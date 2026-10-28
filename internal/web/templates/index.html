@@ -63,7 +63,7 @@
           <div id="species-results" class="species-grid">
             {{range .Species}}
             <a class="species-card" href="/art/{{.Slug}}">
-              {{if .Bilddateien}}<img class="card-image" src="{{imageURL (index .Bilddateien 0)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
+              {{if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
               <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
               <span class="card-arrow" aria-hidden="true">↗</span>
             </a>

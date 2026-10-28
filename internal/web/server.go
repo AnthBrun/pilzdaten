@@ -69,7 +69,7 @@ type searchResult struct {
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
-		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL}).ParseFS(files, "templates/*.html")),
+		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage}).ParseFS(files, "templates/*.html")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", server.home)
@@ -180,6 +180,27 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 			data.Images = append(data.Images, image{URL: imageURL(imagePath), Alt: species.NameTrivial})
 		}
 	}
+	// The source image lists start with tiny 15x15 gif markers before the real
+	// photos. When the species has any .jpg, drop the gif markers from the
+	// gallery so the detail view shows actual photos, not placeholders.
+	if len(data.Images) > 0 {
+		hasJPG := false
+		for _, img := range data.Images {
+			if strings.HasSuffix(strings.ToLower(img.URL), ".jpg") {
+				hasJPG = true
+				break
+			}
+		}
+		if hasJPG {
+			kept := data.Images[:0]
+			for _, img := range data.Images {
+				if strings.HasSuffix(strings.ToLower(img.URL), ".jpg") {
+					kept = append(kept, img)
+				}
+			}
+			data.Images = kept
+		}
+	}
 	for _, slug := range species.Verwechslungen {
 		if related, found := s.catalog.Get(slug); found {
 			data.Related = append(data.Related, related)
@@ -246,4 +267,19 @@ func imageURL(path string) string {
 		parts[i] = url.PathEscape(part)
 	}
 	return "/media/" + strings.Join(parts, "/")
+}
+
+// firstImage returns the first real photo (a .jpg) of a species; the source
+// dataset starts each image list with small 15x15 gif markers. If the species
+// has no .jpg, the first entry is used as a fallback.
+func firstImage(paths []string) string {
+	for _, path := range paths {
+		if strings.HasSuffix(strings.ToLower(path), ".jpg") {
+			return path
+		}
+	}
+	if len(paths) > 0 {
+		return paths[0]
+	}
+	return ""
 }

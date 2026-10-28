@@ -1,0 +1,1355 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Relevante App-, Daten- und Template-Dateien prüfen
+[ ] Filterdaten, API, serverseitige Suche und Filter-UI implementieren
+[ ] Größere Detailbilder und Lightbox umsetzen
+[ ] Tests und Docker-Abnahme durchführen
+[ ] Änderungen prüfen und committen
+[0m
+Ich prüfe jetzt gezielt die Catalog-/HTTP-/Template-Struktur sowie die beiden bereitgestellten Filterdateien; Port 18080 und der bestehende Go-Standardlib-Stack bleiben dabei unverändert.
+[0m✱ [0mGlob "cmd/**/*"[90m 1 match[0m
+[0m✱ [0mGlob "internal/catalog/*"[90m 3 matches[0m
+[0m✱ [0mGlob "**/docker-compose*"[90m 1 match[0m
+[0m✱ [0mGlob "static/*"[90m 0 matches[0m
+[0m✱ [0mGlob "templates/*"[90m 0 matches[0m
+[0m✱ [0mGlob "../pilzsuche/data/{filter_tags.jsonl,facets.json}"[90m 0 matches[0m
+[0m→ [0mRead .
+[0m→ [0mRead docker-compose.yml
+[0m✱ [0mGlob "**/*.html"[90m 2 matches[0m
+[0m→ [0mRead internal/catalog/load.go
+[0m→ [0mRead internal/catalog/query.go
+[0m→ [0mRead cmd/pilzdaten/main.go
+[0m→ [0mRead internal/web
+[0m→ [0mRead Dockerfile
+[0m→ [0mRead go.mod
+[0m✱ [0mGlob "internal/web/**/*"[90m 6 matches[0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json
+[0m→ [0mRead internal/web/server_test.go
+[0m→ [0mRead internal/web/server.go
+[0m→ [0mRead internal/web/templates/detail.html
+[0m→ [0mRead internal/web/static/app.js
+[0m→ [0mRead internal/web/static/app.css
+[0m→ [0mRead internal/web/templates/index.html
+[0m→ [0mRead TASK2.md
+[0m→ [0mRead internal/catalog/load_test.go
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/filter_tags.jsonl[90m [limit=1][0m
+[0m
+[0m$ [0mgit status --short --branch && git log --oneline -10
+## main
+?? TASK.md
+?? TASK2.md
+?? opencode-run1.log
+?? opencode-run2.log
+68097d5 Add Docker deployment and operational smoke tests
+522980c Add species detail pages and image serving
+337408e Add live search and alphabetical species directory
+4529ce6 Add Go catalog scaffold and JSONL loader
+[0m
+[0m# [0mTodos
+[✓] Relevante App-, Daten- und Template-Dateien prüfen
+[•] Filterdaten, API, serverseitige Suche und Filter-UI implementieren
+[ ] Größere Detailbilder und Lightbox umsetzen
+[ ] Tests und Docker-Abnahme durchführen
+[ ] Änderungen prüfen und committen
+[0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 2 files
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+Die Filterdaten sind jetzt an den Catalog angebunden; Suchtext, Merkmals-AND und Durchmessergrenzen laufen serverseitig inklusive Paginierung. Die UI verwendet die Facet-Titel, Labels und Counts direkt aus der gelieferten Definition. Als Nächstes prüfe ich Template-Rendering, Filterfälle und Detail-Lightbox.
+[0m
+[0m# [0mTodos
+[✓] Relevante App-, Daten- und Template-Dateien prüfen
+[✓] Filterdaten, API, serverseitige Suche und Filter-UI implementieren
+[✓] Größere Detailbilder und Lightbox umsetzen
+[•] Tests und Docker-Abnahme durchführen
+[ ] Änderungen prüfen und committen
+[0m
+[0m$ [0mgofmt -w internal/catalog/load.go internal/catalog/query.go internal/catalog/load_test.go internal/web/server.go cmd/pilzdaten/main.go && go test ./...
+/bin/bash: line 1: gofmt: command not found
+[0m
+[0m$ [0mprintenv APP_PORT
+(no output)
+[0m
+[0m$ [0msg docker -c 'docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#6 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#7 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 47.49kB done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 DONE 0.0s
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 20.9s
+
+#7 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#7 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.5s done
+#15 exporting manifest sha256:37a432628da964a7dd26492af055ac97ceb1b3cef8ce7dd29234da1a3fcad631 0.0s done
+#15 exporting config sha256:eb51b5f2f578c94be5e7a758bd93aa8e2614405c788f381ff737215eef3ae3c4 done
+#15 exporting attestation manifest sha256:a65a8613acac3050a2043d660fb0b637ed1c75423b53e44d541be651f4c96703 done
+#15 exporting manifest list sha256:dd65729c4a24edd105f02602f373a9334a05b22398450479c587775d7dba05d7 done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.7s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint pilzdaten-app-1 (e3b6f718e7f0656cd6493751714e1340fd1b548195d9ddb4e1efd6c93e9925bb): Bind for 127.0.0.1:8080 failed: port is already allocated
+[0m
+Der Go-Build im Docker-Image ist erfolgreich. `APP_PORT` war in der Shell nicht gesetzt, deshalb versuchte Compose zunächst den belegten Standardport 8080 zu verwenden; ich starte denselben Compose-Stack jetzt explizit mit `APP_PORT=18080` und führe die Go-Tests im Go-Container aus.
+[0m$ [0mAPP_PORT=18080 sg docker -c 'docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.4s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B 0.0s done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 728B done
+#8 DONE 0.0s
+
+#9 [builder 4/6] COPY cmd ./cmd
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 2/6] WORKDIR /src
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 CACHED
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 CACHED
+
+#15 exporting to image
+#15 exporting layers done
+#15 exporting manifest sha256:37a432628da964a7dd26492af055ac97ceb1b3cef8ce7dd29234da1a3fcad631 done
+#15 exporting config sha256:eb51b5f2f578c94be5e7a758bd93aa8e2614405c788f381ff737215eef3ae3c4 done
+#15 exporting attestation manifest sha256:c4afbaf1af49ff8b05ff253122083b372628d1694559f81ea49be3e3199ee721 0.0s done
+#15 exporting manifest list sha256:e5aad078461174a7aaa92875207511a29a64637a47112ffda4045085d38cdfe1
+#15 exporting manifest list sha256:e5aad078461174a7aaa92875207511a29a64637a47112ffda4045085d38cdfe1 0.0s done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local done
+#15 DONE 0.1s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v /home/hermes/projects/pilzdaten:/src -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.006s
+ok  	pilzdaten/internal/web	0.006s
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; urls=["http://127.0.0.1:18080/","http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12"]; counts=[]
+for u in urls:
+ h=urllib.request.urlopen(u).read().decode(); m=re.search(r"(\d+) Arten gefunden\.",h); counts.append(int(m.group(1)) if m else None); print(u, "count=", counts[-1], "cards=", len(re.findall(r"class=\"species-card\"",h)))
+print("filtered fewer:", counts[1] < counts[0])'
+http://127.0.0.1:18080/ count= 393 cards= 50
+http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12 count= 0 cards= 0
+filtered fewer: True
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request; x=json.load(urllib.request.urlopen("http://127.0.0.1:18080/api/facets")); print("groups=",len(x["groups"]),"titles=",[g["title"] for g in x["groups"]])'
+groups= 9 titles= ['Essbarkeit & Vorkommen', 'Hut', 'Lamellen / Röhren / Stachel', 'Stiel', 'Fruchtfleisch / Schnitt', 'Sporenpulver', 'Wuchsform & Struktur', 'Farbwechsel', 'Geruch & Geschmack']
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; h=urllib.request.urlopen("http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12").read().decode(); slug=re.search(r"href=\"/art/([^\"]+)\"",h).group(1); d=urllib.request.urlopen("http://127.0.0.1:18080/art/"+slug).read().decode(); css=urllib.request.urlopen("http://127.0.0.1:18080/static/app.css").read().decode(); print("detail slug=",slug,"lightbox=", "id=\"lightbox\"" in d,"contain=", "object-fit:contain" in css,"image count=",d.count("class=\"image-open\""))'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import re,urllib.request; h=urllib.request.urlopen("http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12").read().decode(); slug=re.search(r"href=\"/art/([^\"]+)\"",h).group(1); d=urllib.request.urlopen("http://127.0.0.1:18080/art/"+slug).read().decode(); css=urllib.request.urlopen("http://127.0.0.1:18080/static/app.css").read().decode(); print("detail slug=",slug,"lightbox=", "id=\"lightbox\"" in d,"contain=", "object-fit:contain" in css,"image count=",d.count("class=\"image-open\""))
+                                                                                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'group'
+[0m
+[0m$ [0mpython3 -c 'import json; p="/home/hermes/projects/pilzsuche/data/filter_tags.jsonl"; counts={"all":0,"and":0,"and_known":0,"contain":0,"overlap":0,"and_unknown":0}; rows=[]
+for line in open(p):
+ x=json.loads(line); counts["all"]+=1; t=set(x.get("tags",[]));
+ if {"braun","lamellen","gut"}<=t:
+  counts["and"]+=1; lo=x.get("hut_durchmesser_min_cm",0); hi=x.get("hut_durchmesser_max_cm",0)
+  if lo and hi:
+   counts["and_known"]+=1
+   if lo<=5 and hi>=12: counts["contain"]+=1
+   if lo<=12 and hi>=5: counts["overlap"]+=1
+  else: counts["and_unknown"]+=1
+print(counts)'
+{'all': 4181, 'and': 0, 'and_known': 0, 'contain': 0, 'overlap': 0, 'and_unknown': 0}
+[0m
+[0m$ [0mpython3 -c 'import json,collections; c=collections.Counter(); ex={k:[] for k in ("braun","lamellen","gut")};
+for line in open("/home/hermes/projects/pilzsuche/data/filter_tags.jsonl"):
+ x=json.loads(line); t=set(x.get("tags",[])); c.update(t)
+ for k in ex:
+  if k in t and len(ex[k])<4: ex[k].append((x["slug"],sorted(t)))
+print("counts",{k:c[k] for k in ex}); print("examples",ex)'
+counts {'braun': 166, 'lamellen': 755, 'gut': 106}
+examples {'braun': [('AbgestutzteKoralle', ['braun']), ('Kirschstein-Kugelpilz', ['braun']), ('Anhaengselrisspilz', ['braun']), ('KurzstieligerOlivschnitzling', ['braun'])], 'lamellen': [('AlbinoOrange-Ellerling', ['lamellen']), ('AKoernchenschirmling', ['lamellen']), ('Anissaegeblaettling', ['lamellen']), ('Anistaeubling', ['lamellen'])], 'gut': [('Aherkuleskeule', ['gut']), ('AnisklumpfussEssbar1004', ['gut']), ('StachelbartEssbar1004', ['gut']), ('AusgebreitetBecher', ['gut'])]}
+[0m
+[0m$ [0mpython3 -c 'import json,collections; hist=collections.Counter(); examples=[]
+for line in open("/home/hermes/projects/pilzsuche/data/filter_tags.jsonl"):
+ x=json.loads(line); n=len(x.get("tags",[])); hist[n]+=1
+ if n>1 and len(examples)<5: examples.append((x["slug"],x["tags"]))
+print("tag_count_histogram",hist); print("multi_tag_examples",examples)'
+tag_count_histogram Counter({1: 4181})
+multi_tag_examples []
+[0m
+Beim Prüfen der echten Daten zeigte sich ein wichtiges Quellformat-Detail: `filter_tags.jsonl` enthält viele Zeilen je Art, jeweils mit einzelnen Tags. Der bisherige Loader überschreibt bei wiederholtem Slug ältere Zeilen; ich ändere ihn auf Tag-Vereinigung pro Art (mit Übernahme bekannter Durchmesserwerte), bevor ich die Abnahme erneut ausführe.
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m→ [0mRead internal/catalog/load_test.go[90m [offset=45, limit=90][0m
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v /home/hermes/projects/pilzdaten:/src -w /src golang:1.26-alpine sh -c "gofmt -w internal/catalog/load.go internal/catalog/query.go internal/catalog/load_test.go internal/web/server.go cmd/pilzdaten/main.go && go test ./..."'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.004s
+ok  	pilzdaten/internal/web	0.045s
+[0m
+[0m$ [0mAPP_PORT=18080 sg docker -c 'docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.4s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 DONE 0.0s
+
+#7 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#7 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#7 DONE 0.1s
+
+#8 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#8 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#8 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#8 DONE 0.1s
+
+#6 [internal] load build context
+#6 transferring context: 11.30kB done
+#6 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 19.7s
+
+#7 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#7 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.5s done
+#15 exporting manifest sha256:d7a87118f87e00c9b498f5827a08532c63ebab5212e447e5947c1d6831d0b017 done
+#15 exporting config sha256:7ad92140fe6917273abd8d594f8ebf64e3c09d37de03cefa4b18334a8a825ebe done
+#15 exporting attestation manifest sha256:0d7416599d063958810390399b02cd0980aceb42d002c16fd6eb4fb04a58f38c 0.0s done
+#15 exporting manifest list sha256:167312f21ce8b560605eb463fe42e613456747952d164bbc217cdb7047a9e73b done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.7s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request; x=json.load(urllib.request.urlopen("http://127.0.0.1:18080/api/facets")); print("groups=",len(x["groups"]),"titles=",[g["title"] for g in x["groups"]])'
+groups= 9 titles= ['Essbarkeit & Vorkommen', 'Hut', 'Lamellen / Röhren / Stachel', 'Stiel', 'Fruchtfleisch / Schnitt', 'Sporenpulver', 'Wuchsform & Struktur', 'Farbwechsel', 'Geruch & Geschmack']
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; h=urllib.request.urlopen("http://127.0.0.1:18080/").read().decode(); slug=re.search(r"href=\"/art/([^\"]+)\"",h).group(1); d=urllib.request.urlopen("http://127.0.0.1:18080/art/"+slug).read().decode(); css=urllib.request.urlopen("http://127.0.0.1:18080/static/app.css").read().decode(); print("detail slug=",slug,"lightbox=", "id=\"lightbox\"" in d,"contain=", "object-fit:contain" in css,"clickable images=",d.count("class=\"image-open\""))'
+detail slug= VielsporRindenpilz lightbox= True contain= True clickable images= 14
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; urls=["http://127.0.0.1:18080/","http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12"]; counts=[]
+for u in urls:
+ h=urllib.request.urlopen(u).read().decode(); m=re.search(r"(\d+) Arten gefunden\.",h); counts.append(int(m.group(1)) if m else None); print(u, "count=", counts[-1], "cards=", len(re.findall(r"class=\"species-card\"",h)))
+print("filtered fewer:", counts[1] < counts[0])'
+http://127.0.0.1:18080/ count= 393 cards= 50
+http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12 count= 0 cards= 0
+filtered fewer: True
+[0m
+[0m$ [0mpython3 -c 'import json,collections; by=collections.defaultdict(set); dims={}
+for line in open("/home/hermes/projects/pilzsuche/data/filter_tags.jsonl"):
+ x=json.loads(line); by[x["slug"]].update(x.get("tags",[])); dims[x["slug"]]=(x.get("hut_durchmesser_min_cm",0),x.get("hut_durchmesser_max_cm",0))
+print("species",len(by),"tag_union_hist",collections.Counter(map(len,by.values()))); both=[s for s,t in by.items() if {"braun","lamellen","gut"}<=t]; print("and",len(both),"examples",[(s,sorted(by[s]),dims[s]) for s in both[:12]]); print("overlap candidates",sum(1 for s in both if not all(dims[s]) or dims[s][0]<=12 and dims[s][1]>=5)); print("contain candidates",sum(1 for s in both if not all(dims[s]) or dims[s][0]<=5 and dims[s][1]>=12))'
+species 4179 tag_union_hist Counter({1: 4179})
+and 0 examples []
+overlap candidates 0
+contain candidates 0
+[0m
+[0m$ [0mpython3 -c 'import json; idx={};
+for line in open("/home/hermes/projects/pilzsuche/data/index_arts.jsonl"):
+ x=json.loads(line); idx[x.get("slug")]=x
+rows=[json.loads(x) for x in open("/home/hermes/projects/pilzsuche/data/filter_tags.jsonl")]; matched=[x for x in rows if x["slug"] in idx]; print("index entries",len(idx),"filter rows",len(rows),"matching slugs",len(matched)); print("matched tag histogram",__import__("collections").Counter(len(x.get("tags",[])) for x in matched)); print("known facet tag counts",{t:sum(t in x.get("tags",[]) for x in matched) for t in ("braun","lamellen","gut")})'
+index entries 4179 filter rows 4181 matching slugs 4181
+matched tag histogram Counter({1: 4181})
+known facet tag counts {'braun': 166, 'lamellen': 755, 'gut': 106}
+[0m
+[0m% [0mPatch 2 files
+[0m→ [0mRead internal/catalog/load.go[90m [offset=35, limit=155][0m
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request,re,html; selected={}
+for line in open("/home/hermes/projects/pilzsuche/data/filter_tags.jsonl"):
+ x=json.loads(line); tags=x.get("tags",[])
+ if tags and tags[0] in {"braun","lamellen","gut"} and tags[0] not in selected: selected[tags[0]]=x["slug"]
+for tag,slug in selected.items():
+ body=urllib.request.urlopen("http://127.0.0.1:18080/art/"+urllib.parse.quote(slug)).read().decode(); body=re.sub(r"<[^>]+>"," ",body); body=html.unescape(re.sub(r"\s+"," ",body)); i=body.find("Merkmale"); print(tag,slug,body[i:i+550])'
+braun AbgestutzteKoralle Merkmale 11 Angaben Fleisch Weißlich bis schmutzig hell cremegelb, brüchig. Fruchtkörper 5-10 cm hoch, 5-8 (10) cm Ø, schmutzig braun, rosabraun, lachsfarben, weinbraun oder rotbräunlich verfärbend. Im Alter sind die Äste heller, büschelig und aus einem Stamm entspringend. Die Spitzen sind gezahnt. Gattung Korallen ( RAMARIA) . Geruch Leicht pilzig. Geschmack Meist bitterlich. Kommentar Korallen sind meist keine Speisepilze. Zum einen selten und zum anderen schnell verwechselbar. Wenig gute Arten in dieser Gattung. Priorität 3 Sporenpulverfarbe
+gut Aherkuleskeule Merkmale 13 Angaben Chemische reaktionen Fleisch mit Kaliumhydroxid (KOH) rot und mit Eisen (II)-sulfat (FeSO 4 ) grün verfärbend. Fleisch Weiß bis cremefarben, fest, im Schnitt weinrötlich verfärbend, weichlich. Fruchtkörper 1-2 (3) cm Ø, 10-15 cm hoch, gelblich, ockergelblich, keulenförmig. Die Oberfläche ist längs-faltig, gerunzelt und zur Basis verjüngt, etwas lila. Gattung Keulen, Großkeulen, Riesenkeulen. Geruch Pilzig. Geschmack Mild, süß, nach längeren Kauen leicht bitterlich. Priorität 1 Relativer speisewert 123pilze: Relative Wertigke
+lamellen AlbinoOrange-Ellerling Merkmale 15 Angaben Besonderheit Es ist die weiße Version des Orange - Ellerling . Roh unverträglich wie viele Pilzarten. Oft wird er als Weißer Wiesenellerling bezeichnet. Dies ist aber der fast identische kleinere Jungfern-Ellerling , der vielfach auf Wiesen anzutreffen ist. Fleisch Weiß, wässrig, dünn. Gattung Ellerlinge. Geruch Angenehm. Geschmack Mild. Hut 2-6 (8) cm Ø, weiß, Mittelbereich etwas gelbbraun fleckig, feinfaserig, Huthaut meist trocken, +/- etwas bereift wirkend, feucht leicht schmierig, gebuckelt, zunächst halbkreisförmig, sp
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v /home/hermes/projects/pilzdaten:/src -w /src golang:1.26-alpine sh -c "gofmt -w internal/catalog/load.go internal/catalog/query.go internal/catalog/load_test.go && go test ./..."'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.042s
+ok  	pilzdaten/internal/web	0.004s
+[0m
+[0m$ [0mAPP_PORT=18080 sg docker -c 'docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.4s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 9.63kB done
+#8 DONE 0.0s
+
+#9 [builder 3/6] COPY go.mod ./
+#9 CACHED
+
+#10 [builder 2/6] WORKDIR /src
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 20.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.5s done
+#15 exporting manifest sha256:c469f1738b4da1f0ff0456277f3bd34b3e8a3b69ddf386470d27258f1b7711ba done
+#15 exporting config sha256:e9eff12732b2b15b6d531757dc80f7a48d144bc0e55d6623742f47939044c219 done
+#15 exporting attestation manifest sha256:9c870f5040077ac7a5e4d02a93f6397fd68d6f6a60498938292126b7b19fa3d3 done
+#15 exporting manifest list sha256:814167f4a0a56f1ba15389d9b0c6f9de2a920afc93a4eebf6269c1eced1d6c70 done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.6s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; home=urllib.request.urlopen("http://127.0.0.1:18080/").read().decode(); slug=re.search(r"href=\"/art/([^\"]+)\"",home).group(1); detail=urllib.request.urlopen("http://127.0.0.1:18080/art/"+slug).read().decode(); print("detail page",slug,"lightbox markup:","id=\"lightbox\"" in detail,"image click targets:",detail.count("class=\"image-open\""))'
+detail page 32sporigesKnopfbecherchen lightbox markup: True image click targets: 7
+[0m
+[0m$ [0mpython3 -c 'import re,urllib.request; urls=["http://127.0.0.1:18080/","http://127.0.0.1:18080/?f=braun","http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12"]; 
+for u in urls:
+ h=urllib.request.urlopen(u).read().decode(); m=re.search(r"(\d+) Arten gefunden\.",h); print(u,"=>",m.group(1) if m else "no count")'
+http://127.0.0.1:18080/ => 4179
+http://127.0.0.1:18080/?f=braun => 166
+http://127.0.0.1:18080/?f=braun,lamellen,gut&dmin=5&dmax=12 => 0
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request; d=json.load(urllib.request.urlopen("http://127.0.0.1:18080/api/facets")); print("facet groups:",len(d["groups"])); print("home has image previews:", "class=\"card-image\"" in urllib.request.urlopen("http://127.0.0.1:18080/").read().decode())'
+facet groups: 9
+home has image previews: True
+[0m
+[0m$ [0mgit diff --check && git status --short && git diff --stat && git diff
+M cmd/pilzdaten/main.go
+ M docker-compose.yml
+ M internal/catalog/load.go
+ M internal/catalog/load_test.go
+ M internal/catalog/query.go
+ M internal/web/server.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/detail.html
+ M internal/web/templates/index.html
+?? TASK.md
+?? TASK2.md
+?? opencode-run1.log
+?? opencode-run2.log
+ cmd/pilzdaten/main.go              |   4 +-
+ docker-compose.yml                 |   4 +
+ internal/catalog/load.go           | 112 +++++++++++++++++++++++++++-
+ internal/catalog/load_test.go      |  51 +++++++++++++
+ internal/catalog/query.go          |  85 +++++++++++++++++++++
+ internal/web/server.go             |  80 ++++++++++++++++++--
+ internal/web/static/app.css        |   5 ++
+ internal/web/static/app.js         | 148 ++++++++++++++++++++++---------------
+ internal/web/templates/detail.html |  13 +++-
+ internal/web/templates/index.html  |  70 +++++++++++++-----
+ 10 files changed, 481 insertions(+), 91 deletions(-)
+diff --git a/cmd/pilzdaten/main.go b/cmd/pilzdaten/main.go
+index 31fe68c..7cb08c1 100644
+--- a/cmd/pilzdaten/main.go
++++ b/cmd/pilzdaten/main.go
+@@ -12,7 +12,9 @@ import (
+ func main() {
+ 	speciesPath := envOr("SPECIES_FILE", "/data/species.jsonl")
+ 	indexPath := envOr("INDEX_FILE", "/data/index_arts.jsonl")
+-	data, err := catalog.Load(speciesPath, indexPath)
++	filterTagsPath := envOr("FILTER_TAGS_FILE", "/data/filter_tags.jsonl")
++	facetsPath := envOr("FACETS_FILE", "/data/facets.json")
++	data, err := catalog.LoadWithFilters(speciesPath, indexPath, filterTagsPath, facetsPath)
+ 	if err != nil {
+ 		log.Fatalf("Daten konnten nicht geladen werden: %v", err)
+ 	}
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 089213f..d8cb1f7 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -9,9 +9,13 @@ services:
+     environment:
+       SPECIES_FILE: /data/species.jsonl
+       INDEX_FILE: /data/index_arts.jsonl
++      FILTER_TAGS_FILE: /data/filter_tags.jsonl
++      FACETS_FILE: /data/facets.json
+       IMAGE_DIR: /images
+       ADDR: :8080
+     volumes:
+       - ../pilzsuche/data/species.jsonl:/data/species.jsonl:ro
+       - ../pilzsuche/data/index_arts.jsonl:/data/index_arts.jsonl:ro
++      - ../pilzsuche/data/filter_tags.jsonl:/data/filter_tags.jsonl:ro
++      - ../pilzsuche/data/facets.json:/data/facets.json:ro
+       - ../pilzsuche/raw/images:/images:ro
+diff --git a/internal/catalog/load.go b/internal/catalog/load.go
+index e628d4d..de84ba2 100644
+--- a/internal/catalog/load.go
++++ b/internal/catalog/load.go
+@@ -31,15 +31,45 @@ type indexEntry struct {
+ 	Gattung          string `json:"gattung"`
+ }
+ 
++type FilterData struct {
++	Tags  []string `json:"tags"`
++	MinCM int      `json:"hut_durchmesser_min_cm"`
++	MaxCM int      `json:"hut_durchmesser_max_cm"`
++}
++
++type Facets struct {
++	MaxDiameterCM int          `json:"max_diameter_cm"`
++	MinDiameterCM int          `json:"min_diameter_cm"`
++	Groups        []FacetGroup `json:"groups"`
++}
++
++type FacetGroup struct {
++	Group   string        `json:"group"`
++	Title   string        `json:"title"`
++	Options []FacetOption `json:"options"`
++}
++
++type FacetOption struct {
++	Tag   string `json:"tag"`
++	Label string `json:"label"`
++	Count int    `json:"count"`
++}
++
+ // Catalog stores species keyed by their stable source slug. The arts index is
+ // used as the authoritative allow-list so meta/list pages never appear as fungi.
+ type Catalog struct {
+-	bySlug map[string]*Species
+-	all    []*Species
+-	count  int
++	bySlug     map[string]*Species
++	all        []*Species
++	filterData map[string]FilterData
++	facets     Facets
++	count      int
+ }
+ 
+ func Load(speciesPath, indexPath string) (*Catalog, error) {
++	return LoadWithFilters(speciesPath, indexPath, "", "")
++}
++
++func LoadWithFilters(speciesPath, indexPath, filterTagsPath, facetsPath string) (*Catalog, error) {
+ 	index, err := loadIndex(indexPath)
+ 	if err != nil {
+ 		return nil, err
+@@ -51,7 +81,18 @@ func Load(speciesPath, indexPath string) (*Catalog, error) {
+ 	}
+ 	defer file.Close()
+ 
+-	catalog := &Catalog{bySlug: make(map[string]*Species, len(index))}
++	catalog := &Catalog{bySlug: make(map[string]*Species, len(index)), filterData: make(map[string]FilterData), facets: Facets{MinDiameterCM: 1, MaxDiameterCM: 25}}
++	if filterTagsPath != "" {
++		catalog.filterData, err = loadFilterTags(filterTagsPath)
++		if err != nil {
++			return nil, err
++		}
++	}
++	if facetsPath != "" {
++		if err := loadFacets(facetsPath, &catalog.facets); err != nil {
++			return nil, err
++		}
++	}
+ 	scanner := bufio.NewScanner(file)
+ 	scanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
+ 	line := 0
+@@ -90,6 +131,65 @@ func Load(speciesPath, indexPath string) (*Catalog, error) {
+ 	return catalog, nil
+ }
+ 
++func loadFilterTags(path string) (map[string]FilterData, error) {
++	file, err := os.Open(path)
++	if err != nil {
++		return nil, fmt.Errorf("Filtermerkmale %q öffnen: %w", path, err)
++	}
++	defer file.Close()
++
++	filters := make(map[string]FilterData)
++	scanner := bufio.NewScanner(file)
++	scanner.Buffer(make([]byte, 16*1024), 1024*1024)
++	line := 0
++	for scanner.Scan() {
++		line++
++		var entry struct {
++			Slug string `json:"slug"`
++			FilterData
++		}
++		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
++			return nil, fmt.Errorf("Filtermerkmale, Zeile %d: %w", line, err)
++		}
++		if entry.Slug != "" {
++			current := filters[entry.Slug]
++			knownTags := make(map[string]struct{}, len(current.Tags)+len(entry.Tags))
++			for _, tag := range current.Tags {
++				knownTags[tag] = struct{}{}
++			}
++			for _, tag := range entry.Tags {
++				if _, exists := knownTags[tag]; !exists {
++					current.Tags = append(current.Tags, tag)
++					knownTags[tag] = struct{}{}
++				}
++			}
++			if entry.MinCM != 0 && (current.MinCM == 0 || entry.MinCM < current.MinCM) {
++				current.MinCM = entry.MinCM
++			}
++			if entry.MaxCM != 0 && (current.MaxCM == 0 || entry.MaxCM > current.MaxCM) {
++				current.MaxCM = entry.MaxCM
++			}
++			filters[entry.Slug] = current
++		}
++	}
++	if err := scanner.Err(); err != nil {
++		return nil, fmt.Errorf("Filtermerkmale lesen: %w", err)
++	}
++	return filters, nil
++}
++
++func loadFacets(path string, facets *Facets) error {
++	file, err := os.Open(path)
++	if err != nil {
++		return fmt.Errorf("Filterdefinition %q öffnen: %w", path, err)
++	}
++	defer file.Close()
++	if err := json.NewDecoder(file).Decode(facets); err != nil {
++		return fmt.Errorf("Filterdefinition %q lesen: %w", path, err)
++	}
++	return nil
++}
++
+ func loadIndex(path string) (map[string]indexEntry, error) {
+ 	file, err := os.Open(path)
+ 	if err != nil {
+@@ -125,3 +225,7 @@ func (c *Catalog) Get(slug string) (*Species, bool) {
+ 	species, ok := c.bySlug[slug]
+ 	return species, ok
+ }
++
++func (c *Catalog) Facets() Facets {
++	return c.facets
++}
+diff --git a/internal/catalog/load_test.go b/internal/catalog/load_test.go
+index f4992b2..1cea6bf 100644
+--- a/internal/catalog/load_test.go
++++ b/internal/catalog/load_test.go
+@@ -45,3 +45,54 @@ func TestLoadUsesSpeciesIndexAndPreservesVariableTraits(t *testing.T) {
+ 		t.Fatalf("scientific name search = %#v, want Boletus", matches)
+ 	}
+ }
++
++func TestFilterRequiresAllTagsAppliesDiameterAndKeepsUnknown(t *testing.T) {
++	dir := t.TempDir()
++	speciesPath := filepath.Join(dir, "species.jsonl")
++	indexPath := filepath.Join(dir, "index.jsonl")
++	filtersPath := filepath.Join(dir, "filter_tags.jsonl")
++	if err := os.WriteFile(speciesPath, []byte(`{"slug":"A","name_trivial":"A Pilz"}
++{"slug":"B","name_trivial":"B Pilz"}
++{"slug":"C","name_trivial":"C Pilz"}
++{"slug":"D","name_trivial":"D Pilz"}
++`), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(indexPath, []byte(`{"slug":"A","name":"A Pilz"}
++{"slug":"B","name":"B Pilz"}
++{"slug":"C","name":"C Pilz"}
++{"slug":"D","name":"D Pilz"}
++`), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filtersPath, []byte(`{"slug":"A","tags":["braun"],"hut_durchmesser_min_cm":2,"hut_durchmesser_max_cm":15}
++{"slug":"A","tags":["lamellen"],"hut_durchmesser_min_cm":2,"hut_durchmesser_max_cm":15}
++{"slug":"A","tags":["gut"],"hut_durchmesser_min_cm":2,"hut_durchmesser_max_cm":15}
++{"slug":"B","tags":["braun"],"hut_durchmesser_min_cm":2,"hut_durchmesser_max_cm":15}
++{"slug":"B","tags":["lamellen"],"hut_durchmesser_min_cm":2,"hut_durchmesser_max_cm":15}
++{"slug":"C","tags":["braun"],"hut_durchmesser_min_cm":13,"hut_durchmesser_max_cm":15}
++{"slug":"C","tags":["lamellen"],"hut_durchmesser_min_cm":13,"hut_durchmesser_max_cm":15}
++{"slug":"C","tags":["gut"],"hut_durchmesser_min_cm":13,"hut_durchmesser_max_cm":15}
++{"slug":"D","tags":["braun"],"hut_durchmesser_min_cm":0,"hut_durchmesser_max_cm":0}
++{"slug":"D","tags":["lamellen"],"hut_durchmesser_min_cm":0,"hut_durchmesser_max_cm":0}
++{"slug":"D","tags":["gut"],"hut_durchmesser_min_cm":0,"hut_durchmesser_max_cm":0}
++`), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	loaded, err := LoadWithFilters(speciesPath, indexPath, filtersPath, "")
++	if err != nil {
++		t.Fatal(err)
++	}
++	results, count, pages := loaded.Filter("pilz", []string{"braun", "lamellen", "gut"}, 5, 12, "", 1, 50)
++	if count != 2 || pages != 1 || len(results) != 2 || results[0].Slug != "A" || results[1].Slug != "D" {
++		t.Fatalf("filtered results = %#v, count %d, pages %d; want A and unknown-size D", results, count, pages)
++	}
++	results, count, _ = loaded.Filter("", []string{"braun", "gut"}, 5, 12, "", 1, 50)
++	if count != 2 || len(results) != 2 || results[0].Slug != "A" || results[1].Slug != "D" {
++		t.Fatalf("AND-filter results = %#v, count %d; want A and D with all requested tags", results, count)
++	}
++	_, count, _ = loaded.Filter("", nil, 1, 25, "", 1, 50)
++	if count != 4 {
++		t.Fatalf("default diameter range results = %d, want all four species", count)
++	}
++}
+diff --git a/internal/catalog/query.go b/internal/catalog/query.go
+index 0d15a02..73a9170 100644
+--- a/internal/catalog/query.go
++++ b/internal/catalog/query.go
+@@ -1,6 +1,7 @@
+ package catalog
+ 
+ import (
++	"sort"
+ 	"strings"
+ 	"unicode"
+ )
+@@ -51,6 +52,90 @@ func (c *Catalog) List(letter string, page, pageSize int) ([]*Species, int) {
+ 	return filtered[start:end], pages
+ }
+ 
++// Filter returns matching species for a text query, all selected tags, a
++// diameter interval, and optionally an initial letter. Page count is returned
++// separately so callers can render paginated results.
++func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter string, page, pageSize int) ([]*Species, int, int) {
++	query = strings.ToLower(strings.TrimSpace(query))
++	letter = strings.ToUpper(strings.TrimSpace(letter))
++	if pageSize < 1 {
++		pageSize = 50
++	}
++	if page < 1 {
++		page = 1
++	}
++	selected := make(map[string]struct{}, len(tags))
++	for _, tag := range tags {
++		if tag = strings.TrimSpace(tag); tag != "" {
++			selected[tag] = struct{}{}
++		}
++	}
++
++	type match struct {
++		species *Species
++		score   int
++	}
++	matches := make([]match, 0)
++	for _, species := range c.all {
++		if letter != "" && initialLetter(species.NameTrivial) != letter {
++			continue
++		}
++		if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
++			continue
++		}
++		filterData := c.filterData[species.Slug]
++		present := make(map[string]struct{}, len(filterData.Tags))
++		for _, tag := range filterData.Tags {
++			present[tag] = struct{}{}
++		}
++		score := 0
++		matchesTags := true
++		for tag := range selected {
++			if _, ok := present[tag]; !ok {
++				matchesTags = false
++				break
++			}
++			score++
++		}
++		if !matchesTags {
++			continue
++		}
++		// A zero endpoint means the source has no known diameter. Keep those
++		// species visible. Known species remain when their interval overlaps
++		// the selected diameter interval.
++		if filterData.MinCM != 0 && filterData.MaxCM != 0 && (filterData.MinCM > maxCM || filterData.MaxCM < minCM) {
++			continue
++		}
++		matches = append(matches, match{species: species, score: score})
++	}
++	sort.Slice(matches, func(i, j int) bool {
++		if matches[i].score != matches[j].score {
++			return matches[i].score > matches[j].score
++		}
++		left, right := strings.ToLower(matches[i].species.NameTrivial), strings.ToLower(matches[j].species.NameTrivial)
++		if left == right {
++			return matches[i].species.Slug < matches[j].species.Slug
++		}
++		return left < right
++	})
++
++	total := len(matches)
++	pages := (total + pageSize - 1) / pageSize
++	start := (page - 1) * pageSize
++	if start >= total {
++		return []*Species{}, total, pages
++	}
++	end := start + pageSize
++	if end > total {
++		end = total
++	}
++	results := make([]*Species, 0, end-start)
++	for _, item := range matches[start:end] {
++		results = append(results, item.species)
++	}
++	return results, total, pages
++}
++
+ func (c *Catalog) Letters() []string {
+ 	letters := make([]string, 0, 26)
+ 	for letter := 'A'; letter <= 'Z'; letter++ {
+diff --git a/internal/web/server.go b/internal/web/server.go
+index 5a1643b..485fbcd 100644
+--- a/internal/web/server.go
++++ b/internal/web/server.go
+@@ -25,15 +25,22 @@ type Server struct {
+ 
+ type pageData struct {
+ 	Count       int
++	TotalCount  int
+ 	Letter      string
+ 	Letters     []string
+ 	Page        int
+ 	Pages       int
+ 	Species     []*catalog.Species
+-	Previous    int
+-	Next        int
++	PreviousURL string
++	NextURL     string
+ 	HasPrevious bool
+ 	HasNext     bool
++	Query       string
++	Tags        []string
++	Selected    map[string]bool
++	MinCM       int
++	MaxCM       int
++	Facets      catalog.Facets
+ }
+ 
+ type trait struct {
+@@ -62,12 +69,13 @@ type searchResult struct {
+ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
+ 	server := &Server{
+ 		catalog:   data,
+-		templates: template.Must(template.ParseFS(files, "templates/*.html")),
++		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL}).ParseFS(files, "templates/*.html")),
+ 	}
+ 	mux := http.NewServeMux()
+ 	mux.HandleFunc("GET /", server.home)
+ 	mux.HandleFunc("GET /art/{slug}", server.detail)
+ 	mux.HandleFunc("GET /api/search", server.search)
++	mux.HandleFunc("GET /api/facets", server.facets)
+ 	mux.Handle("GET /static/", http.FileServer(http.FS(files)))
+ 	mux.Handle("GET /media/", http.StripPrefix("/media/", http.FileServer(http.Dir(imageDir))))
+ 	return mux
+@@ -76,17 +84,44 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
+ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+ 	letter := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("letter")))
+ 	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'Z' {
+-		letter = "A"
++		letter = ""
+ 	}
+ 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+ 	if page < 1 {
+ 		page = 1
+ 	}
+-	species, pages := s.catalog.List(letter, page, 50)
++	facets := s.catalog.Facets()
++	minCM := queryInt(r, "dmin", facets.MinDiameterCM)
++	maxCM := queryInt(r, "dmax", facets.MaxDiameterCM)
++	if minCM < facets.MinDiameterCM || minCM > facets.MaxDiameterCM {
++		minCM = facets.MinDiameterCM
++	}
++	if maxCM < facets.MinDiameterCM || maxCM > facets.MaxDiameterCM {
++		maxCM = facets.MaxDiameterCM
++	}
++	if minCM > maxCM {
++		minCM, maxCM = maxCM, minCM
++	}
++	tags := splitTags(r.URL.Query().Get("f"))
++	query := strings.TrimSpace(r.URL.Query().Get("q"))
++	species, count, pages := s.catalog.Filter(query, tags, minCM, maxCM, letter, page, 50)
++	selected := make(map[string]bool, len(tags))
++	for _, tag := range tags {
++		selected[tag] = true
++	}
++	values := r.URL.Query()
++	values.Del("page")
++	baseQuery := values.Encode()
++	previousURL, nextURL := "?", "?"
++	if baseQuery != "" {
++		previousURL, nextURL = "?"+baseQuery+"&", "?"+baseQuery+"&"
++	}
+ 	data := pageData{
+-		Count: s.catalog.Count(), Letter: letter, Letters: s.catalog.Letters(),
++		Count: count, TotalCount: s.catalog.Count(), Letter: letter, Letters: s.catalog.Letters(),
+ 		Page: page, Pages: pages, Species: species,
+-		Previous: page - 1, Next: page + 1, HasPrevious: page > 1, HasNext: page < pages,
++		PreviousURL: previousURL + "page=" + strconv.Itoa(page-1), NextURL: nextURL + "page=" + strconv.Itoa(page+1),
++		HasPrevious: page > 1, HasNext: page < pages,
++		Query: query, Tags: tags, Selected: selected, MinCM: minCM, MaxCM: maxCM, Facets: facets,
+ 	}
+ 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+ 	if err := s.templates.ExecuteTemplate(w, "index.html", data); err != nil {
+@@ -94,6 +129,37 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+ 	}
+ }
+ 
++func queryInt(r *http.Request, key string, fallback int) int {
++	value, err := strconv.Atoi(r.URL.Query().Get(key))
++	if err != nil {
++		return fallback
++	}
++	return value
++}
++
++func splitTags(value string) []string {
++	seen := make(map[string]struct{})
++	tags := make([]string, 0)
++	for _, tag := range strings.Split(value, ",") {
++		tag = strings.TrimSpace(tag)
++		if tag == "" {
++			continue
++		}
++		if _, ok := seen[tag]; !ok {
++			seen[tag] = struct{}{}
++			tags = append(tags, tag)
++		}
++	}
++	return tags
++}
++
++func (s *Server) facets(w http.ResponseWriter, _ *http.Request) {
++	w.Header().Set("Content-Type", "application/json; charset=utf-8")
++	if err := json.NewEncoder(w).Encode(s.catalog.Facets()); err != nil {
++		http.Error(w, "Filterdefinition konnte nicht ausgegeben werden", http.StatusInternalServerError)
++	}
++}
++
+ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
+ 	species, ok := s.catalog.Get(r.PathValue("slug"))
+ 	if !ok {
+diff --git a/internal/web/static/app.css b/internal/web/static/app.css
+index c180861..01bd624 100644
+--- a/internal/web/static/app.css
++++ b/internal/web/static/app.css
+@@ -14,3 +14,8 @@ footer{max-width:1240px;margin:auto;padding:24px 32px;border-top:1px solid var(-
+ @media(max-width:800px){.alphabet{grid-template-columns:repeat(13,minmax(0,1fr));gap:2px}.topbar{height:65px}main{padding:0 22px}.hero{padding:65px 0 54px}}
+ @media(max-width:800px){.image-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:560px){.topbar{padding:0 20px}.topbar-note{font-size:9px}main{padding:0 18px}.hero{padding:54px 0 45px}.hero-copy{font-size:14px}.search-box{height:56px;padding:0 12px;gap:9px}.search-box input{font-size:12px}.search-box kbd{display:none}.section-heading h2{font-size:27px}.count-pill{font-size:10px;padding:7px 9px}.alphabet{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin-bottom:27px}.letter{height:34px}.species-grid{grid-template-columns:1fr;gap:7px}.species-card{min-height:67px;padding:11px}.results-toolbar{font-size:11px}.result-number{font-size:10px}footer{padding:20px 18px}.detail-page{padding-bottom:50px}.detail-hero{padding:41px 0}.detail-section{padding-top:35px}.detail-section-heading h2{font-size:26px}.traits-grid{grid-template-columns:1fr}.trait-card{padding:14px}.image-grid{grid-template-columns:1fr 1fr;gap:8px}.mushroom-image img{height:155px}.breadcrumbs{padding-top:19px}}
++
++.filter-layout{display:grid;grid-template-columns:minmax(230px,290px) minmax(0,1fr);gap:25px;align-items:start}.filter-panel{background:var(--white);border:1px solid var(--line);border-radius:6px;overflow:hidden}.filter-panel>summary{padding:15px 17px;color:var(--green);font-size:14px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;list-style:none}.filter-panel>summary::-webkit-details-marker,.facet-group>summary::-webkit-details-marker{display:none}.filter-panel-content{padding:0 15px 16px}.facet-group{border-top:1px solid var(--line);padding:0 0 3px}.facet-group>summary{padding:13px 0 9px;color:#35473a;font-size:12px;font-weight:700;cursor:pointer;list-style:none}.facet-group>summary:after{content:"+";float:right;color:#8b968b}.facet-group[open]>summary:after{content:"−"}.facet-options{display:grid;gap:2px;padding-bottom:7px}.facet-option{display:flex;align-items:center;gap:8px;padding:5px 2px;color:#566259;font-size:11px;cursor:pointer}.facet-option input{accent-color:var(--green);margin:0;flex:none}.facet-option span{flex:1}.facet-option small{min-width:25px;text-align:center;padding:2px 5px;border-radius:99px;background:#f1f2ec;color:#899289;font-size:9px}.diameter-filter{border-top:1px solid var(--line);padding:14px 0 9px}.diameter-filter h3{font-size:12px;color:#35473a;margin:0 0 7px}.diameter-value{margin:0 0 12px;color:var(--green);font-size:12px;font-weight:600}.range-label{display:block;color:#8a948c;font-size:10px;margin:9px 0 3px}.diameter-range{width:100%;accent-color:var(--green);cursor:pointer}.reset-filters{width:100%;margin-top:12px;padding:10px;background:#f3f4ef;border:1px solid var(--line);border-radius:4px;color:#536255;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}.reset-filters:hover{background:#e8eadf}.results-column{min-width:0}.results-toolbar{min-height:25px}.card-image{width:64px;height:64px;flex:none;object-fit:cover;border-radius:5px;background:#f0f2e7}.card-image-empty{display:grid;place-items:center;color:#63836c;font-size:26px}.species-card{gap:13px}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
++.image-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mushroom-image{background:#f4f4ee}.image-open{display:flex;justify-content:center;align-items:center;width:100%;padding:0;border:0;background:#f4f4ee;cursor:zoom-in}.image-open img{display:block;width:auto;max-width:100%;height:auto;max-height:560px;object-fit:contain;background:#f4f4ee}.mushroom-image figcaption{background:#f4f4ee}.lightbox{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:4vh 5vw;background:rgb(12 17 14 / .94);color:white}.lightbox.is-open{display:flex}.lightbox-image{display:block;max-width:95vw;max-height:92vh;object-fit:contain}.lightbox button{position:absolute;z-index:1;border:0;background:rgb(255 255 255 / .13);color:white;border-radius:50%;width:44px;height:44px;font-size:28px;line-height:1;cursor:pointer}.lightbox button:hover{background:rgb(255 255 255 / .25)}.lightbox-close{top:18px;right:20px}.lightbox-prev{left:18px;top:50%;transform:translateY(-50%)}.lightbox-next{right:18px;top:50%;transform:translateY(-50%)}.lightbox-count{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;color:#e1e5df}.lightbox-active{overflow:hidden}
++@media(max-width:800px){.filter-layout{grid-template-columns:1fr;gap:15px}.filter-panel{width:100%}.filter-panel:not([open]) .filter-panel-content{display:none}.image-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
++@media(max-width:560px){.filter-layout{gap:10px}.filter-panel-content{padding:0 12px 13px}.card-image{width:64px;height:64px}.image-grid{gap:8px}.image-open img{max-height:460px}.lightbox{padding:5vh 3vw}.lightbox button{width:38px;height:38px}.lightbox-prev{left:8px}.lightbox-next{right:8px}}
+diff --git a/internal/web/static/app.js b/internal/web/static/app.js
+index 117d911..0250f5d 100644
+--- a/internal/web/static/app.js
++++ b/internal/web/static/app.js
+@@ -1,67 +1,52 @@
+ const searchInput = document.querySelector("#species-search");
+-const resultGrid = document.querySelector("#species-results");
+-const resultsLabel = document.querySelector("#results-label");
+-const searchHint = document.querySelector("#search-hint");
+-let requestTimer;
++const minSlider = document.querySelector("#diameter-min");
++const maxSlider = document.querySelector("#diameter-max");
++const diameterValue = document.querySelector("#diameter-value");
++let reloadTimer;
+ 
+-function makeCard(species) {
+-  const link = document.createElement("a");
+-  link.className = "species-card";
+-  link.href = `/art/${encodeURIComponent(species.slug)}`;
+-
+-  const symbol = document.createElement("span");
+-  symbol.className = "card-symbol";
+-  symbol.setAttribute("aria-hidden", "true");
+-  symbol.textContent = "◌";
+-  const copy = document.createElement("span");
+-  copy.className = "card-copy";
+-  const name = document.createElement("strong");
+-  name.textContent = species.name_trivial;
+-  const scientific = document.createElement("em");
+-  scientific.textContent = species.name_wissenschaftlich || "Wissenschaftlicher Name nicht erfasst";
+-  copy.append(name, scientific);
+-  const arrow = document.createElement("span");
+-  arrow.className = "card-arrow";
+-  arrow.setAttribute("aria-hidden", "true");
+-  arrow.textContent = "↗";
+-  link.append(symbol, copy, arrow);
+-  return link;
++function scheduleFilterReload() {
++  clearTimeout(reloadTimer);
++  reloadTimer = setTimeout(() => {
++    const params = new URLSearchParams();
++    const query = searchInput?.value.trim();
++    if (query) params.set("q", query);
++    const selected = [...document.querySelectorAll('.facet-option input[name="f"]:checked')].map((input) => input.value);
++    if (selected.length) params.set("f", selected.join(","));
++    if (minSlider && maxSlider) {
++      if (minSlider.value !== minSlider.min) params.set("dmin", minSlider.value);
++      if (maxSlider.value !== maxSlider.max) params.set("dmax", maxSlider.value);
++    }
++    const currentLetter = new URLSearchParams(window.location.search).get("letter");
++    if (currentLetter) params.set("letter", currentLetter);
++    window.location.href = `/?${params.toString()}`;
++  }, 150);
+ }
+ 
+-async function searchSpecies() {
+-  const query = searchInput.value.trim();
+-  if (!query) {
+-    window.location.href = "/";
+-    return;
+-  }
+-  resultsLabel.textContent = `Suchergebnisse für „${query}“`;
+-  searchHint.textContent = "Suche in Trivialnamen, wissenschaftlichen Namen und Synonymen …";
+-  try {
+-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+-    if (!response.ok) throw new Error("Suche fehlgeschlagen");
+-    const species = await response.json();
+-    resultGrid.replaceChildren();
+-    if (species.length === 0) {
+-      const empty = document.createElement("p");
+-      empty.className = "empty-state";
+-      empty.textContent = "Keine passenden Arten gefunden. Versuche einen anderen Suchbegriff.";
+-      resultGrid.append(empty);
+-    } else {
+-      resultGrid.append(...species.map(makeCard));
+-    }
+-    searchHint.textContent = `${species.length}${species.length === 30 ? "+" : ""} Treffer`;
+-  } catch {
+-    searchHint.textContent = "Die Suche ist gerade nicht erreichbar.";
+-  }
++function updateDiameterLabel() {
++  if (!minSlider || !maxSlider || !diameterValue) return;
++  diameterValue.textContent = minSlider.value === minSlider.min && maxSlider.value === maxSlider.max
++    ? "alle Werte"
++    : `${minSlider.value} – ${maxSlider.value} cm`;
+ }
+ 
+-searchInput?.addEventListener("input", () => {
+-  clearTimeout(requestTimer);
+-  if (!searchInput.value.trim()) {
+-    window.location.replace("/");
+-    return;
+-  }
+-  requestTimer = setTimeout(searchSpecies, 180);
++searchInput?.addEventListener("input", scheduleFilterReload);
++document.querySelectorAll('.facet-option input[name="f"]').forEach((input) => {
++  input.addEventListener("change", scheduleFilterReload);
++});
++
++minSlider?.addEventListener("input", () => {
++  if (Number(minSlider.value) > Number(maxSlider.value)) maxSlider.value = minSlider.value;
++  updateDiameterLabel();
++  scheduleFilterReload();
++});
++maxSlider?.addEventListener("input", () => {
++  if (Number(maxSlider.value) < Number(minSlider.value)) minSlider.value = maxSlider.value;
++  updateDiameterLabel();
++  scheduleFilterReload();
++});
++
++document.querySelector("#reset-filters")?.addEventListener("click", () => {
++  window.location.href = "/";
+ });
+ 
+ document.addEventListener("keydown", (event) => {
+@@ -70,3 +55,50 @@ document.addEventListener("keydown", (event) => {
+     searchInput?.focus();
+   }
+ });
++
++const lightbox = document.querySelector("#lightbox");
++if (lightbox) {
++  const imageButtons = [...document.querySelectorAll(".image-open")];
++  const lightboxImage = lightbox.querySelector(".lightbox-image");
++  const counter = lightbox.querySelector(".lightbox-count");
++  let currentImage = 0;
++  let returnFocus;
++
++  function showImage(index) {
++    currentImage = (index + imageButtons.length) % imageButtons.length;
++    const source = imageButtons[currentImage].querySelector("img");
++    lightboxImage.src = source.currentSrc || source.src;
++    lightboxImage.alt = source.alt;
++    counter.textContent = `${currentImage + 1} / ${imageButtons.length}`;
++  }
++
++  function openLightbox(index) {
++    returnFocus = document.activeElement;
++    showImage(index);
++    lightbox.classList.add("is-open");
++    lightbox.setAttribute("aria-hidden", "false");
++    document.body.classList.add("lightbox-active");
++    lightbox.querySelector(".lightbox-close").focus();
++  }
++
++  function closeLightbox() {
++    lightbox.classList.remove("is-open");
++    lightbox.setAttribute("aria-hidden", "true");
++    document.body.classList.remove("lightbox-active");
++    returnFocus?.focus();
++  }
++
++  imageButtons.forEach((button, index) => button.addEventListener("click", () => openLightbox(index)));
++  lightbox.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
++  lightbox.querySelector(".lightbox-prev").addEventListener("click", () => showImage(currentImage - 1));
++  lightbox.querySelector(".lightbox-next").addEventListener("click", () => showImage(currentImage + 1));
++  lightbox.addEventListener("click", (event) => {
++    if (event.target === lightbox) closeLightbox();
++  });
++  document.addEventListener("keydown", (event) => {
++    if (!lightbox.classList.contains("is-open")) return;
++    if (event.key === "Escape") closeLightbox();
++    if (event.key === "ArrowLeft") showImage(currentImage - 1);
++    if (event.key === "ArrowRight") showImage(currentImage + 1);
++  });
++}
+diff --git a/internal/web/templates/detail.html b/internal/web/templates/detail.html
+index 0e8e414..4c388b0 100644
+--- a/internal/web/templates/detail.html
++++ b/internal/web/templates/detail.html
+@@ -6,6 +6,7 @@
+   <meta name="theme-color" content="#f5f4ef">
+   <title>{{.Species.NameTrivial}} – Pilzdatenbank</title>
+   <link rel="stylesheet" href="/static/app.css">
++  <script src="/static/app.js" defer></script>
+ </head>
+ <body>
+   <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a><a class="topbar-note back-link" href="/">← Alle Arten</a></header>
+@@ -30,10 +31,20 @@
+     {{if .Images}}
+     <section class="detail-section" aria-labelledby="images-heading">
+       <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>
+-      <div class="image-grid">{{range .Images}}<figure class="mushroom-image"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"><figcaption>{{.Alt}}</figcaption></figure>{{end}}</div>
++      <div class="image-grid">{{range $index, $image := .Images}}<figure class="mushroom-image"><button class="image-open" type="button" data-image-index="{{$index}}" aria-label="Bild vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button><figcaption>{{$image.Alt}}</figcaption></figure>{{end}}</div>
+     </section>
+     {{end}}
+ 
++    {{if .Images}}
++    <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bildansicht">
++      <button class="lightbox-close" type="button" aria-label="Bildansicht schließen">×</button>
++      <button class="lightbox-prev" type="button" aria-label="Vorheriges Bild">‹</button>
++      <img class="lightbox-image" alt="">
++      <button class="lightbox-next" type="button" aria-label="Nächstes Bild">›</button>
++      <p class="lightbox-count" aria-live="polite"></p>
++    </div>
++    {{end}}
++
+     {{if .Related}}
+     <section class="detail-section" aria-labelledby="related-heading">
+       <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
+diff --git a/internal/web/templates/index.html b/internal/web/templates/index.html
+index 0bf13d6..45c1bed 100644
+--- a/internal/web/templates/index.html
++++ b/internal/web/templates/index.html
+@@ -14,38 +14,68 @@
+     <section class="hero">
+       <p class="eyebrow">ENTDECKEN · VERGLEICHEN · LERNEN</p>
+       <h1>Finde deinen<br><em>Waldpilz.</em></h1>
+-      <p class="hero-copy">Durchsuche {{.Count}} Arten nach Namen, Merkmalen und Verwechslungspartnern.</p>
+-      <form class="search-box" role="search" action="/" method="get" onsubmit="return false">
++      <p class="hero-copy">Durchsuche {{.TotalCount}} Arten nach Namen und Merkmalen – direkt im Wald.</p>
++      <div class="search-box" role="search">
+         <span class="search-icon" aria-hidden="true">⌕</span>
+-        <input id="species-search" type="search" name="q" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
++        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
+         <kbd>⌘ K</kbd>
+-      </form>
++      </div>
+       <p class="search-hint" id="search-hint">Zum Beispiel: Steinpilz, Boletus oder Herrenpilz</p>
+     </section>
+ 
+     <section class="catalog-section" aria-labelledby="catalog-heading">
+       <div class="section-heading">
+-        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Alphabetisch stöbern</h2></div>
+-        <span class="count-pill">{{.Count}} Arten</span>
++        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Arten bestimmen</h2></div>
++        <span class="count-pill">{{.TotalCount}} Arten</span>
+       </div>
+       <nav class="alphabet" aria-label="Anfangsbuchstaben">
+         {{range .Letters}}<a class="letter{{if eq . $.Letter}} active{{end}}" href="/?letter={{.}}" aria-current="{{if eq . $.Letter}}page{{else}}false{{end}}">{{.}}</a>{{end}}
+       </nav>
+-      <div class="results-toolbar"><span id="results-label">Arten mit <strong>{{.Letter}}</strong></span><span class="result-number">{{len .Species}} Einträge{{if gt .Pages 1}} · Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
+-      <div id="species-results" class="species-grid">
+-        {{range .Species}}
+-        <a class="species-card" href="/art/{{.Slug}}">
+-          <span class="card-symbol" aria-hidden="true">◌</span>
+-          <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
+-          <span class="card-arrow" aria-hidden="true">↗</span>
+-        </a>
+-        {{else}}<p class="empty-state">Für diesen Buchstaben wurden keine Arten gefunden.</p>{{end}}
++      <div class="filter-layout">
++        <details class="filter-panel" open>
++          <summary>Merkmale filtern <span aria-hidden="true">⌄</span></summary>
++          <div class="filter-panel-content">
++            <div class="facet-groups">
++              {{range .Facets.Groups}}
++              <details class="facet-group" open>
++                <summary>{{.Title}}</summary>
++                <div class="facet-options">
++                  {{range .Options}}
++                  <label class="facet-option"><input type="checkbox" name="f" value="{{.Tag}}"{{if index $.Selected .Tag}} checked{{end}}><span>{{.Label}}</span><small>{{.Count}}</small></label>
++                  {{end}}
++                </div>
++              </details>
++              {{end}}
++            </div>
++            <section class="diameter-filter" aria-labelledby="diameter-title">
++              <h3 id="diameter-title">Hutdurchmesser</h3>
++              <p class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</p>
++              <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label>
++              <input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
++              <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label>
++              <input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
++            </section>
++            <button id="reset-filters" class="reset-filters" type="button">Alle Filter zurücksetzen</button>
++          </div>
++        </details>
++        <div class="results-column">
++          <div class="results-toolbar"><span id="results-label">{{.Count}} Arten gefunden.</span><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
++          <div id="species-results" class="species-grid">
++            {{range .Species}}
++            <a class="species-card" href="/art/{{.Slug}}">
++              {{if .Bilddateien}}<img class="card-image" src="{{imageURL (index .Bilddateien 0)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
++              <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
++              <span class="card-arrow" aria-hidden="true">↗</span>
++            </a>
++            {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}
++          </div>
++          <nav class="pagination" aria-label="Seiten">
++            {{if .HasPrevious}}<a href="{{.PreviousURL}}">← Zurück</a>{{else}}<span></span>{{end}}
++            {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
++            {{if .HasNext}}<a href="{{.NextURL}}">Weiter →</a>{{end}}
++          </nav>
++        </div>
+       </div>
+-      <nav class="pagination" aria-label="Seiten">
+-        {{if .HasPrevious}}<a href="/?letter={{.Letter}}&page={{.Previous}}">← Zurück</a>{{else}}<span></span>{{end}}
+-        {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
+-        {{if .HasNext}}<a href="/?letter={{.Letter}}&page={{.Next}}">Weiter →</a>{{end}}
+-      </nav>
+     </section>
+   </main>
+   <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+[0m
+Docker und Tests laufen jetzt erfolgreich; `/` zeigt 4.179 Arten und ein einzelner Tag wie `braun` reduziert auf 166. Ein Datenhinweis aus der Abnahme: Die bereitgestellte `filter_tags.jsonl` hat in allen 4.181 Zeilen jeweils genau einen Tag je Slug; deshalb liefert die beispielhafte AND-Kombination `braun,lamellen,gut` derzeit 0 Treffer. Der Filtercode unterstützt Mehrfach-Tags korrekt, aber die vorhandenen Daten enthalten diese Kombinationen nicht. Ich sichere die implementierten Änderungen jetzt in einem gezielten Commit.
+[0m$ [0mgit add cmd/pilzdaten/main.go docker-compose.yml internal/catalog/load.go internal/catalog/load_test.go internal/catalog/query.go internal/web/server.go internal/web/static/app.css internal/web/static/app.js internal/web/templates/detail.html internal/web/templates/index.html && git commit -m "Add mushroom trait filters and image lightbox"
+[main e1aee9f] Add mushroom trait filters and image lightbox
+ 10 files changed, 481 insertions(+), 91 deletions(-)
+[0m
+[0m$ [0mgit status --short --branch
+## main
+?? TASK.md
+?? TASK2.md
+?? opencode-run1.log
+?? opencode-run2.log
+[0m
+[0m$ [0mgit show --stat --oneline --summary HEAD
+e1aee9f Add mushroom trait filters and image lightbox
+ cmd/pilzdaten/main.go              |   4 +-
+ docker-compose.yml                 |   4 +
+ internal/catalog/load.go           | 112 +++++++++++++++++++++++++++-
+ internal/catalog/load_test.go      |  51 +++++++++++++
+ internal/catalog/query.go          |  85 +++++++++++++++++++++
+ internal/web/server.go             |  80 ++++++++++++++++++--
+ internal/web/static/app.css        |   5 ++
+ internal/web/static/app.js         | 148 ++++++++++++++++++++++---------------
+ internal/web/templates/detail.html |  13 +++-
+ internal/web/templates/index.html  |  70 +++++++++++++-----
+ 10 files changed, 481 insertions(+), 91 deletions(-)
+[0m
+[0m$ [0msg docker -c 'docker compose ps'
+NAME              IMAGE             COMMAND        SERVICE   CREATED          STATUS          PORTS
+pilzdaten-app-1   pilzdaten:local   "/pilzdaten"   app       37 seconds ago   Up 37 seconds   0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp
+[0m
+[0m# [0mTodos
+[✓] Relevante App-, Daten- und Template-Dateien prüfen
+[✓] Filterdaten, API, serverseitige Suche und Filter-UI implementieren
+[✓] Größere Detailbilder und Lightbox umsetzen
+[✓] Tests und Docker-Abnahme durchführen
+[✓] Änderungen prüfen und committen
+[•] Upstream-Filterdaten um vollständige Tags je Art ergänzen lassen
+[0m
+Implementiert und in **`e1aee9f`** (`Add mushroom trait filters and image lightbox`) committet. Die App läuft auf **Port 18080**.
+
+Enthalten sind serverseitige Text- und AND-Merkmalsuche mit Paginierung, `/api/facets`, das Filterpanel mit Durchmesserreglern, Bildvorschauen sowie größere Detailbilder mit Lightbox. `go test ./...` und der Docker-Build waren erfolgreich; `/api/facets` liefert 9 Gruppen.
+
+**Datenhinweis:** Die bereitgestellte `filter_tags.jsonl` enthält tatsächlich nur einen Tag je Slug. Daher liefert `/?f=braun,lamellen,gut&dmin=5&dmax=12` aktuell 0 Treffer; `/?f=braun` liefert 166. Der Mehrfachfilter ist implementiert und mit Mehrfach-Tag-Daten getestet, benötigt für die praktische Suche aber vollständigere Tags je Art aus der Quelldatenaufbereitung.
+
+`git status` zeigt neben dem Commit noch die bereits vorhandenen, nicht angefassten ungetrackten Dateien `TASK.md`, `TASK2.md`, `opencode-run1.log` und `opencode-run2.log`.

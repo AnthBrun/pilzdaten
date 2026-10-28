@@ -38,4 +38,10 @@ func TestLoadUsesSpeciesIndexAndPreservesVariableTraits(t *testing.T) {
 	if _, ok := catalog.Get("ListenSeite"); ok {
 		t.Fatal("non-species page was loaded")
 	}
+	if matches := catalog.Search("hErReN", 10); len(matches) != 1 || matches[0].Slug != "Boletus" {
+		t.Fatalf("case-insensitive synonym search = %#v, want Boletus", matches)
+	}
+	if matches := catalog.Search("boletus edulis", 10); len(matches) != 1 || matches[0].Slug != "Boletus" {
+		t.Fatalf("scientific name search = %#v, want Boletus", matches)
+	}
 }

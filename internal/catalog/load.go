@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 )
 
 // Species is one structured entry from species.jsonl. Merkmale is deliberately
@@ -33,6 +35,7 @@ type indexEntry struct {
 // used as the authoritative allow-list so meta/list pages never appear as fungi.
 type Catalog struct {
 	bySlug map[string]*Species
+	all    []*Species
 	count  int
 }
 
@@ -70,11 +73,20 @@ func Load(speciesPath, indexPath string) (*Catalog, error) {
 		}
 		species.Gattung = entry.Gattung
 		catalog.bySlug[species.Slug] = &species
+		catalog.all = append(catalog.all, &species)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("species-Datei lesen: %w", err)
 	}
 	catalog.count = len(catalog.bySlug)
+	sort.Slice(catalog.all, func(i, j int) bool {
+		left := strings.ToLower(catalog.all[i].NameTrivial)
+		right := strings.ToLower(catalog.all[j].NameTrivial)
+		if left == right {
+			return catalog.all[i].Slug < catalog.all[j].Slug
+		}
+		return left < right
+	})
 	return catalog, nil
 }
 

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/web"
 )
 
 func main() {
@@ -18,14 +18,10 @@ func main() {
 	}
 	log.Printf("%d Arten aus %s geladen", data.Count(), speciesPath)
 
-	mux := http.NewServeMux()
+	mux := web.New(data)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintln(w, "ok")
-	})
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprintln(w, "<!doctype html><html lang=\"de\"><meta charset=\"utf-8\"><title>Pilzdatenbank</title><h1>Pilzdatenbank</h1>")
+		_, _ = w.Write([]byte("ok\n"))
 	})
 
 	addr := envOr("ADDR", ":8080")

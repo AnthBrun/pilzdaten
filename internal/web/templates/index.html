@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f4ef">
+  <title>Pilzdatenbank – Arten entdecken</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/" aria-label="Pilzdatenbank Startseite"><span class="brand-mark">✳</span> Pilzdatenbank</a><span class="topbar-note">Wissen aus dem Wald</span></header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">ENTDECKEN · VERGLEICHEN · LERNEN</p>
+      <h1>Finde deinen<br><em>Waldpilz.</em></h1>
+      <p class="hero-copy">Durchsuche {{.Count}} Arten nach Namen, Merkmalen und Verwechslungspartnern.</p>
+      <form class="search-box" role="search" action="/" method="get" onsubmit="return false">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="species-search" type="search" name="q" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
+        <kbd>⌘ K</kbd>
+      </form>
+      <p class="search-hint" id="search-hint">Zum Beispiel: Steinpilz, Boletus oder Herrenpilz</p>
+    </section>
+
+    <section class="catalog-section" aria-labelledby="catalog-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Alphabetisch stöbern</h2></div>
+        <span class="count-pill">{{.Count}} Arten</span>
+      </div>
+      <nav class="alphabet" aria-label="Anfangsbuchstaben">
+        {{range .Letters}}<a class="letter{{if eq . $.Letter}} active{{end}}" href="/?letter={{.}}" aria-current="{{if eq . $.Letter}}page{{else}}false{{end}}">{{.}}</a>{{end}}
+      </nav>
+      <div class="results-toolbar"><span id="results-label">Arten mit <strong>{{.Letter}}</strong></span><span class="result-number">{{len .Species}} Einträge{{if gt .Pages 1}} · Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
+      <div id="species-results" class="species-grid">
+        {{range .Species}}
+        <a class="species-card" href="/art/{{.Slug}}">
+          <span class="card-symbol" aria-hidden="true">◌</span>
+          <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
+          <span class="card-arrow" aria-hidden="true">↗</span>
+        </a>
+        {{else}}<p class="empty-state">Für diesen Buchstaben wurden keine Arten gefunden.</p>{{end}}
+      </div>
+      <nav class="pagination" aria-label="Seiten">
+        {{if .HasPrevious}}<a href="/?letter={{.Letter}}&page={{.Previous}}">← Zurück</a>{{else}}<span></span>{{end}}
+        {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
+        {{if .HasNext}}<a href="/?letter={{.Letter}}&page={{.Next}}">Weiter →</a>{{end}}
+      </nav>
+    </section>
+  </main>
+  <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+</body>
+</html>

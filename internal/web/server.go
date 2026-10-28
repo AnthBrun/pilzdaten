@@ -62,11 +62,13 @@ type image struct {
 }
 
 type detailData struct {
-	Species *catalog.Species
-	Traits  []trait
-	Images  []image
-	Gallery []image
-	Related []*catalog.Species
+	DisplayName string
+	Aliases     []string
+	Species     *catalog.Species
+	Traits      []trait
+	Images      []image
+	Gallery     []image
+	Related     []*catalog.Species
 }
 
 type searchResult struct {
@@ -90,15 +92,22 @@ type searchResponse struct {
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
-		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage}).ParseFS(files, "templates/*.html")),
+		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage, "displayName": displayName}).ParseFS(files, "templates/*.html")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", server.home)
 	mux.HandleFunc("GET /art/{slug}", server.detail)
 	mux.HandleFunc("GET /api/search", server.search)
 	mux.HandleFunc("GET /api/facets", server.facets)
-	mux.Handle("GET /static/", http.FileServer(http.FS(files)))
-	mux.Handle("GET /media/", http.StripPrefix("/media/", http.FileServer(http.Dir(imageDir))))
+	mux.Handle("GET /static/", withCacheControl(http.FileServer(http.FS(files)), func(path string) string {
+		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
+			return "no-cache" // Revalidieren (ETag), damit Updates auf dem Handy ankommen
+		}
+		return "public, max-age=86400"
+	}))
+	mux.Handle("GET /media/", http.StripPrefix("/media/", withCacheControl(http.FileServer(http.Dir(imageDir)), func(string) string {
+		return "public, max-age=86400"
+	})))
 	return mux
 }
 
@@ -174,6 +183,22 @@ func queryInt(r *http.Request, key string, fallback int) int {
 	return value
 }
 
+func withCacheControl(next http.Handler, policy func(path string) string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", policy(r.URL.Path))
+		next.ServeHTTP(w, r)
+	})
+}
+
+// displayName gibt den ersten Trivialnamen eines Komma-getrennten Namensstrings zurück.
+func displayName(nameTrivial string) string {
+	trimmed := strings.TrimSpace(nameTrivial)
+	if i := strings.Index(trimmed, ","); i >= 0 {
+		return strings.TrimSpace(trimmed[:i])
+	}
+	return trimmed
+}
+
 func splitTags(value string) []string {
 	seen := make(map[string]struct{})
 	tags := make([]string, 0)
@@ -203,7 +228,14 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	data := detailData{Species: species}
+	data := detailData{Species: species, DisplayName: displayName(species.NameTrivial)}
+	for _, alias := range strings.Split(species.NameTrivial, ",") {
+		alias = strings.TrimSpace(alias)
+		if alias != "" && alias != data.DisplayName {
+			data.Aliases = append(data.Aliases, alias)
+		}
+	}
+	data.Aliases = append(data.Aliases, species.Synonyme...)
 	for key, value := range species.Merkmale {
 		if rendered := displayValue(value); rendered != "" {
 			data.Traits = append(data.Traits, trait{Name: label(key), Value: rendered})
@@ -266,7 +298,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 			imageURLValue = imageURL(imagePath)
 		}
 		response.Results = append(response.Results, searchResult{
-			Slug: species.Slug, Name: species.NameTrivial,
+			Slug: species.Slug, Name: displayName(species.NameTrivial),
 			ScientificName: species.NameWissenschaftlich,
 			Edibility: species.Edibility, EdibilityLabel: species.EdibilityLabel, EdibilityClass: species.EdibilityClass,
 			Image: imageURLValue,

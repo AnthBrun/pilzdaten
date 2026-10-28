@@ -83,8 +83,7 @@
           </section>
           <section class="nonvisual-traits" aria-labelledby="nonvisual-title">
             <h4 id="nonvisual-title">Nicht zeichenbare Merkmale</h4>
-            {{range .Facets.Groups}}{{if eq .Group "spore"}}<div class="trait-chip-group"><h5>Sporenpulver</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{end}}
-            <div class="trait-chip-group"><h5>Geruch &amp; Geschmack · Farbwechsel</h5><div class="trait-chips">{{range $page.Facets.Groups}}{{if or (eq .Group "geruch") (eq .Group "farbwechsel")}}{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}{{end}}</div></div>
+            {{range $page.Facets.Groups}}{{if eq .Group "spore"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "geruch"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h5>Farbwechsel</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{end}}
           </section>
         </aside>
         <div class="results-column">
@@ -102,7 +101,7 @@
             {{range .Species}}
             <a class="species-card" href="/art/{{.Slug}}">
               {{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
-              <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span>
+              <span class="card-copy"><strong>{{displayName .NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span>
               <span class="card-arrow" aria-hidden="true">↗</span>
             </a>
             {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}

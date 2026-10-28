@@ -14,38 +14,68 @@
     <section class="hero">
       <p class="eyebrow">ENTDECKEN · VERGLEICHEN · LERNEN</p>
       <h1>Finde deinen<br><em>Waldpilz.</em></h1>
-      <p class="hero-copy">Durchsuche {{.Count}} Arten nach Namen, Merkmalen und Verwechslungspartnern.</p>
-      <form class="search-box" role="search" action="/" method="get" onsubmit="return false">
+      <p class="hero-copy">Durchsuche {{.TotalCount}} Arten nach Namen und Merkmalen – direkt im Wald.</p>
+      <div class="search-box" role="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="species-search" type="search" name="q" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
+        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
         <kbd>⌘ K</kbd>
-      </form>
+      </div>
       <p class="search-hint" id="search-hint">Zum Beispiel: Steinpilz, Boletus oder Herrenpilz</p>
     </section>
 
     <section class="catalog-section" aria-labelledby="catalog-heading">
       <div class="section-heading">
-        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Alphabetisch stöbern</h2></div>
-        <span class="count-pill">{{.Count}} Arten</span>
+        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Arten bestimmen</h2></div>
+        <span class="count-pill">{{.TotalCount}} Arten</span>
       </div>
       <nav class="alphabet" aria-label="Anfangsbuchstaben">
         {{range .Letters}}<a class="letter{{if eq . $.Letter}} active{{end}}" href="/?letter={{.}}" aria-current="{{if eq . $.Letter}}page{{else}}false{{end}}">{{.}}</a>{{end}}
       </nav>
-      <div class="results-toolbar"><span id="results-label">Arten mit <strong>{{.Letter}}</strong></span><span class="result-number">{{len .Species}} Einträge{{if gt .Pages 1}} · Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
-      <div id="species-results" class="species-grid">
-        {{range .Species}}
-        <a class="species-card" href="/art/{{.Slug}}">
-          <span class="card-symbol" aria-hidden="true">◌</span>
-          <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
-          <span class="card-arrow" aria-hidden="true">↗</span>
-        </a>
-        {{else}}<p class="empty-state">Für diesen Buchstaben wurden keine Arten gefunden.</p>{{end}}
+      <div class="filter-layout">
+        <details class="filter-panel" open>
+          <summary>Merkmale filtern <span aria-hidden="true">⌄</span></summary>
+          <div class="filter-panel-content">
+            <div class="facet-groups">
+              {{range .Facets.Groups}}
+              <details class="facet-group" open>
+                <summary>{{.Title}}</summary>
+                <div class="facet-options">
+                  {{range .Options}}
+                  <label class="facet-option"><input type="checkbox" name="f" value="{{.Tag}}"{{if index $.Selected .Tag}} checked{{end}}><span>{{.Label}}</span><small>{{.Count}}</small></label>
+                  {{end}}
+                </div>
+              </details>
+              {{end}}
+            </div>
+            <section class="diameter-filter" aria-labelledby="diameter-title">
+              <h3 id="diameter-title">Hutdurchmesser</h3>
+              <p class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</p>
+              <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label>
+              <input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
+              <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label>
+              <input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
+            </section>
+            <button id="reset-filters" class="reset-filters" type="button">Alle Filter zurücksetzen</button>
+          </div>
+        </details>
+        <div class="results-column">
+          <div class="results-toolbar"><span id="results-label">{{.Count}} Arten gefunden.</span><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
+          <div id="species-results" class="species-grid">
+            {{range .Species}}
+            <a class="species-card" href="/art/{{.Slug}}">
+              {{if .Bilddateien}}<img class="card-image" src="{{imageURL (index .Bilddateien 0)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
+              <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
+              <span class="card-arrow" aria-hidden="true">↗</span>
+            </a>
+            {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}
+          </div>
+          <nav class="pagination" aria-label="Seiten">
+            {{if .HasPrevious}}<a href="{{.PreviousURL}}">← Zurück</a>{{else}}<span></span>{{end}}
+            {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
+            {{if .HasNext}}<a href="{{.NextURL}}">Weiter →</a>{{end}}
+          </nav>
+        </div>
       </div>
-      <nav class="pagination" aria-label="Seiten">
-        {{if .HasPrevious}}<a href="/?letter={{.Letter}}&page={{.Previous}}">← Zurück</a>{{else}}<span></span>{{end}}
-        {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
-        {{if .HasNext}}<a href="/?letter={{.Letter}}&page={{.Next}}">Weiter →</a>{{end}}
-      </nav>
     </section>
   </main>
   <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>

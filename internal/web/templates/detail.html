@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f5f4ef">
   <title>{{.Species.NameTrivial}} – Pilzdatenbank</title>
   <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a><a class="topbar-note back-link" href="/">← Alle Arten</a></header>
@@ -30,8 +31,18 @@
     {{if .Images}}
     <section class="detail-section" aria-labelledby="images-heading">
       <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>
-      <div class="image-grid">{{range .Images}}<figure class="mushroom-image"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"><figcaption>{{.Alt}}</figcaption></figure>{{end}}</div>
+      <div class="image-grid">{{range $index, $image := .Images}}<figure class="mushroom-image"><button class="image-open" type="button" data-image-index="{{$index}}" aria-label="Bild vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button><figcaption>{{$image.Alt}}</figcaption></figure>{{end}}</div>
     </section>
+    {{end}}
+
+    {{if .Images}}
+    <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bildansicht">
+      <button class="lightbox-close" type="button" aria-label="Bildansicht schließen">×</button>
+      <button class="lightbox-prev" type="button" aria-label="Vorheriges Bild">‹</button>
+      <img class="lightbox-image" alt="">
+      <button class="lightbox-next" type="button" aria-label="Nächstes Bild">›</button>
+      <p class="lightbox-count" aria-live="polite"></p>
+    </div>
     {{end}}
 
     {{if .Related}}

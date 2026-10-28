@@ -12,7 +12,9 @@ import (
 func main() {
 	speciesPath := envOr("SPECIES_FILE", "/data/species.jsonl")
 	indexPath := envOr("INDEX_FILE", "/data/index_arts.jsonl")
-	data, err := catalog.Load(speciesPath, indexPath)
+	filterTagsPath := envOr("FILTER_TAGS_FILE", "/data/filter_tags.jsonl")
+	facetsPath := envOr("FACETS_FILE", "/data/facets.json")
+	data, err := catalog.LoadWithFilters(speciesPath, indexPath, filterTagsPath, facetsPath)
 	if err != nil {
 		log.Fatalf("Daten konnten nicht geladen werden: %v", err)
 	}

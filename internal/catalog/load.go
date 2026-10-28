@@ -31,15 +31,45 @@ type indexEntry struct {
 	Gattung          string `json:"gattung"`
 }
 
+type FilterData struct {
+	Tags  []string `json:"tags"`
+	MinCM int      `json:"hut_durchmesser_min_cm"`
+	MaxCM int      `json:"hut_durchmesser_max_cm"`
+}
+
+type Facets struct {
+	MaxDiameterCM int          `json:"max_diameter_cm"`
+	MinDiameterCM int          `json:"min_diameter_cm"`
+	Groups        []FacetGroup `json:"groups"`
+}
+
+type FacetGroup struct {
+	Group   string        `json:"group"`
+	Title   string        `json:"title"`
+	Options []FacetOption `json:"options"`
+}
+
+type FacetOption struct {
+	Tag   string `json:"tag"`
+	Label string `json:"label"`
+	Count int    `json:"count"`
+}
+
 // Catalog stores species keyed by their stable source slug. The arts index is
 // used as the authoritative allow-list so meta/list pages never appear as fungi.
 type Catalog struct {
-	bySlug map[string]*Species
-	all    []*Species
-	count  int
+	bySlug     map[string]*Species
+	all        []*Species
+	filterData map[string]FilterData
+	facets     Facets
+	count      int
 }
 
 func Load(speciesPath, indexPath string) (*Catalog, error) {
+	return LoadWithFilters(speciesPath, indexPath, "", "")
+}
+
+func LoadWithFilters(speciesPath, indexPath, filterTagsPath, facetsPath string) (*Catalog, error) {
 	index, err := loadIndex(indexPath)
 	if err != nil {
 		return nil, err
@@ -51,7 +81,18 @@ func Load(speciesPath, indexPath string) (*Catalog, error) {
 	}
 	defer file.Close()
 
-	catalog := &Catalog{bySlug: make(map[string]*Species, len(index))}
+	catalog := &Catalog{bySlug: make(map[string]*Species, len(index)), filterData: make(map[string]FilterData), facets: Facets{MinDiameterCM: 1, MaxDiameterCM: 25}}
+	if filterTagsPath != "" {
+		catalog.filterData, err = loadFilterTags(filterTagsPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if facetsPath != "" {
+		if err := loadFacets(facetsPath, &catalog.facets); err != nil {
+			return nil, err
+		}
+	}
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
 	line := 0
@@ -90,6 +131,65 @@ func Load(speciesPath, indexPath string) (*Catalog, error) {
 	return catalog, nil
 }
 
+func loadFilterTags(path string) (map[string]FilterData, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("Filtermerkmale %q öffnen: %w", path, err)
+	}
+	defer file.Close()
+
+	filters := make(map[string]FilterData)
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 16*1024), 1024*1024)
+	line := 0
+	for scanner.Scan() {
+		line++
+		var entry struct {
+			Slug string `json:"slug"`
+			FilterData
+		}
+		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+			return nil, fmt.Errorf("Filtermerkmale, Zeile %d: %w", line, err)
+		}
+		if entry.Slug != "" {
+			current := filters[entry.Slug]
+			knownTags := make(map[string]struct{}, len(current.Tags)+len(entry.Tags))
+			for _, tag := range current.Tags {
+				knownTags[tag] = struct{}{}
+			}
+			for _, tag := range entry.Tags {
+				if _, exists := knownTags[tag]; !exists {
+					current.Tags = append(current.Tags, tag)
+					knownTags[tag] = struct{}{}
+				}
+			}
+			if entry.MinCM != 0 && (current.MinCM == 0 || entry.MinCM < current.MinCM) {
+				current.MinCM = entry.MinCM
+			}
+			if entry.MaxCM != 0 && (current.MaxCM == 0 || entry.MaxCM > current.MaxCM) {
+				current.MaxCM = entry.MaxCM
+			}
+			filters[entry.Slug] = current
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("Filtermerkmale lesen: %w", err)
+	}
+	return filters, nil
+}
+
+func loadFacets(path string, facets *Facets) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("Filterdefinition %q öffnen: %w", path, err)
+	}
+	defer file.Close()
+	if err := json.NewDecoder(file).Decode(facets); err != nil {
+		return fmt.Errorf("Filterdefinition %q lesen: %w", path, err)
+	}
+	return nil
+}
+
 func loadIndex(path string) (map[string]indexEntry, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -124,4 +224,8 @@ func (c *Catalog) Count() int {
 func (c *Catalog) Get(slug string) (*Species, bool) {
 	species, ok := c.bySlug[slug]
 	return species, ok
+}
+
+func (c *Catalog) Facets() Facets {
+	return c.facets
 }

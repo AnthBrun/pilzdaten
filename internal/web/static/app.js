@@ -1,67 +1,52 @@
 const searchInput = document.querySelector("#species-search");
-const resultGrid = document.querySelector("#species-results");
-const resultsLabel = document.querySelector("#results-label");
-const searchHint = document.querySelector("#search-hint");
-let requestTimer;
+const minSlider = document.querySelector("#diameter-min");
+const maxSlider = document.querySelector("#diameter-max");
+const diameterValue = document.querySelector("#diameter-value");
+let reloadTimer;
 
-function makeCard(species) {
-  const link = document.createElement("a");
-  link.className = "species-card";
-  link.href = `/art/${encodeURIComponent(species.slug)}`;
-
-  const symbol = document.createElement("span");
-  symbol.className = "card-symbol";
-  symbol.setAttribute("aria-hidden", "true");
-  symbol.textContent = "◌";
-  const copy = document.createElement("span");
-  copy.className = "card-copy";
-  const name = document.createElement("strong");
-  name.textContent = species.name_trivial;
-  const scientific = document.createElement("em");
-  scientific.textContent = species.name_wissenschaftlich || "Wissenschaftlicher Name nicht erfasst";
-  copy.append(name, scientific);
-  const arrow = document.createElement("span");
-  arrow.className = "card-arrow";
-  arrow.setAttribute("aria-hidden", "true");
-  arrow.textContent = "↗";
-  link.append(symbol, copy, arrow);
-  return link;
-}
-
-async function searchSpecies() {
-  const query = searchInput.value.trim();
-  if (!query) {
-    window.location.href = "/";
-    return;
-  }
-  resultsLabel.textContent = `Suchergebnisse für „${query}“`;
-  searchHint.textContent = "Suche in Trivialnamen, wissenschaftlichen Namen und Synonymen …";
-  try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) throw new Error("Suche fehlgeschlagen");
-    const species = await response.json();
-    resultGrid.replaceChildren();
-    if (species.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "empty-state";
-      empty.textContent = "Keine passenden Arten gefunden. Versuche einen anderen Suchbegriff.";
-      resultGrid.append(empty);
-    } else {
-      resultGrid.append(...species.map(makeCard));
+function scheduleFilterReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => {
+    const params = new URLSearchParams();
+    const query = searchInput?.value.trim();
+    if (query) params.set("q", query);
+    const selected = [...document.querySelectorAll('.facet-option input[name="f"]:checked')].map((input) => input.value);
+    if (selected.length) params.set("f", selected.join(","));
+    if (minSlider && maxSlider) {
+      if (minSlider.value !== minSlider.min) params.set("dmin", minSlider.value);
+      if (maxSlider.value !== maxSlider.max) params.set("dmax", maxSlider.value);
     }
-    searchHint.textContent = `${species.length}${species.length === 30 ? "+" : ""} Treffer`;
-  } catch {
-    searchHint.textContent = "Die Suche ist gerade nicht erreichbar.";
-  }
+    const currentLetter = new URLSearchParams(window.location.search).get("letter");
+    if (currentLetter) params.set("letter", currentLetter);
+    window.location.href = `/?${params.toString()}`;
+  }, 150);
 }
 
-searchInput?.addEventListener("input", () => {
-  clearTimeout(requestTimer);
-  if (!searchInput.value.trim()) {
-    window.location.replace("/");
-    return;
-  }
-  requestTimer = setTimeout(searchSpecies, 180);
+function updateDiameterLabel() {
+  if (!minSlider || !maxSlider || !diameterValue) return;
+  diameterValue.textContent = minSlider.value === minSlider.min && maxSlider.value === maxSlider.max
+    ? "alle Werte"
+    : `${minSlider.value} – ${maxSlider.value} cm`;
+}
+
+searchInput?.addEventListener("input", scheduleFilterReload);
+document.querySelectorAll('.facet-option input[name="f"]').forEach((input) => {
+  input.addEventListener("change", scheduleFilterReload);
+});
+
+minSlider?.addEventListener("input", () => {
+  if (Number(minSlider.value) > Number(maxSlider.value)) maxSlider.value = minSlider.value;
+  updateDiameterLabel();
+  scheduleFilterReload();
+});
+maxSlider?.addEventListener("input", () => {
+  if (Number(maxSlider.value) < Number(minSlider.value)) minSlider.value = maxSlider.value;
+  updateDiameterLabel();
+  scheduleFilterReload();
+});
+
+document.querySelector("#reset-filters")?.addEventListener("click", () => {
+  window.location.href = "/";
 });
 
 document.addEventListener("keydown", (event) => {
@@ -70,3 +55,50 @@ document.addEventListener("keydown", (event) => {
     searchInput?.focus();
   }
 });
+
+const lightbox = document.querySelector("#lightbox");
+if (lightbox) {
+  const imageButtons = [...document.querySelectorAll(".image-open")];
+  const lightboxImage = lightbox.querySelector(".lightbox-image");
+  const counter = lightbox.querySelector(".lightbox-count");
+  let currentImage = 0;
+  let returnFocus;
+
+  function showImage(index) {
+    currentImage = (index + imageButtons.length) % imageButtons.length;
+    const source = imageButtons[currentImage].querySelector("img");
+    lightboxImage.src = source.currentSrc || source.src;
+    lightboxImage.alt = source.alt;
+    counter.textContent = `${currentImage + 1} / ${imageButtons.length}`;
+  }
+
+  function openLightbox(index) {
+    returnFocus = document.activeElement;
+    showImage(index);
+    lightbox.classList.add("is-open");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.classList.add("lightbox-active");
+    lightbox.querySelector(".lightbox-close").focus();
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove("is-open");
+    lightbox.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("lightbox-active");
+    returnFocus?.focus();
+  }
+
+  imageButtons.forEach((button, index) => button.addEventListener("click", () => openLightbox(index)));
+  lightbox.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
+  lightbox.querySelector(".lightbox-prev").addEventListener("click", () => showImage(currentImage - 1));
+  lightbox.querySelector(".lightbox-next").addEventListener("click", () => showImage(currentImage + 1));
+  lightbox.addEventListener("click", (event) => {
+    if (event.target === lightbox) closeLightbox();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (!lightbox.classList.contains("is-open")) return;
+    if (event.key === "Escape") closeLightbox();
+    if (event.key === "ArrowLeft") showImage(currentImage - 1);
+    if (event.key === "ArrowRight") showImage(currentImage + 1);
+  });
+}

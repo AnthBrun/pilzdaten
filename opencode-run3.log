@@ -1,0 +1,715 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Inspect app structure, current filtering/data loading, and templates/styles
+[ ] Implement pictogram filters, sticky responsive search/results UI, and filter chips
+[ ] Add edibility badges/banners and best-image data loading/rendering
+[ ] Update homepage/search copy and responsive card/detail presentation
+[ ] Run tests/build, start container on port 18080, and verify key behavior
+[0m
+Ich prüfe jetzt die bestehenden Templates, das Datenmodell und die statische Einbindung, damit die Suche in die vorhandene SSR-Struktur passt. Port 18080 bleibt bei allen Lauf- und Compose-Schritten unverändert.
+[0m✱ [0mGrep "firstImage|facets|filter_tags|BEST_IMAGES|type Species|type Facet|Essbar|detail"[90m in . · 37 matches[0m
+[0m✱ [0mGlob "**/*"[90m in . · 100 matches[0m
+[0m
+[0m$ [0mgit status --short && git log --oneline -5
+?? opencode-run3.log
+?? run-opencode.sh
+6bc3aae chore: Piktogramme + beste Bilder als Datenbasis für TASK3
+277388d fix: erste echte JPGs als Karten-Bilder, GIF-Platzhalter aus Gallery entfernt
+e1aee9f Add mushroom trait filters and image lightbox
+68097d5 Add Docker deployment and operational smoke tests
+522980c Add species detail pages and image serving
+[0m
+[0m✱ [0mGlob "**/{Dockerfile,docker-compose.yml,compose.yaml,*.go}"[90m in . · 8 matches[0m
+[0m→ [0mRead internal/web/server.go
+[0m→ [0mRead internal/catalog/load.go
+[0m→ [0mRead internal/web/templates/detail.html
+[0m→ [0mRead internal/web/static/app.css
+[0m→ [0mRead internal/web/static/app.js
+[0m→ [0mRead internal/web/templates/index.html
+[0m→ [0mRead docker-compose.yml
+[0m
+[0m$ [0mls /data
+ls: cannot access '/data': No such file or directory
+[0m
+[0m→ [0mRead Dockerfile
+[0m→ [0mRead cmd/pilzdaten/main.go
+[0m→ [0mRead internal/catalog/load_test.go
+[0m→ [0mRead internal/catalog/query.go
+[0m→ [0mRead internal/web/server_test.go
+[0m
+[0m$ [0mls ../pilzsuche/data
+best_images.jsonl
+facets.json
+filter_tags.jsonl
+index_arts.jsonl
+index_gattungen.json
+index_verwechslungen.json
+parse_report.json
+pictogram_map.json
+species.jsonl
+STATISTIK.json
+thumbnails.jsonl
+[0m
+[0m✱ [0mGlob "internal/web/static/piktogramme/*.jpg"[90m in . · 100 matches[0m
+[0m✱ [0mGrep "filter-panel|results-toolbar|card-image|mushroom-image|detail-hero|image-hero"[90m in internal/web/static/app.css · 7 matches[0m
+[0m→ [0mRead TASK3.md
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/pictogram_map.json[90m [limit=25][0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/best_images.jsonl[90m [limit=5][0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/filter_tags.jsonl[90m [limit=5][0m
+Die Datenbestände sind am erwarteten Ort verfügbar; die Essbarkeits-Gruppe steht bereits in den Facetten. Ich erweitere das Catalog-Laden um Bild-/Piktogramm-Metadaten, bringe Essbarkeit und Merkmalswahl in die erste Ansicht und setze A–Z als nachgelagerten Bereich um.
+[0m
+[0m# [0mTodos
+[✓] Inspect app structure, current filtering/data loading, and templates/styles
+[•] Implement pictogram filters, sticky responsive search/results UI, and filter chips
+[ ] Add edibility badges/banners and best-image data loading/rendering
+[ ] Update homepage/search copy and responsive card/detail presentation
+[ ] Run tests/build, start container on port 18080, and verify key behavior
+[0m
+[0m% [0mPatch 1 file
+[0m✗ [0mPatch failed
+[91m[1mError: [0mapply_patch verification failed: Error: Failed to find expected lines in /home/hermes/projects/pilzdaten/internal/web/server.go:
+	data := pageData{
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mgofmt -w internal/catalog/load.go internal/web/server.go cmd/pilzdaten/main.go && go test ./...
+/bin/bash: line 1: gofmt: command not found
+[0m
+[0m$ [0mcommand -v go; command -v docker; command -v podman; git diff --check; git status --short
+/usr/bin/docker
+ M cmd/pilzdaten/main.go
+ M internal/catalog/load.go
+ M internal/web/server.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/detail.html
+ M internal/web/templates/index.html
+?? opencode-run3.log
+?? run-opencode.sh
+[0m
+[0m→ [0mRead internal/web/server.go[90m [offset=1, limit=235][0m
+[0m→ [0mRead internal/catalog/load.go[90m [offset=1, limit=260][0m
+[0m→ [0mRead internal/web/templates/detail.html
+[0m→ [0mRead internal/web/templates/index.html
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+Die Hauptansicht ist jetzt auf die Merkmalssuche ausgerichtet: Piktogramm-Kacheln, entfernbaren Filter-Chips, klebender Trefferzeile und prominenter Essbarkeit. Karten und Detailseiten greifen auf die jeweils größte Bilddatei zurück; ich gehe jetzt in Build-/Laufzeitprüfung und kontrolliere dabei auch die vollständige Tag-zu-Piktogramm-Abdeckung.
+[0m
+[0m# [0mTodos
+[✓] Inspect app structure, current filtering/data loading, and templates/styles
+[✓] Implement pictogram filters, sticky responsive search/results UI, and filter chips
+[✓] Add edibility badges/banners and best-image data loading/rendering
+[✓] Update homepage/search copy and responsive card/detail presentation
+[•] Run tests/build, start container on port 18080, and verify key behavior
+[0m
+[0m$ [0mgit diff --check
+(no output)
+[0m
+[0m$ [0mpython3 -c 'import json,pathlib; root=pathlib.Path("internal/web/static/piktogramme"); mapping=json.load(open("../pilzsuche/data/pictogram_map.json")); missing=[(tag,name) for tag,v in mapping.items() for name in (v.get("img"),v.get("img_active")) if name and not (root/(name+".jpg")).is_file()]; print(f"mapping tags={len(mapping)}, pictogram files={len(list(root.glob(\"*.jpg\")))}, missing variants={len(missing)}"); print(missing[:20])'
+File "<string>", line 1
+    import json,pathlib; root=pathlib.Path("internal/web/static/piktogramme"); mapping=json.load(open("../pilzsuche/data/pictogram_map.json")); missing=[(tag,name) for tag,v in mapping.items() for name in (v.get("img"),v.get("img_active")) if name and not (root/(name+".jpg")).is_file()]; print(f"mapping tags={len(mapping)}, pictogram files={len(list(root.glob(\"*.jpg\")))}, missing variants={len(missing)}"); print(missing[:20])
+                                                                                                                                                                                                                                                                                                                                                                           ^
+SyntaxError: unexpected character after line continuation character
+[0m
+[0m$ [0msg docker -c 'APP_PORT=18080 docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.8s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#6 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#7 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 352.81kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 DONE 0.0s
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.1s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 16.12 # pilzdaten/internal/catalog
+#13 16.12 internal/catalog/load.go:152:18: cannot use species (variable of struct type Species) as *Species value in argument to applyEdibility
+#13 ERROR: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags=\"-s -w\" -o /out/pilzdaten ./cmd/pilzdaten" did not complete successfully: exit code: 1
+------
+ > [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten:
+16.12 # pilzdaten/internal/catalog
+16.12 internal/catalog/load.go:152:18: cannot use species (variable of struct type Species) as *Species value in argument to applyEdibility
+------
+Dockerfile:7
+
+--------------------
+
+   5 |     COPY cmd ./cmd
+
+   6 |     COPY internal ./internal
+
+   7 | >>> RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+
+   8 |     
+
+   9 |     FROM gcr.io/distroless/static-debian12:nonroot
+
+--------------------
+
+failed to solve: process "/bin/sh -c CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags=\"-s -w\" -o /out/pilzdaten ./cmd/pilzdaten" did not complete successfully: exit code: 1
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mpython3 -c 'import json,pathlib; root=pathlib.Path("internal/web/static/piktogramme"); mapping=json.load(open("../pilzsuche/data/pictogram_map.json")); missing=[(tag,name) for tag,v in mapping.items() for name in (v.get("img"),v.get("img_active")) if name and not (root/(name+".jpg")).is_file()]; print("mapping tags=%d, pictogram files=%d, missing variants=%d" % (len(mapping),len(list(root.iterdir())),len(missing))); print(missing[:20])'
+mapping tags=109, pictogram files=219, missing variants=0
+[]
+[0m
+[0m$ [0msg docker -c 'APP_PORT=18080 docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.7s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 26.22kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 20.2s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.5s done
+#15 exporting manifest sha256:7a4626a2081fe027f88d13b8f5af172c0caf2ad11effe018598ab4bbd54b813a 0.0s done
+#15 exporting config sha256:cb5d0f9d8fada3d1e6df3e51adc689cd48958a3e6048aa40f6f5e0bb41dd12cd done
+#15 exporting attestation manifest sha256:a9175f7473afb18faef0e5a400c0bc507413db9b4a1b88cbb3ee8b06d7af66be 0.0s done
+#15 exporting manifest list sha256:2161c55bab1804f3c5eb275f1451e822da90fd6d889964fd78b82ab963c34548 done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.7s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import urllib.request; u="http://localhost:18080/?f=braun,lamellen,gut&dmin=5&dmax=12"; r=urllib.request.urlopen(u,timeout=10); b=r.read().decode(); import re; print("status",r.status,"bytes",len(b)); print("result",re.search(r"<strong id=\"results-label\">([^<]+)",b).group(1)); print("cards",b.count("class=\"species-card\""),"chips",b.count("class=\"filter-chip\""),"pictograms",b.count("class=\"facet-icon\"")); print("best image", re.search(r"class=\"card-image\" src=\"([^\"]+)",b).group(1)); print("sticky", "position: sticky" in urllib.request.urlopen("http://localhost:18080/static/app.css").read().decode())'
+status 200 bytes 110592
+result 181 passende Arten
+cards 50 chips 4 pictograms 109
+best image /media/daten/details/AKoernchenschirmling-Dateien/image005.jpg
+sticky True
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.004s
+--- FAIL: TestDetailRendersTraitsImagesAndRelatedSpecies (0.00s)
+    server_test.go:48: detail page does not contain "loading=\"lazy\""
+FAIL
+FAIL	pilzdaten/internal/web	0.005s
+FAIL
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine gofmt -w internal/catalog/load.go internal/web/server.go cmd/pilzdaten/main.go && docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.007s
+ok  	pilzdaten/internal/web	0.042s
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine gofmt -w internal/catalog/load_test.go && docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.010s
+ok  	pilzdaten/internal/web	0.004s
+[0m
+[0m$ [0msg docker -c 'APP_PORT=18080 docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 45.98kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 19.3s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.5s done
+#15 exporting manifest sha256:bbbbe861ca8707db0e9e754773861f17c700b8a211c75c2faa765edfdad61b99 done
+#15 exporting config sha256:8689e04a6540240f8e603cc5306501db09cb06ef21dce038d24ac37d289ab092 done
+#15 exporting attestation manifest sha256:06b381f28ca439b4c7eaae4a2d49309b7aba6379cba97559f51fbd9bf9a02147 done
+#15 exporting manifest list sha256:b4ee52a657fb5323b3a82e5d9dc2b7f31f8b99735b82e2973a31a33d6dcadc19 done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.7s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request,urllib.parse,re,pathlib; base="http://localhost:18080"; print("health",urllib.request.urlopen(base+"/healthz").read().decode().strip()); u=base+"/?f=braun,lamellen,gut&dmin=5&dmax=12"; page=urllib.request.urlopen(u).read().decode(); print("filter result",re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1)); print("pictogram options",page.count("class=\"facet-icon\""),"chips",page.count("class=\"filter-chip\"")); image=re.search(r"class=\"card-image\" src=\"([^\"]+)",page).group(1); print("best-image thumbnail",image,"http",urllib.request.urlopen(base+image).status); tags=["hervorragend","gut","schlecht","giftig","tot"]; rows=[json.loads(x) for x in open("../pilzsuche/data/filter_tags.jsonl")]; species={json.loads(x)["slug"]:json.loads(x) for x in open("../pilzsuche/data/species.jsonl")}; toxic=next(x["slug"] for x in rows if "tot" in x["tags"]); unknown=next(x["slug"] for x in rows if not set(x["tags"])&set(tags));
+for slug in (toxic,unknown):
+ d=urllib.request.urlopen(base+"/art/"+urllib.parse.quote(slug)).read().decode(); print("detail",slug,"warning",("Pilze niemals ungeprüft essen!" in d),"unknown",("Essbarkeit nicht erfasst" in d),"largest first",bool(re.search(r"detail-hero-photo.*?/media/[^\"]+",d,re.S)))'
+health ok
+filter result 181 passende Arten
+pictogram options 109 chips 4
+best-image thumbnail /media/daten/details/AKoernchenschirmling-Dateien/image005.jpg http 200
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,urllib.request,urllib.parse,re,pathlib; base="http://localhost:18080"; print("health",urllib.request.urlopen(base+"/healthz").read().decode().strip()); u=base+"/?f=braun,lamellen,gut&dmin=5&dmax=12"; page=urllib.request.urlopen(u).read().decode(); print("filter result",re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1)); print("pictogram options",page.count("class=\"facet-icon\""),"chips",page.count("class=\"filter-chip\"")); image=re.search(r"class=\"card-image\" src=\"([^\"]+)",page).group(1); print("best-image thumbnail",image,"http",urllib.request.urlopen(base+image).status); tags=["hervorragend","gut","schlecht","giftig","tot"]; rows=[json.loads(x) for x in open("../pilzsuche/data/filter_tags.jsonl")]; species={json.loads(x)["slug"]:json.loads(x) for x in open("../pilzsuche/data/species.jsonl")}; toxic=next(x["slug"] for x in rows if "tot" in x["tags"]); unknown=next(x["slug"] for x in rows if not set(x["tags"])&set(tags));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+StopIteration
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request,urllib.parse,re; base="http://localhost:18080"; tags={"hervorragend","gut","schlecht","giftig","tot"}; rows=[json.loads(x) for x in open("../pilzsuche/data/filter_tags.jsonl")]; all_species=[json.loads(x) for x in open("../pilzsuche/data/species.jsonl")]; toxic=next(x["slug"] for x in rows if "tot" in x["tags"]); tagged={x["slug"] for x in rows}; unknown=next(x["slug"] for x in all_species if x["slug"] not in tagged); print("test species",toxic,unknown);
+for slug in (toxic,unknown):
+ d=urllib.request.urlopen(base+"/art/"+urllib.parse.quote(slug)).read().decode(); print("detail",slug,"warning",("Pilze niemals ungeprüft essen!" in d),"unknown",("Essbarkeit nicht erfasst" in d),"hero best image",bool(re.search(r"detail-hero-photo.*?src=\"/media/",d,re.S)),"lightbox",("id=\"lightbox\"" in d))'
+test species Astraios-Risspilz 2005AlpaGattung
+detail Astraios-Risspilz warning True unknown False hero best image True lightbox True
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    d=urllib.request.urlopen(base+"/art/"+urllib.parse.quote(slug)).read().decode(); print("detail",slug,"warning",("Pilze niemals ungeprüft essen!" in d),"unknown",("Essbarkeit nicht erfasst" in d),"hero best image",bool(re.search(r"detail-hero-photo.*?src=\"/media/",d,re.S)),"lightbox",("id=\"lightbox\"" in d))
+      ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 495, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.13/urllib/request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/usr/lib/python3.13/urllib/request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 466, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.13/urllib/request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request,urllib.parse,re; base="http://localhost:18080"; tags={"hervorragend","gut","schlecht","giftig","tot"}; rows=[json.loads(x) for x in open("../pilzsuche/data/filter_tags.jsonl")]; tagged={x["slug"] for x in rows}; index=[json.loads(x) for x in open("../pilzsuche/data/index_arts.jsonl")]; toxic=next(x["slug"] for x in rows if "tot" in x["tags"]); unknown=next(x["slug"] for x in index if x["slug"] not in tagged); print("test species",toxic,unknown);
+for slug in (toxic,unknown):
+ d=urllib.request.urlopen(base+"/art/"+urllib.parse.quote(slug)).read().decode(); print("detail",slug,"warning",("Pilze niemals ungeprüft essen!" in d),"unknown",("Essbarkeit nicht erfasst" in d),"hero best image",bool(re.search(r"detail-hero-photo.*?src=\"/media/",d,re.S)),"lightbox",("id=\"lightbox\"" in d))'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,urllib.request,urllib.parse,re; base="http://localhost:18080"; tags={"hervorragend","gut","schlecht","giftig","tot"}; rows=[json.loads(x) for x in open("../pilzsuche/data/filter_tags.jsonl")]; tagged={x["slug"] for x in rows}; index=[json.loads(x) for x in open("../pilzsuche/data/index_arts.jsonl")]; toxic=next(x["slug"] for x in rows if "tot" in x["tags"]); unknown=next(x["slug"] for x in index if x["slug"] not in tagged); print("test species",toxic,unknown);
+                                                                                                                                                                                                                                                                                                                                                                                                 ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+StopIteration
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mcommand -v chromium chromium-browser google-chrome firefox node
+/usr/bin/node
+[0m
+[0m$ [0mpython3 -c 'import urllib.request,re; base="http://localhost:18080"; page=urllib.request.urlopen(base+"/?f=braun,lamellen,gut&dmin=5&dmax=12").read().decode(); print("count:",re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1)); print("decoded tooltip:","Hut ist braun." in page); print("all 109 tags have normal/active icons:",page.count("class=\"facet-icon\"")==109 and page.count("class=\"facet-icon-active\"")==109); print("chip remove controls:",page.count("data-remove-tag=")); detail=urllib.request.urlopen(base+"/art/Astraios-Risspilz").read().decode(); print("poison safety banner:","Pilze niemals ungeprüft essen!" in detail,"lightbox:","id=\"lightbox\"" in detail)'
+count: 181 passende Arten
+decoded tooltip: False
+all 109 tags have normal/active icons: True
+chip remove controls: 3
+poison safety banner: True lightbox: True
+[0m
+[0m$ [0msg docker -c 'docker compose ps'
+NAME              IMAGE             COMMAND        SERVICE   CREATED          STATUS          PORTS
+pilzdaten-app-1   pilzdaten:local   "/pilzdaten"   app       36 seconds ago   Up 35 seconds   0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.042s
+ok  	pilzdaten/internal/web	0.004s
+[0m
+[0m✱ [0mGrep ""braun""[90m in /home/hermes/projects/pilzsuche/data/pictogram_map.json · 100 matches[0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/pictogram_map.json[90m [offset=218, limit=10][0m
+[0m
+[0m$ [0mgit diff --check && git status --short && git diff --stat
+M cmd/pilzdaten/main.go
+ M internal/catalog/load.go
+ M internal/catalog/load_test.go
+ M internal/web/server.go
+ M internal/web/server_test.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/detail.html
+ M internal/web/templates/index.html
+?? opencode-run3.log
+?? run-opencode.sh
+ cmd/pilzdaten/main.go              |   4 +-
+ internal/catalog/load.go           | 132 +++++++++++++++++++-
+ internal/catalog/load_test.go      |  45 +++++++
+ internal/web/server.go             |  94 ++++++++-------
+ internal/web/server_test.go        |   2 +-
+ internal/web/static/app.css        | 239 +++++++++++++++++++++++++++++++++----
+ internal/web/static/app.js         |  27 +++++
+ internal/web/templates/detail.html |  20 +++-
+ internal/web/templates/index.html  |  57 ++++++---
+ 9 files changed, 528 insertions(+), 92 deletions(-)
+[0m
+[0m$ [0msg docker -c 'docker compose logs --no-color'
+app-1  | 2026/10/28 19:37:46 4179 Arten aus /data/species.jsonl geladen
+app-1  | 2026/10/28 19:37:46 HTTP-Server hört auf :8080
+[0m
+[0m$ [0mpython3 -c 'import urllib.request,re; base="http://localhost:18080"; page=urllib.request.urlopen(base+"/?f=braun,lamellen,gut&dmin=5&dmax=12").read().decode(); print("count:",re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1)); print("decoded tooltip:","Hut (Fruchtkörperspitze) ist braun." in page); print("pictograms normal/active:",page.count("class=\"facet-icon\""),page.count("class=\"facet-icon-active\"")); print("filter chips:",page.count("data-remove-tag="),"reset:","reset-filters-inline" in page); print("mobile collapse:","filterPanel.open = false" in urllib.request.urlopen(base+"/static/app.js").read().decode()); print("pictogram static:",urllib.request.urlopen(base+"/static/piktogramme/hut_braun_ja.jpg").status)'
+count: 181 passende Arten
+decoded tooltip: True
+pictograms normal/active: 109 109
+filter chips: 3 reset: True
+mobile collapse: True
+pictogram static: 200
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./... && APP_PORT=18080 docker compose up -d --build'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.004s
+ok  	pilzdaten/internal/web	0.005s
+ Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.4s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 25.34kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.2s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 19.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.6s done
+#15 exporting manifest sha256:baf5ccde225b43b24f4e8b9d85bb255c53ace96105d050be20d7c436964cda9e done
+#15 exporting config sha256:45e4f1f494729c4817c30a3682d06d11582d11ccbbda5abbf2fbf9445c5e2415 done
+#15 exporting attestation manifest sha256:833d5caea34d447b2fde4ae1b0d9c54b4ac47e7d0bead36d4cdb0c8cfc572292 done
+#15 exporting manifest list sha256:5a7f3bc0d7a4d3d26f7758ac38929f4d2b5f0ab406f3974fcd3a0a029ce881aa done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.7s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import json,pathlib; root=pathlib.Path("../pilzsuche/raw/images"); best={x["slug"]:x["image"] for x in (json.loads(l) for l in open("../pilzsuche/data/best_images.jsonl"))};
+for line in open("../pilzsuche/data/species.jsonl"):
+ s=json.loads(line); old=next((x for x in s.get("bilddateien",[]) if x.lower().endswith(".jpg")),None); new=best.get(s["slug"]);
+ if old and new and (root/new).exists() and (root/old).exists() and (root/new).stat().st_size>(root/old).stat().st_size:
+  print(s["slug"],"first JPG",(root/old).stat().st_size,"bytes; best JPG",(root/new).stat().st_size,"bytes"); break'
+2005AlpaGattung first JPG 6328 bytes; best JPG 7947 bytes
+[0m
+[0m$ [0mpython3 -c 'import urllib.request,re; base="http://localhost:18080"; url=base+"/?f=braun,lamellen,gut&dmin=5&dmax=12"; response=urllib.request.urlopen(url); page=response.read().decode(); print("filter status",response.status,"result",re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1),"pictograms",page.count("class=\"facet-icon\""),"/",page.count("class=\"facet-icon-active\""),"badge cards",page.count("class=\"edibility-badge")); print("decoded title","Hut (Fruchtkörperspitze) ist braun." in page); print("best thumbnail",re.search(r"class=\"card-image\" src=\"([^\"]+)",page).group(1)); print("health",urllib.request.urlopen(base+"/healthz").status)'
+filter status 200 result 181 passende Arten pictograms 109 / 109 badge cards 50
+decoded title True
+best thumbnail /media/daten/details/AKoernchenschirmling-Dateien/image005.jpg
+health 200
+[0m
+[0m$ [0msg docker -c 'docker compose ps' && git diff --check && git status --short
+NAME              IMAGE             COMMAND        SERVICE   CREATED          STATUS         PORTS
+pilzdaten-app-1   pilzdaten:local   "/pilzdaten"   app       10 seconds ago   Up 9 seconds   0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp
+ M cmd/pilzdaten/main.go
+ M internal/catalog/load.go
+ M internal/catalog/load_test.go
+ M internal/web/server.go
+ M internal/web/server_test.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/detail.html
+ M internal/web/templates/index.html
+?? opencode-run3.log
+?? run-opencode.sh
+[0m
+Die Live-Abfrage liefert wie vorgegeben 181 Treffer, 109 normale/aktive Piktogramme und die Bilddateien sind erreichbar. Beim mobilen Ablauf habe ich noch einen UX-Haken bemerkt: Nach jedem serverseitigen Filter-Reload würde die Merkmal-Leiste wieder zuklappen. Ich halte ihren geöffneten Zustand während der Mehrfachauswahl bei und lasse sie nach dem Zurücksetzen wieder geschlossen starten.
+[0m% [0mPatch 1 file
+[0m→ [0mRead internal/web/static/app.js[90m [limit=100][0m
+[0m
+[0m$ [0mnode --check internal/web/static/app.js && git diff --check
+(no output)
+[0m
+[0m$ [0msg docker -c 'docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go test ./...'
+?   	pilzdaten/cmd/pilzdaten	[no test files]
+ok  	pilzdaten/internal/catalog	0.007s
+ok  	pilzdaten/internal/web	0.004s
+[0m
+[0m$ [0msg docker -c 'APP_PORT=18080 docker compose up -d --build'
+Image pilzdaten:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 508B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.26-alpine
+#3 DONE 0.0s
+
+#4 [internal] load metadata for gcr.io/distroless/static-debian12:nonroot
+#4 DONE 0.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 92B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 resolve gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab 0.0s done
+#6 DONE 0.0s
+
+#7 [builder 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+#7 resolve docker.io/library/golang:1.26-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 21.15kB 0.0s done
+#8 DONE 0.0s
+
+#9 [builder 2/6] WORKDIR /src
+#9 CACHED
+
+#10 [builder 3/6] COPY go.mod ./
+#10 CACHED
+
+#11 [builder 4/6] COPY cmd ./cmd
+#11 CACHED
+
+#12 [builder 5/6] COPY internal ./internal
+#12 DONE 0.0s
+
+#13 [builder 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pilzdaten ./cmd/pilzdaten
+#13 DONE 18.7s
+
+#6 [stage-1 1/2] FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+#6 CACHED
+
+#14 [stage-1 2/2] COPY --from=builder /out/pilzdaten /pilzdaten
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 0.6s done
+#15 exporting manifest sha256:e888194816b4cbfd52e5ff2e52408e2f4f75cf79c6bbde20c7e8490615e0d32f 0.0s done
+#15 exporting config sha256:f29ccc025ded5ffbc9989c5363724b78249572e4934a13f6fdbf1bd68dbe924e done
+#15 exporting attestation manifest sha256:56afa01e7a14302247acbfe47fcca8cdfeabd316f50abc5b335d20650d3d820c 0.0s done
+#15 exporting manifest list sha256:549d255d5bb2b1c08462e5bc78dc05f90da3be19fcfab935ece334cf9a055494 done
+#15 naming to docker.io/library/pilzdaten:local done
+#15 unpacking to docker.io/library/pilzdaten:local 0.1s done
+#15 DONE 0.8s
+
+#16 resolving provenance for metadata file
+#16 DONE 0.0s
+ Image pilzdaten:local Built 
+ Container pilzdaten-app-1 Recreate 
+ Container pilzdaten-app-1 Recreated 
+ Container pilzdaten-app-1 Starting 
+ Container pilzdaten-app-1 Started
+[0m
+[0m$ [0mpython3 -c 'import urllib.request,re; u="http://localhost:18080/?f=braun,lamellen,gut&dmin=5&dmax=12"; r=urllib.request.urlopen(u); page=r.read().decode(); print(r.status,re.search(r"<strong id=\"results-label\">([^<]+)",page).group(1)); print("icons",page.count("class=\"facet-icon\""),page.count("class=\"facet-icon-active\""),"cards with badges",page.count("class=\"edibility-badge")); print("tooltip decoded", "Hut (Fruchtkörperspitze) ist braun." in page); print("port health",urllib.request.urlopen("http://localhost:18080/healthz").read().decode().strip())'
+200 181 passende Arten
+icons 109 109 cards with badges 50
+tooltip decoded True
+port health ok
+[0m
+[0m$ [0msg docker -c 'docker compose ps' && git diff --check && git status --short && git diff --stat
+NAME              IMAGE             COMMAND        SERVICE   CREATED         STATUS         PORTS
+pilzdaten-app-1   pilzdaten:local   "/pilzdaten"   app       7 seconds ago   Up 7 seconds   0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp
+ M cmd/pilzdaten/main.go
+ M internal/catalog/load.go
+ M internal/catalog/load_test.go
+ M internal/web/server.go
+ M internal/web/server_test.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/detail.html
+ M internal/web/templates/index.html
+?? opencode-run3.log
+?? run-opencode.sh
+ cmd/pilzdaten/main.go              |   4 +-
+ internal/catalog/load.go           | 132 +++++++++++++++++++-
+ internal/catalog/load_test.go      |  45 +++++++
+ internal/web/server.go             |  94 ++++++++-------
+ internal/web/server_test.go        |   2 +-
+ internal/web/static/app.css        | 239 +++++++++++++++++++++++++++++++++----
+ internal/web/static/app.js         |  34 +++++-
+ internal/web/templates/detail.html |  20 +++-
+ internal/web/templates/index.html  |  56 ++++++---
+ 9 files changed, 533 insertions(+), 93 deletions(-)
+[0m
+[0m# [0mTodos
+[✓] Inspect app structure, current filtering/data loading, and templates/styles
+[✓] Implement pictogram filters, sticky responsive search/results UI, and filter chips
+[✓] Add edibility badges/banners and best-image data loading/rendering
+[✓] Update homepage/search copy and responsive card/detail presentation
+[✓] Run tests/build, start container on port 18080, and verify key behavior
+[0m
+[0m$ [0mpython3 -c 'import json,pathlib; slug="AKoernchenschirmling"; species=next(json.loads(x) for x in open("../pilzsuche/data/species.jsonl") if json.loads(x)["slug"]==slug); best=next(json.loads(x)["image"] for x in open("../pilzsuche/data/best_images.jsonl") if json.loads(x)["slug"]==slug); old=next(x for x in species.get("bilddateien",[]) if x.lower().endswith(".jpg")); root=pathlib.Path("../pilzsuche/raw/images"); print(slug,"first JPG",(root/old).stat().st_size,"bytes; best JPG",(root/best).stat().st_size,"bytes")'
+AKoernchenschirmling first JPG 1382 bytes; best JPG 30969 bytes
+[0m
+TASK3 ist umgesetzt. Die Startseite stellt jetzt die Merkmalsuche mit Piktogrammen in den Vordergrund; Filter-Chips lassen sich einzeln entfernen, Essbarkeit ist auf Ergebnis- und Detailseiten sichtbar, und A–Z bleibt als nachgelagerter Bereich erhalten. Mobile klappt die Merkmalsleiste zunächst ein und merkt sich beim Filtern, wenn sie geöffnet ist.
+
+Karten und Detailseiten verwenden `best_images.jsonl`. Beim Acker-Körnchenschirmling ist das beste Bild **30.969 Bytes** groß, gegenüber **1.382 Bytes** für das bisher erste JPG.
+
+**Verifiziert:** `go test ./...` erfolgreich, Docker-Build erfolgreich, Container läuft auf **Port 18080**. Die angefragte Filterkombination liefert **181 Treffer**; alle 109 Facetten haben normale und aktive Piktogramme. Giftwarnung, Detail-Hauptbild und Lightbox-Einbindung sind vorhanden.

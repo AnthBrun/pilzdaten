@@ -96,3 +96,48 @@ func TestFilterRequiresAllTagsAppliesDiameterAndKeepsUnknown(t *testing.T) {
 		t.Fatalf("default diameter range results = %d, want all four species", count)
 	}
 }
+
+func TestLoadWithAssetsUsesPreferredPhotoAndEdibilityMetadata(t *testing.T) {
+	dir := t.TempDir()
+	paths := map[string]string{
+		"species": filepath.Join(dir, "species.jsonl"),
+		"index":   filepath.Join(dir, "index.jsonl"),
+		"filters": filepath.Join(dir, "filter_tags.jsonl"),
+		"facets":  filepath.Join(dir, "facets.json"),
+		"images":  filepath.Join(dir, "best_images.jsonl"),
+		"icons":   filepath.Join(dir, "pictogram_map.json"),
+	}
+	fixtures := map[string]string{
+		"species": `{"slug":"A","name_trivial":"Art A","bilddateien":["old.jpg"]}` + "\n",
+		"index":   `{"slug":"A","name":"Art A"}` + "\n",
+		"filters": `{"slug":"A","tags":["hervorragend"]}` + "\n",
+		"facets":  `{"min_diameter_cm":1,"max_diameter_cm":25,"groups":[{"group":"hut","title":"Hut","options":[{"tag":"braun","label":"Hut braun"}]},{"group":"essbarkeit","title":"Essbarkeit","options":[{"tag":"hervorragend","label":"Hervorragend"}]}]}`,
+		"images":  `{"slug":"A","image":"large.jpg"}` + "\n",
+		"icons":   `{"braun":{"title":"Hut &szlig;braun.","img":"braun","img_active":"braun_ja"}}`,
+	}
+	for key, path := range paths {
+		if err := os.WriteFile(path, []byte(fixtures[key]), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	loaded, err := LoadWithAssets(paths["species"], paths["index"], paths["filters"], paths["facets"], paths["images"], paths["icons"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	species, ok := loaded.Get("A")
+	if !ok {
+		t.Fatal("species A was not loaded")
+	}
+	if species.BestImage != "large.jpg" || species.EdibilityLabel != "Hervorragend essbar" || species.EdibilityClass != "excellent" {
+		t.Fatalf("loaded presentation data = image %q, edibility %q (%s)", species.BestImage, species.EdibilityLabel, species.EdibilityClass)
+	}
+	facets := loaded.Facets()
+	if len(facets.Groups) != 2 || facets.Groups[0].Group != "essbarkeit" {
+		t.Fatalf("first facet group = %#v, want essbarkeit promoted first", facets.Groups)
+	}
+	option := facets.Groups[1].Options[0]
+	if option.Title != "Hut ßbraun." || option.Image != "braun" || option.ActiveImage != "braun_ja" {
+		t.Fatalf("pictogram metadata = %#v", option)
+	}
+}

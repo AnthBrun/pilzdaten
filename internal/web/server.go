@@ -24,23 +24,31 @@ type Server struct {
 }
 
 type pageData struct {
-	Count       int
-	TotalCount  int
-	Letter      string
-	Letters     []string
-	Page        int
-	Pages       int
-	Species     []*catalog.Species
-	PreviousURL string
-	NextURL     string
-	HasPrevious bool
-	HasNext     bool
-	Query       string
-	Tags        []string
-	Selected    map[string]bool
-	MinCM       int
-	MaxCM       int
-	Facets      catalog.Facets
+	Count         int
+	TotalCount    int
+	Letter        string
+	Letters       []string
+	Page          int
+	Pages         int
+	Species       []*catalog.Species
+	PreviousURL   string
+	NextURL       string
+	HasPrevious   bool
+	HasNext       bool
+	Query         string
+	Tags          []string
+	Selected      map[string]bool
+	MinCM         int
+	MaxCM         int
+	Facets        catalog.Facets
+	ActiveFilters []filterChip
+	HasFilters    bool
+	SuggestMore   bool
+}
+
+type filterChip struct {
+	Tag   string
+	Label string
 }
 
 type trait struct {
@@ -57,13 +65,26 @@ type detailData struct {
 	Species *catalog.Species
 	Traits  []trait
 	Images  []image
+	Gallery []image
 	Related []*catalog.Species
 }
 
 type searchResult struct {
 	Slug                 string `json:"slug"`
-	NameTrivial          string `json:"name_trivial"`
-	NameWissenschaftlich string `json:"name_wissenschaftlich"`
+	Name                 string `json:"name"`
+	ScientificName       string `json:"scientific_name"`
+	Edibility            string `json:"edibility"`
+	EdibilityLabel       string `json:"edibility_label"`
+	EdibilityClass       string `json:"edibility_class"`
+	Image                string `json:"image"`
+}
+
+type searchResponse struct {
+	Count      int            `json:"count"`
+	Page       int            `json:"page"`
+	TotalPages int            `json:"total_pages"`
+	PerPage    int            `json:"per_page"`
+	Results    []searchResult `json:"results"`
 }
 
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
@@ -109,6 +130,20 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	for _, tag := range tags {
 		selected[tag] = true
 	}
+	activeFilters := make([]filterChip, 0, len(tags))
+	labels := make(map[string]string)
+	for _, group := range facets.Groups {
+		for _, option := range group.Options {
+			labels[option.Tag] = option.Label
+		}
+	}
+	for _, tag := range tags {
+		chipLabel := labels[tag]
+		if chipLabel == "" {
+			chipLabel = label(tag)
+		}
+		activeFilters = append(activeFilters, filterChip{Tag: tag, Label: chipLabel})
+	}
 	values := r.URL.Query()
 	values.Del("page")
 	baseQuery := values.Encode()
@@ -122,6 +157,8 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		PreviousURL: previousURL + "page=" + strconv.Itoa(page-1), NextURL: nextURL + "page=" + strconv.Itoa(page+1),
 		HasPrevious: page > 1, HasNext: page < pages,
 		Query: query, Tags: tags, Selected: selected, MinCM: minCM, MaxCM: maxCM, Facets: facets,
+		ActiveFilters: activeFilters, HasFilters: len(tags) > 0 || query != "" || minCM != facets.MinDiameterCM || maxCM != facets.MaxDiameterCM,
+		SuggestMore: len(tags) > 0 && count > 50,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.templates.ExecuteTemplate(w, "index.html", data); err != nil {
@@ -175,31 +212,20 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(data.Traits, func(i, j int) bool {
 		return strings.ToLower(data.Traits[i].Name) < strings.ToLower(data.Traits[j].Name)
 	})
-	for _, imagePath := range species.Bilddateien {
-		if imagePath != "" {
-			data.Images = append(data.Images, image{URL: imageURL(imagePath), Alt: species.NameTrivial})
+	seenImages := make(map[string]bool)
+	addPhoto := func(path string) {
+		if path == "" || !strings.HasSuffix(strings.ToLower(path), ".jpg") || seenImages[path] {
+			return
 		}
+		seenImages[path] = true
+		data.Images = append(data.Images, image{URL: imageURL(path), Alt: species.NameTrivial})
 	}
-	// The source image lists start with tiny 15x15 gif markers before the real
-	// photos. When the species has any .jpg, drop the gif markers from the
-	// gallery so the detail view shows actual photos, not placeholders.
-	if len(data.Images) > 0 {
-		hasJPG := false
-		for _, img := range data.Images {
-			if strings.HasSuffix(strings.ToLower(img.URL), ".jpg") {
-				hasJPG = true
-				break
-			}
-		}
-		if hasJPG {
-			kept := data.Images[:0]
-			for _, img := range data.Images {
-				if strings.HasSuffix(strings.ToLower(img.URL), ".jpg") {
-					kept = append(kept, img)
-				}
-			}
-			data.Images = kept
-		}
+	addPhoto(species.BestImage)
+	for _, imagePath := range species.Bilddateien {
+		addPhoto(imagePath)
+	}
+	if len(data.Images) > 1 {
+		data.Gallery = data.Images[1:]
 	}
 	for _, slug := range species.Verwechslungen {
 		if related, found := s.catalog.Get(slug); found {
@@ -213,18 +239,51 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) search(w http.ResponseWriter, r *http.Request) {
-	results := s.catalog.Search(r.URL.Query().Get("q"), 30)
-	response := make([]searchResult, 0, len(results))
+	facets := s.catalog.Facets()
+	minCM := boundedQueryInt(r, "dmin", facets.MinDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+	maxCM := boundedQueryInt(r, "dmax", facets.MaxDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+	if minCM > maxCM {
+		minCM, maxCM = maxCM, minCM
+	}
+	page := queryInt(r, "page", 1)
+	if page < 1 {
+		page = 1
+	}
+	const perPage = 50
+	letter := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("letter")))
+	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'Z' {
+		letter = ""
+	}
+	results, count, pages := s.catalog.Filter(r.URL.Query().Get("q"), splitTags(r.URL.Query().Get("f")), minCM, maxCM, letter, page, perPage)
+	response := searchResponse{Count: count, Page: page, TotalPages: pages, PerPage: perPage, Results: make([]searchResult, 0, len(results))}
 	for _, species := range results {
-		response = append(response, searchResult{
-			Slug: species.Slug, NameTrivial: species.NameTrivial,
-			NameWissenschaftlich: species.NameWissenschaftlich,
+		imagePath := species.BestImage
+		if imagePath == "" {
+			imagePath = firstImage(species.Bilddateien)
+		}
+		imageURLValue := ""
+		if imagePath != "" {
+			imageURLValue = imageURL(imagePath)
+		}
+		response.Results = append(response.Results, searchResult{
+			Slug: species.Slug, Name: species.NameTrivial,
+			ScientificName: species.NameWissenschaftlich,
+			Edibility: species.Edibility, EdibilityLabel: species.EdibilityLabel, EdibilityClass: species.EdibilityClass,
+			Image: imageURLValue,
 		})
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Suchergebnis konnte nicht ausgegeben werden", http.StatusInternalServerError)
 	}
+}
+
+func boundedQueryInt(r *http.Request, key string, fallback, min, max int) int {
+	value := queryInt(r, key, fallback)
+	if value < min || value > max {
+		return fallback
+	}
+	return value
 }
 
 func displayValue(value any) string {

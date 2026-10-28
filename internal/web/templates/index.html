@@ -4,67 +4,105 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f4ef">
-  <title>Pilzdatenbank – Arten entdecken</title>
+  <title>Pilz bestimmen – Merkmale markieren | Pilzdatenbank</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="/" aria-label="Pilzdatenbank Startseite"><span class="brand-mark">✳</span> Pilzdatenbank</a><span class="topbar-note">Wissen aus dem Wald</span></header>
   <main>
-    <section class="hero">
-      <p class="eyebrow">ENTDECKEN · VERGLEICHEN · LERNEN</p>
-      <h1>Finde deinen<br><em>Waldpilz.</em></h1>
-      <p class="hero-copy">Durchsuche {{.TotalCount}} Arten nach Namen und Merkmalen – direkt im Wald.</p>
+    <section class="hero hero-compact">
+      <p class="eyebrow">PILZBESTIMMUNG IM WALD</p>
+      <h1>Was wächst<br><em>hier?</em></h1>
+      <p class="hero-copy">Markiere, was du siehst. Wir zeigen dir passende Pilze.</p>
       <div class="search-box" role="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Trivialname, wissenschaftlicher Name oder Synonym …" autocomplete="off" aria-label="Pilzarten suchen">
-        <kbd>⌘ K</kbd>
+        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Optional: Pilznamen suchen …" autocomplete="off" aria-label="Pilzarten nach Namen suchen">
       </div>
-      <p class="search-hint" id="search-hint">Zum Beispiel: Steinpilz, Boletus oder Herrenpilz</p>
     </section>
 
     <section class="catalog-section" aria-labelledby="catalog-heading">
+      {{$page := .}}
       <div class="section-heading">
-        <div><p class="eyebrow">ARTENVERZEICHNIS</p><h2 id="catalog-heading">Arten bestimmen</h2></div>
-        <span class="count-pill">{{.TotalCount}} Arten</span>
+        <div><p class="eyebrow">MERKMALSSUCHE</p><h2 id="catalog-heading">Was siehst du?</h2><p class="section-intro">Markiere alle Merkmale, die passen — je mehr, desto genauer.</p></div>
       </div>
-      <nav class="alphabet" aria-label="Anfangsbuchstaben">
-        {{range .Letters}}<a class="letter{{if eq . $.Letter}} active{{end}}" href="/?letter={{.}}" aria-current="{{if eq . $.Letter}}page{{else}}false{{end}}">{{.}}</a>{{end}}
-      </nav>
       <div class="filter-layout">
-        <details class="filter-panel" open>
-          <summary>Merkmale filtern <span aria-hidden="true">⌄</span></summary>
-          <div class="filter-panel-content">
-            <div class="facet-groups">
-              {{range .Facets.Groups}}
-              <details class="facet-group" open>
-                <summary>{{.Title}}</summary>
-                <div class="facet-options">
-                  {{range .Options}}
-                  <label class="facet-option"><input type="checkbox" name="f" value="{{.Tag}}"{{if index $.Selected .Tag}} checked{{end}}><span>{{.Label}}</span><small>{{.Count}}</small></label>
-                  {{end}}
-                </div>
-              </details>
-              {{end}}
+        <aside class="mushroom-lab" aria-labelledby="lab-title">
+          <div class="lab-heading"><div><p class="eyebrow">DEIN PILZ-LAB</p><h3 id="lab-title">Merkmale setzen</h3></div><button id="reset-filters" class="wipe-button" type="button">Alles wischen</button></div>
+          <div class="mushroom-stage">
+            <svg id="mushroom" class="mushroom-svg" viewBox="0 0 240 330" role="group" aria-label="Interaktive Pilzzeichnung. Wähle einen Bereich, um Merkmale festzulegen.">
+              <defs>
+                <linearGradient id="capShade" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#c9bda8"/><stop offset="1" stop-color="#a99b84"/></linearGradient>
+                <linearGradient id="stemShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ded8c9"/><stop offset=".5" stop-color="#f3efe4"/><stop offset="1" stop-color="#c9c1b0"/></linearGradient>
+                <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+              </defs>
+              <ellipse id="edibility-aura" class="edibility-aura" cx="120" cy="159" rx="93" ry="142"/>
+              <g class="mushroom-part" data-part="growth" role="button" tabindex="0" aria-label="Wuchsform wählen" title="Wuchsform wählen">
+                <path class="growth-icon" d="M35 261c-12-8-13-24-5-31 7-6 17-2 20 7 3-14 16-16 22-7 6 10-1 24-12 31zm5 7h30"/>
+                <text id="growth-label" class="svg-note" x="15" y="287">Wuchs</text>
+              </g>
+              <g class="mushroom-part" data-part="cap" role="button" tabindex="0" aria-label="Hutfarbe, Form und Oberfläche wählen" title="Hut wählen">
+                <path id="cap-shape" class="cap-fill" d="M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z"/>
+                <path class="cap-rim" d="M31 132c43 14 135 14 178 0"/>
+                <path class="cap-markings surface-grooves" d="M67 109c8-26 23-44 43-53m-19 64c8-31 18-48 29-57m13 57c-1-26-2-42-5-56m27 58c-8-30-15-47-22-56m46 49c-13-26-24-41-35-49"/>
+                <path class="surface-speckles" d="M76 84l4 2m22-20 4 2m47 13 4 2m15 24 4 2m-93-2 4 2"/>
+              </g>
+              <g class="mushroom-part" data-part="underside" role="button" tabindex="0" aria-label="Lamellenart und Unterseitenfarbe wählen" title="Unterseite wählen">
+                <path class="underside-fill" d="M31 132c44 15 134 15 178 0l-13 19c-47 15-105 15-152 0Z"/>
+                <path class="gill-lines" d="m48 136 27 14m-13-11 30 14m-12-13 29 15m-10-15 20 15m0-15-20 15m31-16-8 16m22-17-2 17m17-19 4 19m9-21 10 20"/>
+                <path class="tube-dots" d="M47 138h146"/>
+                <path class="spine-lines" d="m48 136 4 15m15-13 2 16m16-13v16m18-15-1 17m19-17v17m19-17 1 17m18-17 2 17m16-18 4 17"/>
+              </g>
+              <g class="mushroom-part" data-part="stem" role="button" tabindex="0" aria-label="Stielfarbe und Details wählen" title="Stiel wählen">
+                <path class="stem-fill" d="M94 151c3 14 1 25-3 43-4 20-14 42-10 59 3 15 20 20 39 20s36-5 39-20c4-17-8-40-12-59-4-18-5-31-2-43-16 4-36 4-51 0Z"/>
+                <path class="stem-edge" d="M98 159c2 24-15 67-10 94m54-94c-1 24 14 67 9 94"/>
+                <path class="stem-hollow" d="M117 176v75"/>
+                <path class="stem-net" d="m99 191 36 9m-38 10 40 9m-42 10 43 9m-33-38-4 29m20-26-1 36m16-33 3 28"/>
+                <path class="stem-ring" d="M88 184c15 7 42 7 60 0l3 8c-19 8-48 8-67 0Z"/>
+                <path class="stem-bulb" d="M82 249c-11 17-13 28-5 35 11 8 54 8 66 0 8-7 5-18-5-35-13 8-43 8-56 0Z"/>
+                <path class="stem-roots" d="M93 274c-12 14-16 22-17 31m34-29c-5 14-6 21-5 29m25-29c12 12 16 19 18 27"/>
+              </g>
+              <g class="mushroom-part" data-part="flesh" role="button" tabindex="0" aria-label="Fruchtfleisch wählen" title="Fruchtfleisch wählen">
+                <path class="flesh-slice" d="M157 207c15-8 31-4 34 7 3 11-5 23-19 29l-15-2Z"/>
+                <path class="flesh-core" d="M164 211c9-4 18-2 20 4 2 6-4 13-13 17l-7-1Z"/>
+                <path class="flesh-fiber-pattern" d="m161 218 19-8m-17 17 22-9m-17 17 19-8"/>
+              </g>
+              <g class="mushroom-part" data-part="edibility" role="button" tabindex="0" aria-label="Essbarkeit wählen" title="Essbarkeit wählen">
+                <circle class="edibility-dot" cx="120" cy="314" r="6"/><text id="edibility-label" class="svg-note" x="132" y="318">Essbarkeit</text>
+              </g>
+            </svg>
+            <div id="swatch-popover" class="swatch-popover" role="dialog" aria-modal="false" aria-label="Merkmale auswählen" hidden>
+              <div class="popover-heading"><strong id="popover-title">Merkmal wählen</strong><button id="popover-close" type="button" aria-label="Schließen">×</button></div>
+              <div id="popover-options" class="popover-options"></div>
             </div>
-            <section class="diameter-filter" aria-labelledby="diameter-title">
-              <h3 id="diameter-title">Hutdurchmesser</h3>
-              <p class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</p>
-              <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label>
-              <input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
-              <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label>
-              <input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
-            </section>
-            <button id="reset-filters" class="reset-filters" type="button">Alle Filter zurücksetzen</button>
           </div>
-        </details>
+          <section class="diameter-filter" aria-labelledby="diameter-title">
+            <div class="slider-heading"><h4 id="diameter-title">Hutdurchmesser</h4><span class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</span></div>
+            <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label><input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
+            <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label><input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
+          </section>
+          <section class="nonvisual-traits" aria-labelledby="nonvisual-title">
+            <h4 id="nonvisual-title">Nicht zeichenbare Merkmale</h4>
+            {{range .Facets.Groups}}{{if eq .Group "spore"}}<div class="trait-chip-group"><h5>Sporenpulver</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{end}}
+            <div class="trait-chip-group"><h5>Geruch &amp; Geschmack · Farbwechsel</h5><div class="trait-chips">{{range $page.Facets.Groups}}{{if or (eq .Group "geruch") (eq .Group "farbwechsel")}}{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}{{end}}</div></div>
+          </section>
+        </aside>
         <div class="results-column">
-          <div class="results-toolbar"><span id="results-label">{{.Count}} Arten gefunden.</span><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
-          <div id="species-results" class="species-grid">
+          <div class="results-toolbar">
+            <div class="results-heading-row"><strong id="results-label">{{.Count}} passende Arten</strong><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
+            <div id="active-filters" class="active-filters" aria-label="Aktive Filter"{{if not .HasFilters}} hidden{{end}}>
+              {{range .ActiveFilters}}<button class="filter-chip" type="button" data-remove-tag="{{.Tag}}">{{.Label}} <span aria-hidden="true">×</span></button>{{end}}
+              {{if or (ne .MinCM .Facets.MinDiameterCM) (ne .MaxCM .Facets.MaxDiameterCM)}}<button class="filter-chip" type="button" data-reset-diameter>Hut {{.MinCM}}–{{.MaxCM}} cm <span aria-hidden="true">×</span></button>{{end}}
+              {{if .Query}}<button class="filter-chip" type="button" data-clear-query>„{{.Query}}“ <span aria-hidden="true">×</span></button>{{end}}
+              {{if .HasFilters}}<button class="reset-inline" type="button" id="reset-filters-inline">Zurücksetzen</button>{{end}}
+            </div>
+          </div>
+          {{if .SuggestMore}}<p class="refine-hint">Noch 2–3 Merkmale markieren für genauere Treffer.</p>{{end}}
+          <div id="species-results" class="species-grid" aria-live="polite">
             {{range .Species}}
             <a class="species-card" href="/art/{{.Slug}}">
-              {{if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
-              <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em></span>
+              {{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
+              <span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span>
               <span class="card-arrow" aria-hidden="true">↗</span>
             </a>
             {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}
@@ -76,6 +114,15 @@
           </nav>
         </div>
       </div>
+      <div id="facet-labels" class="visually-hidden" aria-hidden="true">{{range .Facets.Groups}}{{range .Options}}<span data-tag="{{.Tag}}" data-label="{{.Label}}"></span>{{end}}{{end}}</div>
+    </section>
+    <section class="az-section" aria-labelledby="az-heading">
+      <details class="az-disclosure"{{if .Letter}} open{{end}}>
+        <summary><span><span class="eyebrow">ARTENVERZEICHNIS</span><strong id="az-heading">Oder nach Namen stöbern</strong></span><span class="count-pill">{{.TotalCount}} Arten · A–Z</span></summary>
+        <nav class="alphabet" aria-label="Anfangsbuchstaben">
+          {{range .Letters}}<a class="letter{{if eq . $.Letter}} active{{end}}" href="/?letter={{.}}" aria-current="{{if eq . $.Letter}}page{{else}}false{{end}}">{{.}}</a>{{end}}
+        </nav>
+      </details>
     </section>
   </main>
   <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>

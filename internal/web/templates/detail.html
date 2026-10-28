@@ -13,10 +13,18 @@
   <main class="detail-page">
     <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/">Artenverzeichnis</a><span>/</span><span>{{.Species.NameTrivial}}</span></nav>
     <section class="detail-hero">
-      <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
-      <h1>{{.Species.NameTrivial}}</h1>
-      {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
-      {{if .Species.Synonyme}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Species.Synonyme}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
+      <div class="detail-hero-copy">
+        <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
+        <h1>{{.Species.NameTrivial}}</h1>
+        {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
+        {{if .Species.Synonyme}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Species.Synonyme}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
+      </div>
+      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0" aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
+    </section>
+
+    <section class="edibility-banner edibility-{{.Species.EdibilityClass}}" aria-label="Essbarkeit">
+      <span class="edibility-badge edibility-{{.Species.EdibilityClass}}">{{.Species.EdibilityLabel}}</span>
+      {{if .Species.EdibilityWarning}}<p>Giftiger Pilz — nicht verzehren.</p><p class="safety-warning">Nur als Nachschlagehilfe — Pilze niemals ungeprüft essen!</p>{{else if eq .Species.EdibilityClass "unknown"}}<p>Für diese Art liegt keine Essbarkeits-Angabe vor.</p>{{else}}<p>Angabe aus der Datenquelle; keine Verzehrfreigabe.</p>{{end}}
     </section>
 
     {{if .Traits}}
@@ -31,7 +39,7 @@
     {{if .Images}}
     <section class="detail-section" aria-labelledby="images-heading">
       <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>
-      <div class="image-grid">{{range $index, $image := .Images}}<figure class="mushroom-image"><button class="image-open" type="button" data-image-index="{{$index}}" aria-label="Bild vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button><figcaption>{{$image.Alt}}</figcaption></figure>{{end}}</div>
+      {{if .Gallery}}<div class="image-grid">{{range $index, $image := .Gallery}}<figure class="mushroom-image"><button class="image-open" type="button" data-image-index="{{$index}}" aria-label="Bild vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button><figcaption>{{$image.Alt}}</figcaption></figure>{{end}}</div>{{else}}<p class="search-hint">Das Hauptbild ist das einzige erfasste Foto.</p>{{end}}
     </section>
     {{end}}
 
@@ -48,7 +56,7 @@
     {{if .Related}}
     <section class="detail-section" aria-labelledby="related-heading">
       <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
-      <div class="species-grid">{{range .Related}}<a class="species-card" href="/art/{{.Slug}}"><span class="card-symbol" aria-hidden="true">◌</span><span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em></span><span class="card-arrow" aria-hidden="true">↗</span></a>{{end}}</div>
+      <div class="species-grid">{{range .Related}}<a class="species-card" href="/art/{{.Slug}}"><span class="card-image card-image-empty" aria-hidden="true">◌</span><span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>{{end}}</div>
     </section>
     {{end}}
 

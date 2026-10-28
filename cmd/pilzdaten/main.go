@@ -14,7 +14,9 @@ func main() {
 	indexPath := envOr("INDEX_FILE", "/data/index_arts.jsonl")
 	filterTagsPath := envOr("FILTER_TAGS_FILE", "/data/filter_tags.jsonl")
 	facetsPath := envOr("FACETS_FILE", "/data/facets.json")
-	data, err := catalog.LoadWithFilters(speciesPath, indexPath, filterTagsPath, facetsPath)
+	bestImagesPath := envOr("BEST_IMAGES_FILE", "/data/best_images.jsonl")
+	pictogramMapPath := envOr("PICTOGRAM_MAP_FILE", "/data/pictogram_map.json")
+	data, err := catalog.LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImagesPath, pictogramMapPath)
 	if err != nil {
 		log.Fatalf("Daten konnten nicht geladen werden: %v", err)
 	}

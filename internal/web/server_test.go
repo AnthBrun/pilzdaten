@@ -43,7 +43,7 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 	if response.Code != 200 {
 		t.Fatalf("detail status = %d, want 200", response.Code)
 	}
-	for _, expected := range []string{"BOLETUS EDULIS", "Herrenpilz", "Merkmale", "braun", "Bilder", "/media/pilz.jpg", `loading="lazy"`, "Gallenröhrling"} {
+	for _, expected := range []string{"BOLETUS EDULIS", "Herrenpilz", "Merkmale", "braun", "Bilder", "/media/pilz.jpg", `loading="lazy"`, "Gallenröhrling", "Essbarkeit nicht erfasst"} {
 		if !strings.Contains(response.Body.String(), expected) {
 			t.Errorf("detail page does not contain %q", expected)
 		}

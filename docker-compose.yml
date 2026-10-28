@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+    image: pilzdaten:local
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      SPECIES_FILE: /data/species.jsonl
+      INDEX_FILE: /data/index_arts.jsonl
+      IMAGE_DIR: /images
+      ADDR: :8080
+    volumes:
+      - ../pilzsuche/data/species.jsonl:/data/species.jsonl:ro
+      - ../pilzsuche/data/index_arts.jsonl:/data/index_arts.jsonl:ro
+      - ../pilzsuche/raw/images:/images:ro

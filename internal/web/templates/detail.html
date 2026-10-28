@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f4ef">
+  <title>{{.Species.NameTrivial}} – Pilzdatenbank</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a><a class="topbar-note back-link" href="/">← Alle Arten</a></header>
+  <main class="detail-page">
+    <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/">Artenverzeichnis</a><span>/</span><span>{{.Species.NameTrivial}}</span></nav>
+    <section class="detail-hero">
+      <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
+      <h1>{{.Species.NameTrivial}}</h1>
+      {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
+      {{if .Species.Synonyme}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Species.Synonyme}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
+    </section>
+
+    {{if .Traits}}
+    <section class="detail-section" aria-labelledby="traits-heading">
+      <div class="detail-section-heading"><div><p class="eyebrow">ERKENNUNGSMERKMALE</p><h2 id="traits-heading">Merkmale</h2></div><span class="count-pill">{{len .Traits}} Angaben</span></div>
+      <dl class="traits-grid">
+        {{range .Traits}}<div class="trait-card"><dt>{{.Name}}</dt><dd>{{.Value}}</dd></div>{{end}}
+      </dl>
+    </section>
+    {{end}}
+
+    {{if .Images}}
+    <section class="detail-section" aria-labelledby="images-heading">
+      <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>
+      <div class="image-grid">{{range .Images}}<figure class="mushroom-image"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"><figcaption>{{.Alt}}</figcaption></figure>{{end}}</div>
+    </section>
+    {{end}}
+
+    {{if .Related}}
+    <section class="detail-section" aria-labelledby="related-heading">
+      <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
+      <div class="species-grid">{{range .Related}}<a class="species-card" href="/art/{{.Slug}}"><span class="card-symbol" aria-hidden="true">◌</span><span class="card-copy"><strong>{{.NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em></span><span class="card-arrow" aria-hidden="true">↗</span></a>{{end}}</div>
+    </section>
+    {{end}}
+
+    {{if .Species.URL}}<p class="source-link">Quelle: <a href="{{.Species.URL}}" rel="noopener noreferrer">Originaleintrag auf 123pilzsuche.de ↗</a></p>{{end}}
+  </main>
+  <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+</body>
+</html>

@@ -11,6 +11,8 @@ services:
       INDEX_FILE: /data/index_arts.jsonl
       FILTER_TAGS_FILE: /data/filter_tags.jsonl
       FACETS_FILE: /data/facets.json
+      BEST_IMAGES_FILE: /data/best_images.jsonl
+      PICTOGRAM_MAP_FILE: /data/pictogram_map.json
       IMAGE_DIR: /images
       ADDR: :8080
     volumes:
@@ -18,4 +20,6 @@ services:
       - ../pilzsuche/data/index_arts.jsonl:/data/index_arts.jsonl:ro
       - ../pilzsuche/data/filter_tags.jsonl:/data/filter_tags.jsonl:ro
       - ../pilzsuche/data/facets.json:/data/facets.json:ro
+      - ../pilzsuche/data/best_images.jsonl:/data/best_images.jsonl:ro
+      - ../pilzsuche/data/pictogram_map.json:/data/pictogram_map.json:ro
       - ../pilzsuche/raw/images:/images:ro

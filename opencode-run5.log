@@ -1,0 +1,107 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Inspect search/render and slider CSS implementation
+[ ] Implement render guard, scroll/focus preservation, and slider touch-action
+[ ] Run JavaScript syntax check and inspect diff
+[0m
+[0m✱ [0mGrep "\.diameter-range"[90m in internal/web/static · 1 match[0m
+[0m✱ [0mGrep "function (updateResults|renderResults)|updateResults|renderResults|requestSequence|searchInput"[90m in internal/web/static · 14 matches[0m
+[0m→ [0mRead internal/web/static/app.css[90m [offset=100, limit=28][0m
+[0m→ [0mRead internal/web/static/app.js[90m [offset=1, limit=165][0m
+[0m
+[0m# [0mTodos
+[✓] Inspect search/render and slider CSS implementation
+[•] Implement render guard, scroll/focus preservation, and slider touch-action
+[ ] Run JavaScript syntax check and inspect diff
+[0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mgit diff --check && git diff -- internal/web/static/app.js internal/web/static/app.css
+diff --git a/internal/web/static/app.css b/internal/web/static/app.css
+index f2202bf..18238f9 100644
+--- a/internal/web/static/app.css
++++ b/internal/web/static/app.css
+@@ -111,7 +111,7 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .diameter-value { margin: 0 0 10px; color: var(--green); font-size: 12px; font-weight: 600; }
+ .slider-heading .diameter-value { margin: 0; white-space: nowrap; }
+ .range-label { display: block; color: #8a948c; font-size: 10px; margin: 8px 0 3px; }
+-.diameter-range { width: 100%; accent-color: var(--green); cursor: pointer; }
++.diameter-range { width: 100%; accent-color: var(--green); cursor: pointer; touch-action: none; }
+ .nonvisual-traits { padding-top: 10px; border-top: 1px solid var(--line); }
+ .nonvisual-traits > h4 { margin: 0 0 8px; color: #35473a; font-size: 10px; }
+ .trait-chip-group { margin: 0 0 9px; }
+diff --git a/internal/web/static/app.js b/internal/web/static/app.js
+index 2af0c0c..841997f 100644
+--- a/internal/web/static/app.js
++++ b/internal/web/static/app.js
+@@ -55,6 +55,7 @@ const state = {
+ let openPart = "";
+ let updateTimer;
+ let requestSequence = 0;
++let lastRenderKey = "";
+ 
+ function escapeHTML(value) {
+   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+@@ -108,26 +109,33 @@ function renderCard(species) {
+ }
+ 
+ function renderResults(data) {
++  const y = window.scrollY;
+   resultLabel.textContent = `${data.count} passende ${data.count === 1 ? "Art" : "Arten"}`;
+   resultNumber.textContent = data.total_pages > 1 ? `Seite ${data.page} von ${data.total_pages}` : "";
+   results.innerHTML = data.results.length
+     ? data.results.map(renderCard).join("")
+     : '<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>';
++  window.scrollTo({ top: y, behavior: "instant" });
+   pagination.innerHTML = `${data.page > 1 ? '<button type="button" data-page="-1">← Zurück</button>' : "<span></span>"}${data.total_pages > 1 ? `<span>Seite ${data.page} / ${data.total_pages}</span>` : ""}${data.page < data.total_pages ? '<button type="button" data-page="1">Weiter →</button>' : ""}`;
+ }
+ 
+ async function updateResults() {
+   const requestId = ++requestSequence;
+   const params = paramsForRequest();
++  const key = params.toString();
+   const url = `/api/search${params.size ? `?${params}` : ""}`;
+   try {
+     const response = await fetch(url, { headers: { Accept: "application/json" } });
+     if (!response.ok) throw new Error("Suche fehlgeschlagen");
+     const data = await response.json();
+     if (requestId !== requestSequence) return;
++    if (key === lastRenderKey) return;
++    const searchFocused = document.activeElement === searchInput;
+     renderResults(data);
+     renderActiveFilters();
++    if (searchFocused && searchInput) searchInput.focus({ preventScroll: true });
+     syncURL();
++    lastRenderKey = key;
+   } catch (_error) {
+     if (requestId !== requestSequence) return;
+     window.location.href = `/${params.size ? `?${params}` : ""}`;
+[0m
+[0m$ [0mnode --check internal/web/static/app.js
+(no output)
+[0m
+[0m$ [0mgit status --short
+M internal/web/static/app.css
+ M internal/web/static/app.js
+?? TASK5.md
+?? opencode-run5.log
+?? run-opencode5.sh
+[0m
+[0m$ [0mgit diff --check
+(no output)
+[0m
+[0m# [0mTodos
+[✓] Inspect search/render and slider CSS implementation
+[✓] Implement render guard, scroll/focus preservation, and slider touch-action
+[✓] Run JavaScript syntax check and inspect diff
+[0m
+TASK5 umgesetzt:
+
+- `updateResults()` überspringt Rendern und URL-Synchronisierung bei identischem Parameter-Key und bewahrt bei tatsächlichen Änderungen den Suchfokus.
+- `renderResults()` stellt nach dem Ergebnislisten-Swap die vorherige Scrollposition wieder her.
+- Der Slider erhält `touch-action: none`.
+
+`node --check internal/web/static/app.js` und `git diff --check` liefen erfolgreich. Browser- und iOS-Tests habe ich nicht ausgeführt. Die vorhandenen ungetrackten Dateien `TASK5.md`, `opencode-run5.log` und `run-opencode5.sh` blieben unangetastet.

@@ -55,6 +55,7 @@ const state = {
 let openPart = "";
 let updateTimer;
 let requestSequence = 0;
+let lastRenderKey = "";
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -108,26 +109,33 @@ function renderCard(species) {
 }
 
 function renderResults(data) {
+  const y = window.scrollY;
   resultLabel.textContent = `${data.count} passende ${data.count === 1 ? "Art" : "Arten"}`;
   resultNumber.textContent = data.total_pages > 1 ? `Seite ${data.page} von ${data.total_pages}` : "";
   results.innerHTML = data.results.length
     ? data.results.map(renderCard).join("")
     : '<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>';
+  window.scrollTo(0, y);
   pagination.innerHTML = `${data.page > 1 ? '<button type="button" data-page="-1">← Zurück</button>' : "<span></span>"}${data.total_pages > 1 ? `<span>Seite ${data.page} / ${data.total_pages}</span>` : ""}${data.page < data.total_pages ? '<button type="button" data-page="1">Weiter →</button>' : ""}`;
 }
 
 async function updateResults() {
   const requestId = ++requestSequence;
   const params = paramsForRequest();
+  const key = params.toString();
   const url = `/api/search${params.size ? `?${params}` : ""}`;
   try {
     const response = await fetch(url, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error("Suche fehlgeschlagen");
     const data = await response.json();
     if (requestId !== requestSequence) return;
+    if (key === lastRenderKey) return;
+    const searchFocused = document.activeElement === searchInput;
     renderResults(data);
     renderActiveFilters();
+    if (searchFocused && searchInput) searchInput.focus({ preventScroll: true });
     syncURL();
+    lastRenderKey = key;
   } catch (_error) {
     if (requestId !== requestSequence) return;
     window.location.href = `/${params.size ? `?${params}` : ""}`;

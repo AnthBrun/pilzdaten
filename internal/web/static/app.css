@@ -111,7 +111,7 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .diameter-value { margin: 0 0 10px; color: var(--green); font-size: 12px; font-weight: 600; }
 .slider-heading .diameter-value { margin: 0; white-space: nowrap; }
 .range-label { display: block; color: #8a948c; font-size: 10px; margin: 8px 0 3px; }
-.diameter-range { width: 100%; accent-color: var(--green); cursor: pointer; }
+.diameter-range { width: 100%; accent-color: var(--green); cursor: pointer; touch-action: none; }
 .nonvisual-traits { padding-top: 10px; border-top: 1px solid var(--line); }
 .nonvisual-traits > h4 { margin: 0 0 8px; color: #35473a; font-size: 10px; }
 .trait-chip-group { margin: 0 0 9px; }

@@ -153,8 +153,18 @@ func containsForestTerm(words []textWord, terms []string) bool {
 	return false
 }
 
-// addFieldTags ergänzt Saison- und Wald-Tags aus dem Vorkommen-Text.
+// hatTags kennzeichnen Pilze mit Hut und Fruchtschicht auf der Unterseite.
+var hatTags = map[string]bool{"lamellen": true, "roehren": true, "stachel": true, "leisten": true}
+
+// addFieldTags ergänzt Saison- und Wald-Tags aus dem Vorkommen-Text sowie den
+// abgeleiteten Gruppen-Tag "hutpilz".
 func addFieldTags(tags []string, traits map[string]any) []string {
+	for _, tag := range tags {
+		if hatTags[tag] {
+			tags = appendUniqueTag(tags, "hutpilz")
+			break
+		}
+	}
 	text, _ := traits["vorkommen"].(string)
 	months := seasonMonths(text)
 	for month := 1; month <= 12; month++ {
@@ -186,7 +196,24 @@ func (c *Catalog) addFieldFacets() {
 	for _, candidate := range forestTags {
 		forest.Options = append(forest.Options, FacetOption{Tag: candidate.Tag, Label: candidate.Label, Count: counts[candidate.Tag]})
 	}
-	c.facets.Groups = append(c.facets.Groups, season, forest)
+	// Hauptmerkmal wie auf 123pilzsuche.de: Zuerst wird die Pilzgruppe gewählt.
+	group := FacetGroup{Group: "gruppe", Title: "Was für ein Pilz?"}
+	titles := make(map[string]string)
+	for _, facetGroup := range c.facets.Groups {
+		for _, option := range facetGroup.Options {
+			if option.Title != "" {
+				titles[option.Tag] = option.Title
+			}
+		}
+	}
+	for _, tag := range []string{"hutpilz", "kugel", "hut_koralle", "konsistenz_gallertartig", "f", "sonstige_gattung"} {
+		label := sourceLabels[tag]
+		if tag == "hutpilz" {
+			label = "Hut & Stiel"
+		}
+		group.Options = append(group.Options, FacetOption{Tag: tag, Label: label, Count: counts[tag], Title: titles[tag]})
+	}
+	c.facets.Groups = append(c.facets.Groups, season, forest, group)
 }
 
 // sourcePriority liest das Quellfeld "priorität" (1 = bekannte, häufig

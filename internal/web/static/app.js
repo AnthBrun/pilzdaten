@@ -24,20 +24,26 @@ const REQUEST_TIMEOUT_MS = 6000;
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
 const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
 const sporeColorHex = { "sp_weiß": "#f2efe4", sp_gelb: "#d9b936", sp_rot: "#bd4b45", sp_braun: "#8b5e3c", sp_violett: "#846497", sp_schwarz: "#333332" };
-const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund und Wuchsform" };
+const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund und Wuchsform", body: "Fruchtkörper" };
+// Hauptmerkmal wie auf 123pilzsuche.de; "hutpilz" ist abgeleitet (Lamellen, Röhren, Stacheln oder Leisten).
+const groupTags = ["hutpilz", "kugel", "hut_koralle", "konsistenz_gallertartig", "f", "sonstige_gattung"];
+const capShapes = ["spitz", "schirm", "trichter", "sonstige_form"];
+const surfaceTags = ["hut_gerieft", "hut_hygrophan", "flocken", "haut_schmierig", "konsistenz_hart"];
 const partChoices = {
   cap: [
     { title: "Hutfarbe", kind: "color", group: "colors", tags: colors.map((color) => color) },
-    { title: "Hutform", kind: "icon", group: "shape", tags: ["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"] },
-    { title: "Hutoberfläche", kind: "icon", group: "multi", tags: ["hut_gerieft", "hut_hygrophan", "flocken", "haut_schmierig"] },
+    { title: "Hutform", kind: "icon", group: "shape", tags: capShapes },
+    { title: "Oberfläche & Konsistenz · kombinierbar", kind: "icon", group: "multi", tags: surfaceTags },
   ],
   underside: [
     { title: "Unterseitenform", kind: "icon", group: "type", tags: ["lamellen", "roehren", "stachel", "leisten"] },
     { title: "Farbe der Unterseite", kind: "color", group: "colors", tags: colors.map((color) => `lr_${color}`) },
+    { title: "Ansatz am Stiel", kind: "icon", group: "ansatz", tags: ["angewachsen", "herablaufend", "frei"] },
+    { title: "Lamellen-Details · kombinierbar", kind: "icon", group: "multi", tags: ["lamellen_eng", "lamellen_gegabelt", "lamellen_gesaegt"] },
   ],
   stem: [
     { title: "Stielfarbe", kind: "color", group: "colors", tags: colors.map((color) => `stiel_${color}`) },
-    { title: "Stieldetails · kombinierbar", kind: "icon", group: "multi", tags: ["ring", "netz", "knollig", "wurzel", "stiel_hohl"] },
+    { title: "Stieldetails · kombinierbar", kind: "icon", group: "multi", tags: ["ring", "netz", "knollig", "wurzel", "stiel_hohl", "genattert"] },
   ],
   flesh: [
     { title: "Farbe", kind: "color", group: "colors", tags: colors.map((color) => `fl_${color}`) },
@@ -47,10 +53,18 @@ const partChoices = {
     { title: "Untergrund", kind: "icon", group: "substrate", tags: ["auf_boden", "auf_wiese", "holz"] },
     { title: "Wuchsform", kind: "icon", group: "multi", tags: ["bueschelig"] },
   ],
+  body: [
+    { title: "Farbe des Fruchtkörpers", kind: "color", group: "colors", tags: colors.map((color) => color) },
+    { title: "Oberfläche & Konsistenz · kombinierbar", kind: "icon", group: "multi", tags: surfaceTags },
+    { title: "Fleischfarbe (Schnitt)", kind: "color", group: "fleshColors", tags: colors.map((color) => `fl_${color}`) },
+    { title: "Fleisch · kombinierbar", kind: "icon", group: "multi", tags: ["milch", "bruechig", "faserig"] },
+  ],
 };
 const groups = {
-  cap: { colors: new Set(colors), shape: new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]) },
-  underside: { colors: new Set(colors.map((color) => `lr_${color}`)), type: new Set(["lamellen", "roehren", "stachel", "leisten"]) },
+  cap: { colors: new Set(colors), shape: new Set(capShapes) },
+  body: { colors: new Set(colors), fleshColors: new Set(colors.map((color) => `fl_${color}`)) },
+  gruppe: { gruppe: new Set(groupTags) },
+  underside: { colors: new Set(colors.map((color) => `lr_${color}`)), type: new Set(["lamellen", "roehren", "stachel", "leisten"]), ansatz: new Set(["angewachsen", "herablaufend", "frei"]) },
   stem: { colors: new Set(colors.map((color) => `stiel_${color}`)) },
   flesh: { colors: new Set(colors.map((color) => `fl_${color}`)) },
   growth: { substrate: new Set(["auf_boden", "auf_wiese", "holz"]) },
@@ -269,13 +283,24 @@ function updateMushroom() {
   const shapePaths = {
     spitz: "M30 132C50 75 81 38 120 28c39 10 70 47 90 104-45 15-135 15-180 0Z",
     schirm: "M30 132C44 78 71 62 120 61c49 1 76 17 90 71-45 15-135 15-180 0Z",
-    kugel: "M30 132C22 92 52 42 120 40c68 2 98 52 90 92-45 15-135 15-180 0Z",
     trichter: "M30 132C22 120 18 96 16 76c50-12 158-12 208 0-2 20-6 44-14 56-45 15-135 15-180 0Z",
-    f: "M30 132C27 106 40 84 60 70q10-12 26-10 14-8 34-4 20-4 34 4 16-2 26 10c20 14 32 36 30 62-45 15-135 15-180 0Z",
     sonstige_form: "M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z",
   };
 
-  const selectedShape = activeFrom(new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]));
+  const selectedShape = activeFrom(new Set(capShapes));
+  const mushroom = document.querySelector("#mushroom");
+  mushroom.dataset.group = activeFrom(new Set(groupTags)) || "";
+  const bodyGroup = mushroom.dataset.group !== "hutpilz" ? mushroom.dataset.group : "";
+  mushroom.classList.toggle("is-body", Boolean(bodyGroup));
+  for (const tag of [...surfaceTags, "bueschelig"]) mushroom.classList.toggle(`has-${tag}`, state.tags.has(tag));
+  if (bodyGroup) document.querySelectorAll(".mini-body").forEach((use) => use.setAttribute("href", `#art-${bodyGroup}`));
+  // Ohne Hut ist der Anschnitt ein ovales Stück Fruchtkörper statt eines Hutquerschnitts.
+  document.querySelector(".flesh-slice").setAttribute("d", bodyGroup ? fleshShapes.body.slice : fleshShapes.hat.slice);
+  document.querySelector(".flesh-core").setAttribute("d", bodyGroup ? fleshShapes.body.core : fleshShapes.hat.core);
+  mushroom.style.setProperty("--body", capColor ? colorFor(capColor) : "url(#capShade)");
+  for (const [tag, selector] of [["lamellen_eng", ".gill-dense"], ["lamellen_gegabelt", ".gill-forks"], ["lamellen_gesaegt", ".gill-serration"], ["frei", ".gill-free"], ["herablaufend", ".stem-decurrent"], ["genattert", ".stem-pattern"]]) {
+    document.querySelector(selector).classList.toggle("is-visible", state.tags.has(tag));
+  }
   const capD = shapePaths[selectedShape] || shapePaths.sonstige_form;
   const capFill = capColor ? colorFor(capColor) : "url(#capShade)";
   const stemFill = stemColor ? colorFor(stemColor, "stiel_") : "url(#stemShade)";
@@ -314,6 +339,17 @@ function updateMushroom() {
   applyExhausted();
 }
 
+const fleshShapes = {
+  hat: {
+    slice: "M166 228c0-18 12-30 24-30s24 12 24 30c0 3-8 4-15 4l-2 20c0 4-14 4-14 0l-2-20c-7 0-15-1-15-4Z",
+    core: "M169 227c0-15 11-26 21-26s21 11 21 26c-2 2-8 2-15 2l-2 21c0 2-8 2-8 0l-2-21c-7 0-13 0-15-2Z",
+  },
+  body: {
+    slice: "M168 226c0-14 10-25 22-25s22 11 22 25-10 24-22 24-22-10-22-24Z",
+    core: "M171 226c0-12 9-22 19-22s19 10 19 22-9 21-19 21-19-9-19-21Z",
+  },
+};
+
 function toggleTag(tag, group = "multi") {
   const previousSelection = group === "multi" ? null : activeFrom(
     new Set((partChoices[openPart] || []).filter((section) => section.group === group).flatMap((section) => section.tags)),
@@ -347,10 +383,10 @@ function renderDeck(part) {
   deckSections.innerHTML = sections.map((section, index) => {
     const options = section.tags.map((tag) => {
       const selected = state.tags.has(tag);
-      const prefix = part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_";
+      const prefix = section.group === "fleshColors" ? "fl_" : part === "cap" || part === "body" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_";
       const swatchColor = section.kind === "color" ? colorFor(tag, prefix) : "";
       const kindClass = section.kind === "color" ? "color-option" : "icon-choice";
-      const specialIcon = part === "growth" ? substrateIconFor(tag) : part === "underside" ? undersideIconFor(tag) : "";
+      const specialIcon = traitIconFor(tag) || (part === "growth" ? substrateIconFor(tag) : part === "underside" ? undersideIconFor(tag) : "");
       const icon = specialIcon || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
       return `<button type="button" class="deck-option ${kindClass}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
     }).join("");
@@ -386,6 +422,24 @@ function undersideIconFor(tag) {
     roehren: `${cap}${band}<path class="option-pores" d="M6 10.9h0m3 .6h0m3 .3h0m4 0h0m3-.3h0m3-.6h0M7.5 12.6h0m3 .4h0m3 .1h0m3-.1h0m3-.4h0"/>`,
     stachel: `${cap}<path class="option-underside" d="M2 9c6 2 18 2 24 0l-1.6 2.6c-5 1.6-15.8 1.6-20.8 0Z"/><path class="option-underside" d="M4 11.5l1 3 1-3ZM7 12.1l1 3.6 1-3.6ZM10 12.5l1 4.2 1-4.2ZM13 12.6l1 4.5 1-4.5ZM16 12.5l1 4.2 1-4.2ZM19 12.1l1 3.6 1-3.6ZM22 11.5l1 3 1-3Z"/>`,
     leisten: `${cap}<path class="option-underside" d="M11.2 14h5.6l-.6 3.6h-4.4Z"/>${band}<path class="ridge-fan" d="M6.5 13.3V12.1l-1.4-1.6M6.5 12.1l1.4-1.6M11.5 14.0V12.8l-1.4-1.7M11.5 12.8l1.4-1.7M16.5 14.0V12.8l-1.4-1.7M16.5 12.8l1.4-1.7M21.5 13.3V12.1l-1.4-1.6M21.5 12.1l1.4-1.6M12.6 14.6l.2 2.4m1.2-2.4v2.6m1.4-2.6-.2 2.4"/>`,
+  };
+  return icons[tag] ? `<svg class="substrate-option-icon underside-option-icon" viewBox="0 0 28 18" aria-hidden="true">${icons[tag]}</svg>` : "";
+}
+
+// Kleine Schnittbilder für Merkmale, die sich als Glyphe nicht erklären lassen.
+function traitIconFor(tag) {
+  const cap = '<path class="option-cap" d="M3 8C5 3 9 2 14 2s9 1 11 6Z"/>';
+  const stem = '<path class="option-underside" d="M12 8h4v9h-4Z"/>';
+  const band = '<path class="option-underside" d="M2 9c6 2 18 2 24 0l-2 4c-5 2-15 2-20 0Z"/>';
+  const icons = {
+    angewachsen: `${cap}${stem}<path class="option-gill" d="M4 8h8v4ZM24 8h-8v4Z"/>`,
+    herablaufend: `${cap}${stem}<path class="option-gill" d="M4 8h8v8ZM24 8h-8v8Z"/>`,
+    frei: `${cap}${stem}<path class="option-gill" d="M4 8h6l-.6 3.4ZM24 8h-6l.6 3.4Z"/>`,
+    lamellen_eng: `${cap.replace("M3 8", "M2 9")}${band}<path d="M4 10.2l.9 2.6M5.8 10.6l.7 2.6M7.6 10.9l.5 2.7M9.4 11.1l.4 2.7M11.2 11.2l.2 2.8M13 11.3v2.8M14.8 11.3v2.8M16.6 11.2l-.2 2.8M18.4 11.1l-.4 2.7M20.2 10.9l-.5 2.7M22 10.6l-.7 2.6M23.8 10.2l-.9 2.6"/>`,
+    lamellen_gegabelt: `${cap.replace("M3 8", "M2 9")}${band}<path d="M6.5 13.5V12l-1.3-1.6M6.5 12l1.2-1.6M11.5 14.2v-1.6l-1.3-1.6m1.3 1.6 1.2-1.6M16.5 14.2v-1.6l-1.3-1.6m1.3 1.6 1.2-1.6M21.5 13.5V12l-1.3-1.6M21.5 12l1.2-1.6"/>`,
+    lamellen_gesaegt: `${cap.replace("M3 8", "M2 9")}<path class="option-underside" d="M2 9c6 2 18 2 24 0l-2 4-1.5-.4-1.5 .8-1.5-.5-1.5.8-1.5-.4-1.5.6-1.5-.6-1.5.6-1.5-.6-1.5.6-1.5-.4-1.5.4-1.5-.6-1.5.4Z"/>`,
+    genattert: '<path class="option-underside" d="M10 1h8l1 16h-10Z"/><path d="M10 4l2-1.4 2 1.4 2-1.4 2 1.4M9.8 8l2.1-1.4 2.1 1.4 2.1-1.4 2.1 1.4M9.6 12l2.2-1.4 2.2 1.4 2.2-1.4 2.2 1.4"/>',
+    konsistenz_hart: '<path class="option-bark" d="M2 1h6v17H2Z"/><path class="option-cap" d="M8 6c8 0 16 1 18 4-4 2-12 2-18 1Z"/><path d="M10 8.5c5 0 10 .5 14 1.6"/>',
   };
   return icons[tag] ? `<svg class="substrate-option-icon underside-option-icon" viewBox="0 0 28 18" aria-hidden="true">${icons[tag]}</svg>` : "";
 }

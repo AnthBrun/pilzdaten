@@ -249,8 +249,32 @@ func (c *Catalog) normalizeFacetLabels() {
 					option.Label = strings.TrimPrefix(option.Label, "Wird ")
 				}
 			}
+			if label, ok := sourceLabels[option.Tag]; ok {
+				option.Label = label
+			}
 		}
 	}
+}
+
+// sourceLabels korrigiert Beschriftungen aus facets.json nach der Bedeutung,
+// die 123pilzsuche.de den Tags in ihren Tooltips gibt. "f" ist dort die
+// Gruppe der Flechten (nicht "fächerförmig"), "kugel" meint Boviste,
+// Becherlinge und Hexeneier (nicht einen kugeligen Hut).
+var sourceLabels = map[string]string{
+	"f":                       "Flechten",
+	"kugel":                   "Kugel- & Becherpilze",
+	"hut_koralle":             "Keulen & Korallen",
+	"konsistenz_gallertartig": "Gallertartig, sehr weich",
+	"sonstige_gattung":        "Krusten & Sonstige",
+	"sonstige_form":           "Halbkugelig / andere",
+	"trichter":                "Trichterförmig, genabelt",
+	"spitz":                   "Spitz, gebuckelt",
+	"schirm":                  "Schirmförmig, flach",
+	"konsistenz_hart":         "Hart, holzig, zäh",
+	"genattert":               "Genattert, gefleckt",
+	"lamellen_gesaegt":        "Schneide gesägt/wellig",
+	"lamellen_gegabelt":       "Gegabelt, queradrig",
+	"nicht_selten":            "Seltene ausblenden",
 }
 
 func (c *Catalog) promoteEdibilityFacet() {

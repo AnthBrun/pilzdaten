@@ -58,6 +58,9 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 		t.Error("detail page should keep the related-species section with images")
 	}
 	body := response.Body.String()
+	if titlePosition, imagePosition := strings.Index(body, `<h1 class="detail-title">`), strings.Index(body, `<figure class="detail-hero-photo">`); imagePosition >= 0 && (titlePosition < 0 || titlePosition > imagePosition) {
+		t.Error("detail hero should introduce the species name before its lead photo")
+	}
 	supplementalPosition := strings.Index(body, `<summary><span>Weitere Angaben</span>`)
 	if supplementalPosition < 0 {
 		t.Fatal("detail page does not provide a collapsed section for supplemental source fields")

@@ -15,7 +15,7 @@
     <section class="detail-hero">
       <div class="detail-hero-copy">
         <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
-        <h1>{{.DisplayName}}</h1>
+        <h1 class="detail-title">{{.DisplayName}}</h1>
         {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
         {{if .Aliases}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Aliases}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
       </div>

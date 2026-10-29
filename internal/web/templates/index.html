@@ -91,9 +91,14 @@
                 <circle class="edibility-dot" cx="120" cy="348" r="6"/><text id="edibility-label" class="svg-note" x="132" y="352">Essbarkeit</text>
               </g>
             </svg>
-            <div id="swatch-popover" class="swatch-popover" role="dialog" aria-modal="false" aria-label="Merkmale auswählen" hidden>
-              <div class="popover-heading"><strong id="popover-title">Merkmal wählen</strong><button id="popover-close" type="button" aria-label="Schließen">×</button></div>
-              <div id="popover-options" class="popover-options"></div>
+            <div id="option-deck" role="dialog" aria-modal="false" aria-label="Optionen auswählen" hidden>
+              <div class="deck-header"><strong id="deck-title">Merkmal wählen</strong><button id="deck-close" type="button" aria-label="Schließen">×</button></div>
+              <div id="deck-tabs" class="deck-tabs" hidden></div>
+              <div class="deck-carousel-row">
+                <button id="deck-prev" class="deck-arrow" type="button" aria-label="Vorherige Option">‹</button>
+                <div id="deck-carousel" class="deck-carousel"></div>
+                <button id="deck-next" class="deck-arrow" type="button" aria-label="Nächste Option">›</button>
+              </div>
             </div>
           </div>
           <section class="diameter-filter" aria-labelledby="diameter-title">

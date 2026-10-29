@@ -7,9 +7,12 @@ const resultLabel = document.querySelector("#results-label");
 const resultNumber = document.querySelector(".result-number");
 const activeFilters = document.querySelector("#active-filters");
 const pagination = document.querySelector(".pagination");
-const popover = document.querySelector("#swatch-popover");
-const popoverTitle = document.querySelector("#popover-title");
-const popoverOptions = document.querySelector("#popover-options");
+const deck = document.querySelector("#option-deck");
+const deckTitle = document.querySelector("#deck-title");
+const deckTabs = document.querySelector("#deck-tabs");
+const deckCarousel = document.querySelector("#deck-carousel");
+const deckPrev = document.querySelector("#deck-prev");
+const deckNext = document.querySelector("#deck-next");
 const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-tag]")].map((node) => [node.dataset.tag, node.dataset.label]));
 
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
@@ -53,11 +56,11 @@ const state = {
   letter: currentURL.searchParams.get("letter") || "",
 };
 let openPart = "";
+let activeSectionIndex = 0;
 let updateTimer;
 let requestSequence = 0;
 let lastRenderKey = "";
-let cycleBadgeTimer;
-const cyclePulseTimers = new WeakMap();
+const pulseTimers = new WeakMap();
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -215,6 +218,9 @@ function updateMushroom() {
 }
 
 function toggleTag(tag, group = "multi") {
+  const previousSelection = group === "multi" ? null : activeFrom(
+    new Set((partChoices[openPart] || []).filter((section) => section.group === group).flatMap((section) => section.tags)),
+  );
   if (state.tags.has(tag)) state.tags.delete(tag);
   else {
     if (group !== "multi") {
@@ -231,138 +237,127 @@ function toggleTag(tag, group = "multi") {
   }
   state.page = 1;
   updateMushroom();
-  if (openPart) renderPopover(openPart);
+  if (openPart) renderDeck(openPart);
+  if (group !== "multi" && previousSelection !== tag && state.tags.has(tag)) pulsePart(openPart);
   scheduleUpdate();
 }
 
-function renderPopover(part) {
+function renderDeck(part) {
   const sections = partChoices[part] || [];
-  popoverTitle.textContent = partNames[part];
-  popoverOptions.innerHTML = sections.map((section) => `<div class="option-section"><h4>${escapeHTML(section.title)}</h4><div class="option-list ${section.kind === "color" ? "color-options" : ""}">${section.tags.map((tag) => {
+  if (!sections.length) return;
+  activeSectionIndex = Math.min(activeSectionIndex, sections.length - 1);
+  const section = sections[activeSectionIndex];
+  deckTitle.textContent = `${partNames[part]} wählen`;
+  deckTabs.hidden = sections.length <= 1;
+  deckTabs.innerHTML = sections.length > 1 ? sections.map((item, index) => `<button type="button" class="deck-tab${index === activeSectionIndex ? " is-active" : ""}" data-section-index="${index}" aria-pressed="${index === activeSectionIndex}">${escapeHTML(item.title)}</button>`).join("") : "";
+  const isMulti = section.group === "multi";
+  deckPrev.hidden = isMulti;
+  deckNext.hidden = isMulti;
+  deckCarousel.classList.toggle("color-options", section.kind === "color");
+  deckCarousel.innerHTML = section.tags.map((tag) => {
     const selected = state.tags.has(tag);
     const swatchColor = section.kind === "color" ? colorFor(tag, part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_") : "";
     const kindClass = section.kind === "color" ? "swatch-choice" : section.kind === "edibility" ? `edibility-choice edible-${tag}` : "icon-choice";
-    return `<button type="button" class="popover-choice ${kindClass}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`}<span>${escapeHTML(labelFor(tag))}</span></button>`;
-  }).join("")}</div></div>`).join("");
+    const substrate = part === "growth" ? substrateIconFor(tag) : "";
+    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`);
+    return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+  }).join("");
+  if (!isMulti) {
+    const selected = deckCarousel.querySelector(".deck-option.is-selected");
+    if (selected) requestAnimationFrame(() => centerDeckOption(selected));
+    else deckCarousel.scrollLeft = 0;
+  }
+}
+
+function centerDeckOption(option) {
+  const optionRect = option.getBoundingClientRect();
+  const carouselRect = deckCarousel.getBoundingClientRect();
+  const target = deckCarousel.scrollLeft + optionRect.left - carouselRect.left + optionRect.width / 2 - deckCarousel.clientWidth / 2;
+  deckCarousel.scrollTo({ left: Math.max(0, target), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 function iconFor(tag) {
   return ({ spitz: "△", schirm: "⌒", kugel: "◠", trichter: "▽", f: "◖", sonstige_form: "⌒", lamellen: "≋", roehren: "○", stachel: "⋮", hut_gerieft: "╱", hut_hygrophan: "◒", flocken: "⁘", haut_schmierig: "◌", ring: "◉", netz: "▦", knollig: "⬭", wurzel: "♧", stiel_hohl: "∥", milch: "◉", bruechig: "⌁", faserig: "╱", bueschelig: "♧", holz: "▰", auf_boden: "⌂", auf_wiese: "♣" })[tag] || "•";
 }
 
-function openPopover(part) {
+function substrateIconFor(tag) {
+  const icons = {
+    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24M7 15V9m7 6V6m7 9V9"/><path d="M4 9c0-3 6-3 6 0m1-3c0-4 7-4 7 0m1 3c0-3 6-3 6 0"/></svg>',
+    holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><rect x="2" y="10" width="24" height="6" rx="2"/><path d="M5 12h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
+    auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 11c6-2 18-2 24 0v5H2z"/><path d="M2 11c6-2 18-2 24 0M7 14h2m5-2h2m4 3h2"/></svg>',
+    auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 15h24M5 15l2-6m3 6V7m3 8 2-7m3 7 1-5m3 5 2-7"/><circle cx="15" cy="6" r="1.5"/></svg>',
+  };
+  return icons[tag] || "";
+}
+
+function openDeck(part) {
   openPart = part;
-  renderPopover(part);
-  popover.hidden = false;
+  activeSectionIndex = 0;
+  renderDeck(part);
+  deck.hidden = false;
   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.toggle("is-open", node.dataset.part === part));
 }
 
-function closePopover() {
-  popover.hidden = true;
+function closeDeck() {
+  deck.hidden = true;
   openPart = "";
   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.remove("is-open"));
 }
 
-function showCycleFeedback(part, tag) {
-  clearTimeout(cyclePulseTimers.get(part));
+function pulsePart(partName) {
+  const part = document.querySelector(`.mushroom-part[data-part="${partName}"]`);
+  if (!part) return;
+  clearTimeout(pulseTimers.get(part));
   part.classList.remove("is-cycled");
   void part.getBoundingClientRect();
   part.classList.add("is-cycled");
-  cyclePulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
-
-  document.querySelector(".cycle-badge")?.remove();
-  clearTimeout(cycleBadgeTimer);
-  const stage = document.querySelector(".mushroom-stage");
-  const stageRect = stage.getBoundingClientRect();
-  const partRect = part.getBoundingClientRect();
-  const badge = document.createElement("span");
-  badge.className = "cycle-badge";
-  badge.textContent = labelFor(tag);
-  badge.style.left = `${Math.min(stage.clientWidth - 12, partRect.right - stageRect.left)}px`;
-  badge.style.top = `${Math.max(12, partRect.top - stageRect.top - 5)}px`;
-  stage.append(badge);
-  cycleBadgeTimer = setTimeout(() => badge.remove(), 900);
+  pulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
 }
 
-function cyclePart(part, section, direction) {
+function cycleSection(direction) {
+  const section = (partChoices[openPart] || [])[activeSectionIndex];
+  if (!section || section.group === "multi") return;
   const currentIndex = section.tags.findIndex((tag) => state.tags.has(tag));
   const startIndex = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
   const nextIndex = (startIndex + direction + section.tags.length) % section.tags.length;
-  const nextTag = section.tags[nextIndex];
-  const previousOpenPart = openPart;
-  openPart = part.dataset.part;
-  toggleTag(nextTag, section.group);
-  openPart = previousOpenPart;
-  if (previousOpenPart) renderPopover(previousOpenPart);
-  showCycleFeedback(part, nextTag);
+  toggleTag(section.tags[nextIndex], section.group);
 }
 
 document.querySelectorAll(".mushroom-part").forEach((part) => {
-  let gesture = null;
-  let suppressNextClick = false;
-  let clickSuppressionTimer;
-  if (part.dataset.part !== "edibility") {
-    part.addEventListener("pointerdown", (event) => {
-      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
-      gesture = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
-      try { part.setPointerCapture(event.pointerId); } catch (_error) {}
-    });
-    part.addEventListener("pointermove", (event) => {
-      if (gesture?.pointerId === event.pointerId) {
-        gesture.dx = event.clientX - gesture.x;
-        gesture.dy = event.clientY - gesture.y;
-      }
-    });
-    part.addEventListener("pointerup", (event) => {
-      if (gesture?.pointerId !== event.pointerId) return;
-      const dx = event.clientX - gesture.x;
-      const dy = event.clientY - gesture.y;
-      gesture = null;
-      let section;
-      let direction;
-      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) {
-        section = (partChoices[part.dataset.part] || []).find((choice) => choice.group !== "multi");
-        direction = dx > 0 ? 1 : -1;
-      } else if (event.pointerType === "mouse" && Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) {
-        section = (partChoices[part.dataset.part] || []).filter((choice) => choice.group !== "multi")[1];
-        direction = dy > 0 ? 1 : -1;
-      }
-      if (section) {
-        suppressNextClick = true;
-        clearTimeout(clickSuppressionTimer);
-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
-        cyclePart(part, section, direction);
-      } else if ((Math.abs(dx) > 24 || Math.abs(dy) > 24) && (Math.abs(dx) > Math.abs(dy) || event.pointerType === "mouse")) {
-        suppressNextClick = true;
-        clearTimeout(clickSuppressionTimer);
-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
-      } else if (Math.max(Math.abs(dx), Math.abs(dy)) >= 8) {
-        suppressNextClick = true;
-        clearTimeout(clickSuppressionTimer);
-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
-      }
-    });
-    part.addEventListener("pointercancel", () => { gesture = null; });
-  }
-  part.addEventListener("click", () => {
-    if (suppressNextClick) { suppressNextClick = false; return; }
-    openPopover(part.dataset.part);
-  });
+  part.addEventListener("click", () => openDeck(part.dataset.part));
   part.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPopover(part.dataset.part); }
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDeck(part.dataset.part); }
   });
 });
-document.querySelector("#popover-close")?.addEventListener("click", closePopover);
-popoverOptions?.addEventListener("click", (event) => {
+document.querySelector("#deck-close")?.addEventListener("click", closeDeck);
+deckTabs?.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-section-index]");
+  if (!tab) return;
+  activeSectionIndex = Number(tab.dataset.sectionIndex);
+  renderDeck(openPart);
+});
+deckCarousel?.addEventListener("click", (event) => {
   const choice = event.target.closest("[data-choice-tag]");
   if (choice) toggleTag(choice.dataset.choiceTag, choice.dataset.choiceGroup);
 });
+deckPrev?.addEventListener("click", () => cycleSection(-1));
+deckNext?.addEventListener("click", () => cycleSection(1));
 document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag)));
 document.addEventListener("click", (event) => {
-  if (!popover || popover.hidden || event.target.closest("#swatch-popover, .mushroom-part")) return;
-  closePopover();
+  if (!deck || deck.hidden) return;
+  const inside = event.composedPath().some((node) => node === deck || (node.nodeType === 1 && node.classList && node.classList.contains("mushroom-part")));
+  if (inside) return;
+  closeDeck();
 });
-document.addEventListener("keydown", (event) => { if (event.key === "Escape" && popover && !popover.hidden) closePopover(); });
+document.addEventListener("keydown", (event) => {
+  if (!deck || deck.hidden) return;
+  if (event.key === "Escape") closeDeck();
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    if (document.activeElement.matches("input, textarea, select")) return;
+    event.preventDefault();
+    cycleSection(event.key === "ArrowRight" ? 1 : -1);
+  }
+});
 
 activeFilters?.addEventListener("click", (event) => {
   const remove = event.target.closest("[data-remove-tag]");
@@ -382,7 +377,7 @@ function resetFilters() {
   state.tags.clear(); state.q = ""; state.page = 1; state.letter = "";
   searchInput.value = ""; minSlider.value = minSlider.min; maxSlider.value = maxSlider.max;
   state.min = minSlider.value; state.max = maxSlider.value;
-  updateDiameterLabel(); updateMushroom(); closePopover(); scheduleUpdate(0);
+  updateDiameterLabel(); updateMushroom(); closeDeck(); scheduleUpdate(0);
 }
 document.querySelector("#reset-filters")?.addEventListener("click", resetFilters);
 

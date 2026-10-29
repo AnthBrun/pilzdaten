@@ -1,0 +1,475 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Inspect existing template, JavaScript, and CSS behavior
+[ ] Replace popover and swipe-cycle behavior with the option deck carousel
+[ ] Run syntax/config checks and review the final diff
+[0m
+[0m✱ [0mGlob "internal/web/templates/index.html"[90m 1 match[0m
+[0m✱ [0mGlob "internal/web/static/app.{js,css}"[90m 2 matches[0m
+[0m✱ [0mGrep "openPopover|closePopover|renderPopover|cyclePart|showCycleFeedback|suppressNextClick|pointerdown|swatch-popover|popover-choice|cycle-badge"[90m in internal/web · 41 matches[0m
+[0m→ [0mRead internal/web/templates/index.html[90m [offset=65, limit=65][0m
+[0m→ [0mRead internal/web/static/app.js
+[0m→ [0mRead internal/web/static/app.css[90m [offset=1, limit=330][0m
+Ich ersetze die bisherige Popover-/Wischbedienung jetzt durch ein Deck mit section-basierten Tabs, horizontal scrollbaren Karten und zirkulären Pfeiltasten. Der bestehende Tag-/URL- und SVG-Updatepfad bleibt dabei erhalten.
+[0m
+[0m# [0mTodos
+[✓] Inspect existing template, JavaScript, and CSS behavior
+[•] Replace popover and swipe-cycle behavior with the option deck carousel
+[ ] Run syntax/config checks and review the final diff
+[0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m✱ [0mGrep "openPopover|closePopover|renderPopover|cyclePart|showCycleFeedback|cycleBadge|cyclePulseTimers|suppressNextClick|popover|swatch-popover|pointerdown|pointermove|pointerup|pointercancel"[90m in internal/web · 0 matches[0m
+[0m✱ [0mGrep "deck|substrateIconFor|toggleTag\("[90m in internal/web/static/app.js · 33 matches[0m
+[0m
+[0m$ [0mgit diff --check && git status --short
+M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/index.html
+?? TASK7.md
+?? opencode-run7.log
+?? run-opencode7.sh
+[0m
+[0m% [0mPatch 1 file
+[0m
+[0m# [0mTodos
+[✓] Inspect existing template, JavaScript, and CSS behavior
+[✓] Replace popover and swipe-cycle behavior with the option deck carousel
+[•] Run syntax/config checks and review the final diff
+[0m
+[0m$ [0mgit diff --check && git diff -- internal/web/templates/index.html internal/web/static/app.js internal/web/static/app.css
+diff --git a/internal/web/static/app.css b/internal/web/static/app.css
+index 7981f9c..c640ac4 100644
+--- a/internal/web/static/app.css
++++ b/internal/web/static/app.css
+@@ -106,27 +106,37 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .edibility-dot { fill: #ded9cd; stroke: white; stroke-width: 2; }
+ .mushroom-part[data-part="edibility"] { cursor: pointer; }
+ .mushroom-part[data-part="edibility"].has-selection .edibility-dot { fill: #d98740; }
+-.swatch-popover { position: absolute; z-index: 5; top: 45px; right: -2px; width: min(260px, 80%); max-height: 300px; overflow: auto; padding: 12px; border: 1px solid #d9dfd4; border-radius: 10px; background: #fff; box-shadow: 0 12px 35px #24372c26; animation: popoverIn .16s ease; }
+-@keyframes popoverIn { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+-.swatch-popover[hidden] { display: none; }
+-.cycle-badge { position: absolute; z-index: 4; transform: translate(-50%, -100%); max-width: 150px; overflow: hidden; padding: 5px 9px; border: 1px solid #e1e3da; border-radius: 99px; background: #fff; box-shadow: 0 4px 12px #24372c20; color: var(--green); font-size: 10px; line-height: 1.2; white-space: nowrap; pointer-events: none; animation: badgeIn .16s ease both; }
+-@keyframes badgeIn { from { opacity: 0; transform: translate(-50%, -85%); } }
+-.popover-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--green); font-size: 12px; }
+-.popover-heading button { width: 25px; height: 25px; border: 0; border-radius: 50%; color: #627166; background: #f1f3ed; font-size: 19px; cursor: pointer; }
+-.option-section { padding-top: 9px; }
+-.option-section h4 { margin: 0 0 5px; color: #7a857c; font-size: 9px; font-weight: 700; }
+-.option-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+-.option-list.color-options { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+-.popover-choice { min-width: 0; display: flex; align-items: center; gap: 6px; padding: 6px; border: 1px solid transparent; border-radius: 6px; background: #f7f8f4; color: #536056; text-align: left; font-size: 9px; line-height: 1.2; cursor: pointer; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+-.popover-choice:hover, .popover-choice.is-selected { border-color: #96ad93; color: #254e3b; background: #eaf1e7; }
+-.color-options .popover-choice { flex-direction: column; justify-content: center; gap: 4px; padding: 5px 2px; text-align: center; overflow-wrap: anywhere; }
++#option-deck { position: absolute; z-index: 6; right: 0; bottom: 6px; left: 0; max-height: 190px; overflow-y: auto; padding: 10px 12px; border: 1px solid #d9dfd4; border-radius: 10px; background: #fff; box-shadow: 0 12px 35px #24372c26; animation: deckIn .18s ease; }
++#option-deck[hidden], #option-deck [hidden] { display: none; }
++@keyframes deckIn { from { opacity: 0; transform: translateY(-6px); } }
++.deck-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--green); font-size: 12px; }
++.deck-header button { width: 25px; height: 25px; border: 0; border-radius: 50%; color: #627166; background: #f1f3ed; font-size: 19px; cursor: pointer; }
++.deck-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 6px; }
++.deck-tab { padding: 5px 8px; border: 1px solid #e2e6dc; border-radius: 99px; color: #5d6a60; background: #f7f8f4; font-size: 9px; cursor: pointer; }
++.deck-tab.is-active { border-color: var(--green); color: #fff; background: var(--green); font-weight: 700; }
++.deck-carousel-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
++.deck-arrow { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid #dce2d9; border-radius: 50%; color: var(--green); background: #f8f9f6; font-size: 23px; line-height: 1; cursor: pointer; }
++.deck-arrow:hover { border-color: #91a68f; background: #edf2e9; }
++.deck-carousel { flex: 1; display: flex; gap: 6px; min-width: 0; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 4px 2px; }
++.deck-carousel::-webkit-scrollbar { height: 4px; }
++.deck-carousel::-webkit-scrollbar-thumb { border-radius: 99px; background: #d5dbd0; }
++.deck-option { flex: none; min-width: 76px; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 6px; border: 2px solid transparent; border-radius: 8px; background: #f7f8f4; color: #536056; text-align: center; font-size: 9px; line-height: 1.2; overflow-wrap: anywhere; cursor: pointer; scroll-snap-align: center; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
++.deck-option:hover, .deck-option.is-selected { border-color: #6e936f; color: #254e3b; background: #eaf1e7; }
++.deck-option.is-selected { border-width: 3px; }
++.deck-option.color-option { min-width: 64px; }
+ .swatch { display: block; width: 21px; height: 21px; flex: none; border: 1px solid #0002; border-radius: 50%; background: var(--swatch); box-shadow: inset 0 0 0 2px #fff8; }
+-.color-options .swatch { width: 26px; height: 26px; }
++.deck-option.color-option .swatch { width: 26px; height: 26px; }
+ .choice-icon { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 5px; background: #e8ece3; color: #48634e; font-size: 14px; }
+ .edibility-choice .edibility-dot-choice { width: 11px; height: 11px; flex: none; border-radius: 50%; background: #7da876; }
+ .edibility-choice.edible-schlecht .edibility-dot-choice { background: #a79a5f; }
+ .edibility-choice.edible-giftig .edibility-dot-choice { background: #dc7445; }
+ .edibility-choice.edible-tot .edibility-dot-choice { background: #bf4646; }
++.substrate-option-icon { width: 28px; height: 18px; fill: none; stroke: #72845d; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
++.substrate-option-wood { stroke: #795c40; }
++.substrate-option-wood rect { fill: #b99668; }
++.substrate-option-earth { stroke: #8a765a; }
++.substrate-option-earth path:first-child { fill: #d8c9ad; }
++.substrate-option-grass circle { fill: #e7c76b; stroke: #aa9250; }
+ .diameter-filter { border-top: 1px solid var(--line); padding: 12px 0 8px; }
+ .slider-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+ .diameter-filter h4 { font-size: 11px; color: #35473a; margin: 0 0 5px; }
+@@ -254,11 +264,11 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
+   .mushroom-lab { position: relative; top: auto; max-height: none; overflow: visible; padding: 13px; }
+   .mushroom-stage { height: min(106vw, 418px); max-height: 418px; }
+   .mushroom-svg { max-width: 270px; }
+-  .swatch-popover { position: fixed; top: auto; right: 0; bottom: 0; left: 0; width: 100%; max-height: 70vh; padding: 17px max(16px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom)); border-radius: 16px 16px 0 0; box-shadow: 0 -12px 40px #24372c30; }
+-  #swatch-popover { animation-name: popoverSheetIn; }
+-  @keyframes popoverSheetIn { from { transform: translateY(24px); opacity: 0; } }
+-  .option-list.color-options { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+-  .popover-choice { min-height: 38px; font-size: 10px; }
++  #option-deck { position: fixed; top: auto; right: 0; bottom: 0; left: 0; width: 100%; max-height: 72vh; overflow-y: auto; padding: 17px max(16px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom)); border-radius: 16px 16px 0 0; box-shadow: 0 -12px 40px #24372c30; animation-name: deckSheetIn; }
++  #option-deck::before { content: ""; display: block; width: 28px; height: 4px; margin: -7px auto 12px; border-radius: 99px; background: #cbd2c8; }
++  @keyframes deckSheetIn { from { transform: translateY(30px); opacity: 0; } }
++  .deck-arrow { min-width: 38px; min-height: 38px; }
++  .deck-option { min-height: 58px; font-size: 10px; }
+   .results-toolbar { position: sticky; top: 0; z-index: 4; margin-bottom: 9px; padding: 9px 10px; }
+   .results-heading-row strong { font-size: 13px; }
+   .species-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@@ -294,6 +304,7 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
+   footer { padding: 18px 14px; gap: 10px; }
+ }
+ @media (prefers-reduced-motion: reduce) {
+-  .substrate, .popover-choice, #swatch-popover, .cycle-badge { transition: none; animation: none; }
++  .substrate, .deck-option, #option-deck { transition: none; animation: none; }
++  .deck-carousel { scroll-behavior: auto; }
+   .mushroom-part.is-cycled { animation: none; }
+ }
+diff --git a/internal/web/static/app.js b/internal/web/static/app.js
+index 1effe8d..382e45f 100644
+--- a/internal/web/static/app.js
++++ b/internal/web/static/app.js
+@@ -7,9 +7,12 @@ const resultLabel = document.querySelector("#results-label");
+ const resultNumber = document.querySelector(".result-number");
+ const activeFilters = document.querySelector("#active-filters");
+ const pagination = document.querySelector(".pagination");
+-const popover = document.querySelector("#swatch-popover");
+-const popoverTitle = document.querySelector("#popover-title");
+-const popoverOptions = document.querySelector("#popover-options");
++const deck = document.querySelector("#option-deck");
++const deckTitle = document.querySelector("#deck-title");
++const deckTabs = document.querySelector("#deck-tabs");
++const deckCarousel = document.querySelector("#deck-carousel");
++const deckPrev = document.querySelector("#deck-prev");
++const deckNext = document.querySelector("#deck-next");
+ const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-tag]")].map((node) => [node.dataset.tag, node.dataset.label]));
+ 
+ const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
+@@ -53,11 +56,11 @@ const state = {
+   letter: currentURL.searchParams.get("letter") || "",
+ };
+ let openPart = "";
++let activeSectionIndex = 0;
+ let updateTimer;
+ let requestSequence = 0;
+ let lastRenderKey = "";
+-let cycleBadgeTimer;
+-const cyclePulseTimers = new WeakMap();
++const pulseTimers = new WeakMap();
+ 
+ function escapeHTML(value) {
+   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+@@ -215,6 +218,9 @@ function updateMushroom() {
+ }
+ 
+ function toggleTag(tag, group = "multi") {
++  const previousSelection = group === "multi" ? null : activeFrom(
++    new Set((partChoices[openPart] || []).filter((section) => section.group === group).flatMap((section) => section.tags)),
++  );
+   if (state.tags.has(tag)) state.tags.delete(tag);
+   else {
+     if (group !== "multi") {
+@@ -231,138 +237,125 @@ function toggleTag(tag, group = "multi") {
+   }
+   state.page = 1;
+   updateMushroom();
+-  if (openPart) renderPopover(openPart);
++  if (openPart) renderDeck(openPart);
++  if (group !== "multi" && previousSelection !== tag && state.tags.has(tag)) pulsePart(openPart);
+   scheduleUpdate();
+ }
+ 
+-function renderPopover(part) {
++function renderDeck(part) {
+   const sections = partChoices[part] || [];
+-  popoverTitle.textContent = partNames[part];
+-  popoverOptions.innerHTML = sections.map((section) => `<div class="option-section"><h4>${escapeHTML(section.title)}</h4><div class="option-list ${section.kind === "color" ? "color-options" : ""}">${section.tags.map((tag) => {
++  if (!sections.length) return;
++  activeSectionIndex = Math.min(activeSectionIndex, sections.length - 1);
++  const section = sections[activeSectionIndex];
++  deckTitle.textContent = `${partNames[part]} wählen`;
++  deckTabs.hidden = sections.length <= 1;
++  deckTabs.innerHTML = sections.length > 1 ? sections.map((item, index) => `<button type="button" class="deck-tab${index === activeSectionIndex ? " is-active" : ""}" data-section-index="${index}" aria-pressed="${index === activeSectionIndex}">${escapeHTML(item.title)}</button>`).join("") : "";
++  const isMulti = section.group === "multi";
++  deckPrev.hidden = isMulti;
++  deckNext.hidden = isMulti;
++  deckCarousel.classList.toggle("color-options", section.kind === "color");
++  deckCarousel.innerHTML = section.tags.map((tag) => {
+     const selected = state.tags.has(tag);
+     const swatchColor = section.kind === "color" ? colorFor(tag, part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_") : "";
+     const kindClass = section.kind === "color" ? "swatch-choice" : section.kind === "edibility" ? `edibility-choice edible-${tag}` : "icon-choice";
+-    return `<button type="button" class="popover-choice ${kindClass}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+-  }).join("")}</div></div>`).join("");
++    const substrate = part === "growth" ? substrateIconFor(tag) : "";
++    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`);
++    return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
++  }).join("");
++  if (!isMulti) {
++    const selected = deckCarousel.querySelector(".deck-option.is-selected");
++    if (selected) requestAnimationFrame(() => centerDeckOption(selected));
++    else deckCarousel.scrollLeft = 0;
++  }
++}
++
++function centerDeckOption(option) {
++  const optionRect = option.getBoundingClientRect();
++  const carouselRect = deckCarousel.getBoundingClientRect();
++  const target = deckCarousel.scrollLeft + optionRect.left - carouselRect.left + optionRect.width / 2 - deckCarousel.clientWidth / 2;
++  deckCarousel.scrollTo({ left: Math.max(0, target), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+ }
+ 
+ function iconFor(tag) {
+   return ({ spitz: "△", schirm: "⌒", kugel: "◠", trichter: "▽", f: "◖", sonstige_form: "⌒", lamellen: "≋", roehren: "○", stachel: "⋮", hut_gerieft: "╱", hut_hygrophan: "◒", flocken: "⁘", haut_schmierig: "◌", ring: "◉", netz: "▦", knollig: "⬭", wurzel: "♧", stiel_hohl: "∥", milch: "◉", bruechig: "⌁", faserig: "╱", bueschelig: "♧", holz: "▰", auf_boden: "⌂", auf_wiese: "♣" })[tag] || "•";
+ }
+ 
+-function openPopover(part) {
++function substrateIconFor(tag) {
++  const icons = {
++    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24M7 15V9m7 6V6m7 9V9"/><path d="M4 9c0-3 6-3 6 0m1-3c0-4 7-4 7 0m1 3c0-3 6-3 6 0"/></svg>',
++    holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><rect x="2" y="10" width="24" height="6" rx="2"/><path d="M5 12h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
++    auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 11c6-2 18-2 24 0v5H2z"/><path d="M2 11c6-2 18-2 24 0M7 14h2m5-2h2m4 3h2"/></svg>',
++    auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 15h24M5 15l2-6m3 6V7m3 8 2-7m3 7 1-5m3 5 2-7"/><circle cx="15" cy="6" r="1.5"/></svg>',
++  };
++  return icons[tag] || "";
++}
++
++function openDeck(part) {
+   openPart = part;
+-  renderPopover(part);
+-  popover.hidden = false;
++  activeSectionIndex = 0;
++  renderDeck(part);
++  deck.hidden = false;
+   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.toggle("is-open", node.dataset.part === part));
+ }
+ 
+-function closePopover() {
+-  popover.hidden = true;
++function closeDeck() {
++  deck.hidden = true;
+   openPart = "";
+   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.remove("is-open"));
+ }
+ 
+-function showCycleFeedback(part, tag) {
+-  clearTimeout(cyclePulseTimers.get(part));
++function pulsePart(partName) {
++  const part = document.querySelector(`.mushroom-part[data-part="${partName}"]`);
++  if (!part) return;
++  clearTimeout(pulseTimers.get(part));
+   part.classList.remove("is-cycled");
+   void part.getBoundingClientRect();
+   part.classList.add("is-cycled");
+-  cyclePulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
+-
+-  document.querySelector(".cycle-badge")?.remove();
+-  clearTimeout(cycleBadgeTimer);
+-  const stage = document.querySelector(".mushroom-stage");
+-  const stageRect = stage.getBoundingClientRect();
+-  const partRect = part.getBoundingClientRect();
+-  const badge = document.createElement("span");
+-  badge.className = "cycle-badge";
+-  badge.textContent = labelFor(tag);
+-  badge.style.left = `${Math.min(stage.clientWidth - 12, partRect.right - stageRect.left)}px`;
+-  badge.style.top = `${Math.max(12, partRect.top - stageRect.top - 5)}px`;
+-  stage.append(badge);
+-  cycleBadgeTimer = setTimeout(() => badge.remove(), 900);
++  pulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
+ }
+ 
+-function cyclePart(part, section, direction) {
++function cycleSection(direction) {
++  const section = (partChoices[openPart] || [])[activeSectionIndex];
++  if (!section || section.group === "multi") return;
+   const currentIndex = section.tags.findIndex((tag) => state.tags.has(tag));
+   const startIndex = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
+   const nextIndex = (startIndex + direction + section.tags.length) % section.tags.length;
+-  const nextTag = section.tags[nextIndex];
+-  const previousOpenPart = openPart;
+-  openPart = part.dataset.part;
+-  toggleTag(nextTag, section.group);
+-  openPart = previousOpenPart;
+-  if (previousOpenPart) renderPopover(previousOpenPart);
+-  showCycleFeedback(part, nextTag);
++  toggleTag(section.tags[nextIndex], section.group);
+ }
+ 
+ document.querySelectorAll(".mushroom-part").forEach((part) => {
+-  let gesture = null;
+-  let suppressNextClick = false;
+-  let clickSuppressionTimer;
+-  if (part.dataset.part !== "edibility") {
+-    part.addEventListener("pointerdown", (event) => {
+-      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+-      gesture = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+-      try { part.setPointerCapture(event.pointerId); } catch (_error) {}
+-    });
+-    part.addEventListener("pointermove", (event) => {
+-      if (gesture?.pointerId === event.pointerId) {
+-        gesture.dx = event.clientX - gesture.x;
+-        gesture.dy = event.clientY - gesture.y;
+-      }
+-    });
+-    part.addEventListener("pointerup", (event) => {
+-      if (gesture?.pointerId !== event.pointerId) return;
+-      const dx = event.clientX - gesture.x;
+-      const dy = event.clientY - gesture.y;
+-      gesture = null;
+-      let section;
+-      let direction;
+-      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) {
+-        section = (partChoices[part.dataset.part] || []).find((choice) => choice.group !== "multi");
+-        direction = dx > 0 ? 1 : -1;
+-      } else if (event.pointerType === "mouse" && Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) {
+-        section = (partChoices[part.dataset.part] || []).filter((choice) => choice.group !== "multi")[1];
+-        direction = dy > 0 ? 1 : -1;
+-      }
+-      if (section) {
+-        suppressNextClick = true;
+-        clearTimeout(clickSuppressionTimer);
+-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+-        cyclePart(part, section, direction);
+-      } else if ((Math.abs(dx) > 24 || Math.abs(dy) > 24) && (Math.abs(dx) > Math.abs(dy) || event.pointerType === "mouse")) {
+-        suppressNextClick = true;
+-        clearTimeout(clickSuppressionTimer);
+-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+-      } else if (Math.max(Math.abs(dx), Math.abs(dy)) >= 8) {
+-        suppressNextClick = true;
+-        clearTimeout(clickSuppressionTimer);
+-        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+-      }
+-    });
+-    part.addEventListener("pointercancel", () => { gesture = null; });
+-  }
+-  part.addEventListener("click", () => {
+-    if (suppressNextClick) { suppressNextClick = false; return; }
+-    openPopover(part.dataset.part);
+-  });
++  part.addEventListener("click", () => openDeck(part.dataset.part));
+   part.addEventListener("keydown", (event) => {
+-    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPopover(part.dataset.part); }
++    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDeck(part.dataset.part); }
+   });
+ });
+-document.querySelector("#popover-close")?.addEventListener("click", closePopover);
+-popoverOptions?.addEventListener("click", (event) => {
++document.querySelector("#deck-close")?.addEventListener("click", closeDeck);
++deckTabs?.addEventListener("click", (event) => {
++  const tab = event.target.closest("[data-section-index]");
++  if (!tab) return;
++  activeSectionIndex = Number(tab.dataset.sectionIndex);
++  renderDeck(openPart);
++});
++deckCarousel?.addEventListener("click", (event) => {
+   const choice = event.target.closest("[data-choice-tag]");
+   if (choice) toggleTag(choice.dataset.choiceTag, choice.dataset.choiceGroup);
+ });
++deckPrev?.addEventListener("click", () => cycleSection(-1));
++deckNext?.addEventListener("click", () => cycleSection(1));
+ document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag)));
+ document.addEventListener("click", (event) => {
+-  if (!popover || popover.hidden || event.target.closest("#swatch-popover, .mushroom-part")) return;
+-  closePopover();
++  if (!deck || deck.hidden || event.target.closest("#option-deck, .mushroom-part")) return;
++  closeDeck();
++});
++document.addEventListener("keydown", (event) => {
++  if (!deck || deck.hidden) return;
++  if (event.key === "Escape") closeDeck();
++  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
++    if (document.activeElement.matches("input, textarea, select")) return;
++    event.preventDefault();
++    cycleSection(event.key === "ArrowRight" ? 1 : -1);
++  }
+ });
+-document.addEventListener("keydown", (event) => { if (event.key === "Escape" && popover && !popover.hidden) closePopover(); });
+ 
+ activeFilters?.addEventListener("click", (event) => {
+   const remove = event.target.closest("[data-remove-tag]");
+@@ -382,7 +375,7 @@ function resetFilters() {
+   state.tags.clear(); state.q = ""; state.page = 1; state.letter = "";
+   searchInput.value = ""; minSlider.value = minSlider.min; maxSlider.value = maxSlider.max;
+   state.min = minSlider.value; state.max = maxSlider.value;
+-  updateDiameterLabel(); updateMushroom(); closePopover(); scheduleUpdate(0);
++  updateDiameterLabel(); updateMushroom(); closeDeck(); scheduleUpdate(0);
+ }
+ document.querySelector("#reset-filters")?.addEventListener("click", resetFilters);
+ 
+diff --git a/internal/web/templates/index.html b/internal/web/templates/index.html
+index 269bf80..d9af7b4 100644
+--- a/internal/web/templates/index.html
++++ b/internal/web/templates/index.html
+@@ -91,9 +91,14 @@
+                 <circle class="edibility-dot" cx="120" cy="348" r="6"/><text id="edibility-label" class="svg-note" x="132" y="352">Essbarkeit</text>
+               </g>
+             </svg>
+-            <div id="swatch-popover" class="swatch-popover" role="dialog" aria-modal="false" aria-label="Merkmale auswählen" hidden>
+-              <div class="popover-heading"><strong id="popover-title">Merkmal wählen</strong><button id="popover-close" type="button" aria-label="Schließen">×</button></div>
+-              <div id="popover-options" class="popover-options"></div>
++            <div id="option-deck" role="dialog" aria-modal="false" aria-label="Optionen auswählen" hidden>
++              <div class="deck-header"><strong id="deck-title">Merkmal wählen</strong><button id="deck-close" type="button" aria-label="Schließen">×</button></div>
++              <div id="deck-tabs" class="deck-tabs" hidden></div>
++              <div class="deck-carousel-row">
++                <button id="deck-prev" class="deck-arrow" type="button" aria-label="Vorherige Option">‹</button>
++                <div id="deck-carousel" class="deck-carousel"></div>
++                <button id="deck-next" class="deck-arrow" type="button" aria-label="Nächste Option">›</button>
++              </div>
+             </div>
+           </div>
+           <section class="diameter-filter" aria-labelledby="diameter-title">
+[0m
+[0m$ [0mnode --check internal/web/static/app.js
+(no output)
+[0m
+[0m$ [0msg docker -c 'docker compose config --quiet'
+(no output)
+[0m
+[0m✱ [0mGlob "package.json"[90m 0 matches[0m
+[0m✱ [0mGlob "docker-compose.yml"[90m 1 match[0m
+[0m✱ [0mGlob "**/*test*"[90m in . · 2 matches[0m
+[0m
+[0m$ [0mgo test ./...
+/bin/bash: line 1: go: command not found
+[0m
+[0m✱ [0mGrep "swatch-popover|popover-choice|cycle-badge|cyclePart|showCycleFeedback|suppressNextClick|addEventListener\("pointer"[90m in . · 0 matches[0m
+[0m
+[0m$ [0mgit diff --stat && git status --short
+internal/web/static/app.css       |  53 ++++++-----
+ internal/web/static/app.js        | 187 ++++++++++++++++++--------------------
+ internal/web/templates/index.html |  11 ++-
+ 3 files changed, 130 insertions(+), 121 deletions(-)
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/index.html
+?? TASK7.md
+?? opencode-run7.log
+?? run-opencode7.sh
+[0m
+Das Deck und die Carousel-Interaktionen sind umgesetzt; der alte Pointer-Tracking-/Badge-Code ist vollständig entfernt. `node --check` und `docker compose config --quiet` sind erfolgreich. Der zusätzliche Go-Testlauf ließ sich hier nicht starten, weil `go` in der Umgebung nicht installiert ist.
+[0m$ [0mgit status --short
+M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/index.html
+?? TASK7.md
+?? opencode-run7.log
+?? run-opencode7.sh
+[0m
+[0m$ [0mnode --check internal/web/static/app.js && git diff --check
+(no output)
+[0m
+[0m# [0mTodos
+[✓] Inspect existing template, JavaScript, and CSS behavior
+[✓] Replace popover and swipe-cycle behavior with the option deck carousel
+[✓] Run syntax/config checks and review the final diff
+[0m
+TASK7 umgesetzt:
+
+- Popover durch das Options-Deck mit Section-Tabs, horizontal scrollbaren Karten und Auswahl-Markierung ersetzt.
+- Pfeile und `ArrowLeft`/`ArrowRight` iterieren Radio-Optionen zirkulär; Mehrfachauswahlen blenden die Pfeile aus.
+- Untergrund-Karten zeigen Inline-SVG-Minis; Radio-Wechsel lässt den Part kurz pulsieren.
+- Die Wischgeste samt Pointer-Tracking und Cycle-Badge entfernt. Schließen per ×, Escape oder Klick außerhalb ist umgesetzt.
+
+**Checks:** `node --check internal/web/static/app.js`, `sg docker -c 'docker compose config --quiet'` und `git diff --check` erfolgreich. `go test ./...` konnte nicht starten, da Go hier nicht installiert ist. Browser-Abnahme wurde nicht ausgeführt.

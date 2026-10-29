@@ -9,15 +9,14 @@ const activeFilters = document.querySelector("#active-filters");
 const pagination = document.querySelector(".pagination");
 const deck = document.querySelector("#option-deck");
 const deckTitle = document.querySelector("#deck-title");
-const deckTabs = document.querySelector("#deck-tabs");
-const deckCarousel = document.querySelector("#deck-carousel");
-const deckPrev = document.querySelector("#deck-prev");
-const deckNext = document.querySelector("#deck-next");
+const deckSections = document.querySelector("#deck-sections");
 const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-tag]")].map((node) => [node.dataset.tag, node.dataset.label]));
+const customLabels = { leisten: "Leisten" };
 
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
 const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
-const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund" };
+const sporeColorHex = { "sp_weiß": "#f2efe4", sp_gelb: "#d9b936", sp_rot: "#bd4b45", sp_braun: "#8b5e3c", sp_violett: "#846497", sp_schwarz: "#333332" };
+const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund und Wuchsform" };
 const partChoices = {
   cap: [
     { title: "Hutfarbe", kind: "color", group: "colors", tags: colors.map((color) => color) },
@@ -25,7 +24,7 @@ const partChoices = {
     { title: "Hutoberfläche", kind: "icon", group: "multi", tags: ["hut_gerieft", "hut_hygrophan", "flocken", "haut_schmierig"] },
   ],
   underside: [
-    { title: "Lamellenart", kind: "icon", group: "type", tags: ["lamellen", "roehren", "stachel"] },
+    { title: "Unterseitenform", kind: "icon", group: "type", tags: ["lamellen", "roehren", "stachel", "leisten"] },
     { title: "Farbe der Unterseite", kind: "color", group: "colors", tags: colors.map((color) => `lr_${color}`) },
   ],
   stem: [
@@ -36,14 +35,19 @@ const partChoices = {
     { title: "Farbe", kind: "color", group: "colors", tags: colors.map((color) => `fl_${color}`) },
     { title: "Merkmale · kombinierbar", kind: "icon", group: "multi", tags: ["milch", "bruechig", "faserig"] },
   ],
-  growth: [{ title: "Untergrund · kombinierbar", kind: "icon", group: "multi", tags: ["bueschelig", "holz", "auf_boden", "auf_wiese"] }],
+  growth: [
+    { title: "Untergrund", kind: "icon", group: "substrate", tags: ["auf_boden", "auf_wiese", "holz"] },
+    { title: "Wuchsform", kind: "icon", group: "multi", tags: ["bueschelig"] },
+  ],
 };
 const groups = {
   cap: { colors: new Set(colors), shape: new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]) },
-  underside: { colors: new Set(colors.map((color) => `lr_${color}`)), type: new Set(["lamellen", "roehren", "stachel"]) },
+  underside: { colors: new Set(colors.map((color) => `lr_${color}`)), type: new Set(["lamellen", "roehren", "stachel", "leisten"]) },
   stem: { colors: new Set(colors.map((color) => `stiel_${color}`)) },
   flesh: { colors: new Set(colors.map((color) => `fl_${color}`)) },
+  growth: { substrate: new Set(["auf_boden", "auf_wiese", "holz"]) },
   edibility: { edibility: new Set(["hervorragend", "gut", "schlecht", "giftig", "tot"]) },
+  spore: { spore: new Set(Object.keys(sporeColorHex)) },
 };
 const currentURL = new URL(window.location.href);
 const state = {
@@ -56,18 +60,22 @@ const state = {
   availableTags: null,
 };
 let openPart = "";
-let activeSectionIndex = 0;
 let updateTimer;
 let requestSequence = 0;
 let lastRenderKey = "";
+let pendingHistoryMode = "push";
 const pulseTimers = new WeakMap();
+
+document.querySelectorAll(".spore-option").forEach((button) => {
+  button.style.setProperty("--spore-color", sporeColorHex[button.dataset.traitTag] || "#999b96");
+});
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 }
 
 function labelFor(tag) {
-  return facetLabels.get(tag) || tag.replaceAll("_", " ");
+  return facetLabels.get(tag) || customLabels[tag] || tag.replaceAll("_", " ");
 }
 
 function paramsForRequest() {
@@ -81,9 +89,12 @@ function paramsForRequest() {
   return params;
 }
 
-function syncURL() {
+function syncURL(historyMode = "replace") {
   const params = paramsForRequest();
-  history.replaceState(null, "", `${location.pathname}${params.size ? `?${params}` : ""}`);
+  const nextURL = `${location.pathname}${params.size ? `?${params}` : ""}`;
+  if (`${location.pathname}${location.search}` === nextURL) return;
+  if (historyMode === "push") history.pushState(null, "", nextURL);
+  else history.replaceState(null, "", nextURL);
 }
 
 function updateDiameterLabel() {
@@ -109,8 +120,10 @@ function renderActiveFilters() {
 function renderCard(species) {
   const name = escapeHTML(species.name);
   const scientific = escapeHTML(species.scientific_name || "Wissenschaftlicher Name nicht erfasst");
+  const edibilityClass = escapeHTML(species.edibility_class || "unknown");
+  const edibilityLabel = escapeHTML(species.edibility_label || "Essbarkeit nicht erfasst");
   const image = species.image ? `<img class="card-image" src="${escapeHTML(species.image)}" alt="${name}" loading="lazy" decoding="async">` : '<span class="card-image card-image-empty" aria-hidden="true">✳</span>';
-  return `<a class="species-card" href="/art/${escapeHTML(encodeURIComponent(species.slug))}">${image}<span class="card-copy"><strong>${name}</strong><em>${scientific}</em><span class="edibility-badge edibility-${escapeHTML(species.edibility_class || "unknown")}">${escapeHTML(species.edibility_label || "Essbarkeit nicht erfasst")}</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>`;
+  return `<a class="species-card edibility-card-${edibilityClass}" href="/art/${escapeHTML(encodeURIComponent(species.slug))}">${image}<span class="card-copy"><strong>${name}</strong><em>${scientific}</em><span class="visually-hidden">Essbarkeit: ${edibilityLabel}. Keine Verzehrfreigabe.</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>`;
 }
 
 function renderResults(data) {
@@ -126,6 +139,8 @@ function renderResults(data) {
 
 async function updateResults() {
   const requestId = ++requestSequence;
+  const historyMode = pendingHistoryMode;
+  pendingHistoryMode = "replace";
   const params = paramsForRequest();
   const key = params.toString();
   const url = `/api/search${params.size ? `?${params}` : ""}`;
@@ -155,7 +170,7 @@ async function updateResults() {
     renderResults(data);
     renderActiveFilters();
     if (searchFocused && searchInput) searchInput.focus({ preventScroll: true });
-    syncURL();
+    syncURL(historyMode);
     lastRenderKey = key;
   } catch (_error) {
     if (requestId !== requestSequence) return;
@@ -163,9 +178,10 @@ async function updateResults() {
   }
 }
 
-function scheduleUpdate(delay = 120) {
+function scheduleUpdate(delay = 120, historyMode = "push") {
   clearTimeout(updateTimer);
   requestSequence++;
+  pendingHistoryMode = historyMode;
   state.availableTags = null;
   applyExhausted();
   updateTimer = setTimeout(updateResults, delay);
@@ -196,42 +212,43 @@ function updateMushroom() {
   const stemColor = activeFrom(new Set(colors.map((color) => `stiel_${color}`)));
   const fleshColor = activeFrom(new Set(colors.map((color) => `fl_${color}`)));
   document.querySelector(".cap-fill").style.fill = capColor ? colorFor(capColor) : "url(#capShade)";
-  document.querySelector(".stem-fill").style.fill = stemColor ? colorFor(stemColor, "stiel_") : "url(#stemShade)";
-  document.querySelector(".underside-fill").style.fill = undersideColor ? colorFor(undersideColor, "lr_") : "#e8dfcb";
+  document.querySelectorAll(".stem-fill, .stem-tint").forEach((node) => { node.style.fill = stemColor ? colorFor(stemColor, "stiel_") : ""; });
+  const underside = document.querySelector('[data-part="underside"]');
+  underside.style.setProperty("--underside", undersideColor ? colorFor(undersideColor, "lr_") : "#e8dfcb");
   document.querySelector(".flesh-core").style.fill = fleshColor ? colorFor(fleshColor, "fl_") : "#eee7d7";
   const shapePaths = {
     spitz: "M30 132C50 75 81 38 120 28c39 10 70 47 90 104-45 15-135 15-180 0Z",
     schirm: "M30 132C44 78 71 62 120 61c49 1 76 17 90 71-45 15-135 15-180 0Z",
-    kugel: "M34 132C33 79 65 42 120 40c55 2 87 39 86 92-45 15-127 15-172 0Z",
-    trichter: "M30 132C42 80 68 51 120 47c52 4 78 33 90 85-41 4-66-33-90-33s-49 37-90 33Z",
-    f: "M36 132C53 82 81 48 120 39c34 10 57 43 72 93-43 15-111 15-156 0Z",
+    kugel: "M30 132C22 92 52 42 120 40c68 2 98 52 90 92-45 15-135 15-180 0Z",
+    trichter: "M30 132C22 120 18 96 16 76c50-12 158-12 208 0-2 20-6 44-14 56-45 15-135 15-180 0Z",
+    f: "M30 132C27 106 40 84 60 70q10-12 26-10 14-8 34-4 20-4 34 4 16-2 26 10c20 14 32 36 30 62-45 15-135 15-180 0Z",
     sonstige_form: "M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z",
   };
+
   const selectedShape = activeFrom(new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]));
   const capD = shapePaths[selectedShape] || shapePaths.sonstige_form;
   const capFill = capColor ? colorFor(capColor) : "url(#capShade)";
   const stemFill = stemColor ? colorFor(stemColor, "stiel_") : "url(#stemShade)";
   document.querySelector("#cap-shape").setAttribute("d", capD);
+  document.querySelector(".cap-funnel").classList.toggle("is-visible", selectedShape === "trichter");
   document.querySelector(".surface-grooves").classList.toggle("is-visible", state.tags.has("hut_gerieft"));
   document.querySelector(".surface-speckles").classList.toggle("is-visible", state.tags.has("flocken"));
-  document.querySelector("#cap-shape").classList.toggle("is-hygrophan", state.tags.has("hut_hygrophan"));
-  document.querySelector("#cap-shape").classList.toggle("is-greasy", state.tags.has("haut_schmierig"));
-  document.querySelector(".underside-fill").classList.toggle("pattern-tubes", state.tags.has("roehren"));
-  document.querySelector(".underside-fill").classList.toggle("pattern-spines", state.tags.has("stachel"));
-  document.querySelector(".gill-lines").classList.toggle("is-hidden", state.tags.has("roehren") || state.tags.has("stachel"));
-  document.querySelector(".tube-dots").classList.toggle("is-visible", state.tags.has("roehren"));
-  document.querySelector(".spine-lines").classList.toggle("is-visible", state.tags.has("stachel"));
+  document.querySelector(".surface-hygro").classList.toggle("is-visible", state.tags.has("hut_hygrophan"));
+  document.querySelector(".surface-gloss").classList.toggle("is-visible", state.tags.has("haut_schmierig"));
+  underside.dataset.underside = activeFrom(new Set(["lamellen", "roehren", "stachel", "leisten"])) || "lamellen";
+  document.querySelector(".stem-ridges").classList.toggle("is-visible", underside.dataset.underside === "leisten");
   for (const [tag, selector] of [["ring", ".stem-ring"], ["netz", ".stem-net"], ["knollig", ".stem-bulb"], ["wurzel", ".stem-roots"], ["stiel_hohl", ".stem-hollow"]]) {
     document.querySelector(selector).classList.toggle("is-visible", state.tags.has(tag));
   }
-  document.querySelector(".flesh-slice").classList.toggle("flesh-milky", state.tags.has("milch"));
-  document.querySelector(".flesh-slice").classList.toggle("flesh-brittle", state.tags.has("bruechig"));
+  document.querySelector(".flesh-milk").classList.toggle("is-visible", state.tags.has("milch"));
+  document.querySelector(".flesh-crack").classList.toggle("is-visible", state.tags.has("bruechig"));
   document.querySelector(".flesh-fiber-pattern").classList.toggle("is-visible", state.tags.has("faserig"));
-  const substrates = { holz: "holz", auf_boden: "erde", auf_wiese: "wiese", bueschelig: "bueschel" };
+  const selectedSurface = activeFrom(new Set(["auf_boden", "auf_wiese", "holz"]));
+  const substrates = { auf_boden: "erde", holz: "holz", auf_wiese: "wiese", bueschelig: "bueschel" };
   for (const [tag, substrate] of Object.entries(substrates)) {
     const element = document.querySelector(`.substrate[data-substrate="${substrate}"]`);
-    if (substrate === "erde") element.classList.add("is-visible");
-    else element.classList.toggle("is-visible", state.tags.has(tag));
+    const visible = tag === "bueschelig" ? state.tags.has(tag) : selectedSurface === tag;
+    element.classList.toggle("is-visible", visible);
   }
   document.querySelectorAll(".mini-cap").forEach((p) => { p.setAttribute("d", capD); p.setAttribute("fill", capFill); });
   document.querySelectorAll(".mini-stem").forEach((p) => { p.setAttribute("fill", stemFill); });
@@ -275,55 +292,66 @@ function toggleTag(tag, group = "multi") {
 function renderDeck(part) {
   const sections = partChoices[part] || [];
   if (!sections.length) return;
-  activeSectionIndex = Math.min(activeSectionIndex, sections.length - 1);
-  const section = sections[activeSectionIndex];
+  const scrollPositions = new Map([...deckSections.querySelectorAll(".deck-carousel")].map((carousel) => [carousel.dataset.sectionIndex, carousel.scrollLeft]));
   deckTitle.textContent = `${partNames[part]} wählen`;
-  deckTabs.hidden = sections.length <= 1;
-  deckTabs.innerHTML = sections.length > 1 ? sections.map((item, index) => `<button type="button" class="deck-tab${index === activeSectionIndex ? " is-active" : ""}" data-section-index="${index}" aria-pressed="${index === activeSectionIndex}">${escapeHTML(item.title)}</button>`).join("") : "";
-  const isMulti = section.group === "multi";
-  deckPrev.hidden = isMulti;
-  deckNext.hidden = isMulti;
-  deckCarousel.classList.toggle("color-options", section.kind === "color");
-  deckCarousel.innerHTML = section.tags.map((tag) => {
-    const selected = state.tags.has(tag);
-    const swatchColor = section.kind === "color" ? colorFor(tag, part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_") : "";
-    const kindClass = section.kind === "color" ? "swatch-choice" : "icon-choice";
-    const substrate = part === "growth" ? substrateIconFor(tag) : "";
-    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
-    return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+  deckSections.innerHTML = sections.map((section, index) => {
+    const options = section.tags.map((tag) => {
+      const selected = state.tags.has(tag);
+      const prefix = part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_";
+      const swatchColor = section.kind === "color" ? colorFor(tag, prefix) : "";
+      const kindClass = section.kind === "color" ? "color-option" : "icon-choice";
+      const specialIcon = part === "growth" ? substrateIconFor(tag) : part === "underside" ? undersideIconFor(tag) : "";
+      const icon = specialIcon || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
+      return `<button type="button" class="deck-option ${kindClass}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+    }).join("");
+    return `<section class="deck-section"><h4>${escapeHTML(section.title)}</h4><div class="deck-carousel${section.kind === "color" ? " color-options" : ""}" data-section-index="${index}" role="group" aria-label="${escapeHTML(section.title)}">${options}</div></section>`;
   }).join("");
   applyExhausted();
-  if (!isMulti) {
-    const selected = deckCarousel.querySelector(".deck-option.is-selected");
-    if (selected) requestAnimationFrame(() => centerDeckOption(selected));
-    else deckCarousel.scrollLeft = 0;
-  }
+  deckSections.querySelectorAll(".deck-carousel").forEach((carousel) => {
+    const priorScroll = scrollPositions.get(carousel.dataset.sectionIndex);
+    if (priorScroll !== undefined) carousel.scrollLeft = priorScroll;
+    else {
+      const selected = carousel.querySelector(".deck-option.is-selected");
+      if (selected) requestAnimationFrame(() => centerDeckOption(selected, carousel));
+    }
+  });
 }
 
-function centerDeckOption(option) {
+function centerDeckOption(option, carousel) {
   const optionRect = option.getBoundingClientRect();
-  const carouselRect = deckCarousel.getBoundingClientRect();
-  const target = deckCarousel.scrollLeft + optionRect.left - carouselRect.left + optionRect.width / 2 - deckCarousel.clientWidth / 2;
-  deckCarousel.scrollTo({ left: Math.max(0, target), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  const carouselRect = carousel.getBoundingClientRect();
+  const target = carousel.scrollLeft + optionRect.left - carouselRect.left + optionRect.width / 2 - carousel.clientWidth / 2;
+  carousel.scrollTo({ left: Math.max(0, target), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 function iconFor(tag) {
-  return ({ spitz: "△", schirm: "⌒", kugel: "◠", trichter: "▽", f: "◖", sonstige_form: "⌒", lamellen: "≋", roehren: "○", stachel: "⋮", hut_gerieft: "╱", hut_hygrophan: "◒", flocken: "⁘", haut_schmierig: "◌", ring: "◉", netz: "▦", knollig: "⬭", wurzel: "♧", stiel_hohl: "∥", milch: "◉", bruechig: "⌁", faserig: "╱", bueschelig: "♧", holz: "▰", auf_boden: "⌂", auf_wiese: "♣" })[tag] || "•";
+  return ({ spitz: "△", schirm: "⌒", kugel: "◠", trichter: "▽", f: "◖", sonstige_form: "⌒", lamellen: "≋", roehren: "○", stachel: "⋮", hut_gerieft: "╱", hut_hygrophan: "◒", flocken: "⁘", haut_schmierig: "◌", ring: "◉", netz: "▦", knollig: "⬭", wurzel: "♧", stiel_hohl: "∥", milch: "◉", bruechig: "⌁", faserig: "╱", bueschelig: "♧", holz: "▰", auf_wiese: "♣" })[tag] || "•";
+}
+
+function undersideIconFor(tag) {
+  const cap = '<path class="option-cap" d="M2 9C4 4 9 2 14 2s10 2 12 7Z"/>';
+  const band = '<path class="option-underside" d="M2 9c6 2 18 2 24 0l-2 4c-5 2-15 2-20 0Z"/>';
+  const icons = {
+    lamellen: `${cap}${band}<path d="M5 10.2l1.3 2.8M8 10.8l.8 2.7M11 11.1l.4 2.7M14 11.2v2.8M17 11.1l-.4 2.7M20 10.8l-.8 2.7M23 10.2l-1.3 2.8"/>`,
+    roehren: `${cap}${band}<path class="option-pores" d="M6 10.9h0m3 .6h0m3 .3h0m4 0h0m3-.3h0m3-.6h0M7.5 12.6h0m3 .4h0m3 .1h0m3-.1h0m3-.4h0"/>`,
+    stachel: `${cap}<path class="option-underside" d="M2 9c6 2 18 2 24 0l-1.6 2.6c-5 1.6-15.8 1.6-20.8 0Z"/><path class="option-underside" d="M4 11.5l1 3 1-3ZM7 12.1l1 3.6 1-3.6ZM10 12.5l1 4.2 1-4.2ZM13 12.6l1 4.5 1-4.5ZM16 12.5l1 4.2 1-4.2ZM19 12.1l1 3.6 1-3.6ZM22 11.5l1 3 1-3Z"/>`,
+    leisten: `${cap}<path class="option-underside" d="M11.2 14h5.6l-.6 3.6h-4.4Z"/>${band}<path class="ridge-fan" d="M6.5 13.3V12.1l-1.4-1.6M6.5 12.1l1.4-1.6M11.5 14.0V12.8l-1.4-1.7M11.5 12.8l1.4-1.7M16.5 14.0V12.8l-1.4-1.7M16.5 12.8l1.4-1.7M21.5 13.3V12.1l-1.4-1.6M21.5 12.1l1.4-1.6M12.6 14.6l.2 2.4m1.2-2.4v2.6m1.4-2.6-.2 2.4"/>`,
+  };
+  return icons[tag] ? `<svg class="substrate-option-icon underside-option-icon" viewBox="0 0 28 18" aria-hidden="true">${icons[tag]}</svg>` : "";
 }
 
 function substrateIconFor(tag) {
   const icons = {
-    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24"/><path class="cluster-cap" d="M3 10c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Zm8 1c.5-4 2-7 4-7s3.5 3 4 7c-2 .7-6 .7-8 0Zm8-1c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Z"/><path d="M6 10v6m7-5v5m7-6v6"/></svg>',
-    holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><rect x="2" y="10" width="24" height="6" rx="2"/><path d="M5 12h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
-    auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 11c6-2 18-2 24 0v5H2z"/><path d="M2 11c6-2 18-2 24 0M7 14h2m5-2h2m4 3h2"/></svg>',
-    auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 15h24M5 15l2-6m3 6V7m3 8 2-7m3 7 1-5m3 5 2-7"/><circle cx="15" cy="6" r="1.5"/></svg>',
+    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path class="option-bed" d="M2 15c6-2 18-2 24 0v3H2Z"/><path class="cluster-cap" d="M3 10c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Zm8 1c.5-4 2-7 4-7s3.5 3 4 7c-2 .7-6 .7-8 0Zm8-1c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Z"/><path d="M6 10v5m7-4v4m7-5v5"/></svg>',
+    holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><path class="option-bed" d="M2 15c6-2 18-2 24 0v3H2Z"/><rect x="2" y="8" width="24" height="7" rx="2"/><path d="M5 10h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
+    auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path class="option-bed" d="M2 15c6-2 18-2 24 0v3H2Z"/><path class="option-earth-surface" d="M2 12c6-2 18-2 24 0v4H2Z"/><path d="M7 13h2m5-2h2m4 3h2"/></svg>',
+    auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path class="option-bed" d="M2 15c6-2 18-2 24 0v3H2Z"/><path class="option-grass-turf" d="M2 12c6-2 18-2 24 0v4H2Z"/><path d="M4 13 6 7m3 6V5m3 8 2-7m3 7 1-5m3 5 2-7m3 7 1-5"/><circle cx="15" cy="5" r="1.5"/></svg>',
   };
   return icons[tag] || "";
 }
 
 function openDeck(part) {
   openPart = part;
-  activeSectionIndex = 0;
   renderDeck(part);
   deck.hidden = false;
   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.toggle("is-open", node.dataset.part === part));
@@ -345,15 +373,6 @@ function pulsePart(partName) {
   pulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
 }
 
-function cycleSection(direction) {
-  const section = (partChoices[openPart] || [])[activeSectionIndex];
-  if (!section || section.group === "multi") return;
-  const currentIndex = section.tags.findIndex((tag) => state.tags.has(tag));
-  const startIndex = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
-  const nextIndex = (startIndex + direction + section.tags.length) % section.tags.length;
-  toggleTag(section.tags[nextIndex], section.group);
-}
-
 document.querySelectorAll(".mushroom-part").forEach((part) => {
   part.addEventListener("click", () => openDeck(part.dataset.part));
   part.addEventListener("keydown", (event) => {
@@ -361,18 +380,10 @@ document.querySelectorAll(".mushroom-part").forEach((part) => {
   });
 });
 document.querySelector("#deck-close")?.addEventListener("click", closeDeck);
-deckTabs?.addEventListener("click", (event) => {
-  const tab = event.target.closest("[data-section-index]");
-  if (!tab) return;
-  activeSectionIndex = Number(tab.dataset.sectionIndex);
-  renderDeck(openPart);
-});
-deckCarousel?.addEventListener("click", (event) => {
+deckSections?.addEventListener("click", (event) => {
   const choice = event.target.closest("[data-choice-tag]");
   if (choice) toggleTag(choice.dataset.choiceTag, choice.dataset.choiceGroup);
 });
-deckPrev?.addEventListener("click", () => cycleSection(-1));
-deckNext?.addEventListener("click", () => cycleSection(1));
 document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag, button.dataset.traitGroup || "multi")));
 document.addEventListener("click", (event) => {
   if (!deck || deck.hidden) return;
@@ -383,11 +394,6 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!deck || deck.hidden) return;
   if (event.key === "Escape") closeDeck();
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-    if (document.activeElement.matches("input, textarea, select")) return;
-    event.preventDefault();
-    cycleSection(event.key === "ArrowRight" ? 1 : -1);
-  }
 });
 
 activeFilters?.addEventListener("click", (event) => {
@@ -412,14 +418,14 @@ function resetFilters() {
 }
 document.querySelector("#reset-filters")?.addEventListener("click", resetFilters);
 
-searchInput?.addEventListener("input", () => { state.q = searchInput.value.trim(); state.page = 1; scheduleUpdate(260); });
+searchInput?.addEventListener("input", () => { state.q = searchInput.value.trim(); state.page = 1; scheduleUpdate(260, "replace"); });
 minSlider?.addEventListener("input", () => {
   if (Number(minSlider.value) > Number(maxSlider.value)) maxSlider.value = minSlider.value;
-  state.min = minSlider.value; state.max = maxSlider.value; state.page = 1; updateDiameterLabel(); scheduleUpdate(180);
+  state.min = minSlider.value; state.max = maxSlider.value; state.page = 1; updateDiameterLabel(); scheduleUpdate(180, "replace");
 });
 maxSlider?.addEventListener("input", () => {
   if (Number(maxSlider.value) < Number(minSlider.value)) minSlider.value = maxSlider.value;
-  state.min = minSlider.value; state.max = maxSlider.value; state.page = 1; updateDiameterLabel(); scheduleUpdate(180);
+  state.min = minSlider.value; state.max = maxSlider.value; state.page = 1; updateDiameterLabel(); scheduleUpdate(180, "replace");
 });
 
 document.addEventListener("keydown", (event) => {
@@ -430,15 +436,19 @@ window.addEventListener("popstate", () => {
   if (!minSlider || !maxSlider) return;
   const params = new URLSearchParams(location.search);
   state.tags = new Set((params.get("f") || "").split(",").filter(Boolean));
-  state.q = params.get("q") || ""; state.page = Number(params.get("page") || 1);
-  state.min = params.get("dmin") || minSlider.min; state.max = params.get("dmax") || maxSlider.max;
+  state.q = params.get("q") || "";
+  state.page = Math.max(1, Number(params.get("page") || 1) || 1);
+  state.letter = params.get("letter") || "";
   if (searchInput) searchInput.value = state.q;
-  minSlider.value = state.min; maxSlider.value = state.max;
-  updateDiameterLabel(); updateMushroom(); scheduleUpdate(0);
+  minSlider.value = params.get("dmin") || minSlider.min;
+  maxSlider.value = params.get("dmax") || maxSlider.max;
+  if (Number(minSlider.value) > Number(maxSlider.value)) [minSlider.value, maxSlider.value] = [maxSlider.value, minSlider.value];
+  state.min = minSlider.value; state.max = maxSlider.value;
+  updateDiameterLabel(); updateMushroom(); scheduleUpdate(0, "replace");
 });
 
 updateMushroom();
-scheduleUpdate(0);
+scheduleUpdate(0, "replace");
 
 const lightbox = document.querySelector("#lightbox");
 if (lightbox) {

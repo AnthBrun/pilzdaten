@@ -25,9 +25,6 @@ type Server struct {
 
 type pageData struct {
 	Count         int
-	TotalCount    int
-	Letter        string
-	Letters       []string
 	Page          int
 	Pages         int
 	Species       []*catalog.Species
@@ -72,13 +69,13 @@ type detailData struct {
 }
 
 type searchResult struct {
-	Slug                 string `json:"slug"`
-	Name                 string `json:"name"`
-	ScientificName       string `json:"scientific_name"`
-	Edibility            string `json:"edibility"`
-	EdibilityLabel       string `json:"edibility_label"`
-	EdibilityClass       string `json:"edibility_class"`
-	Image                string `json:"image"`
+	Slug           string `json:"slug"`
+	Name           string `json:"name"`
+	ScientificName string `json:"scientific_name"`
+	Edibility      string `json:"edibility"`
+	EdibilityLabel string `json:"edibility_label"`
+	EdibilityClass string `json:"edibility_class"`
+	Image          string `json:"image"`
 }
 
 type searchResponse struct {
@@ -96,7 +93,7 @@ type availableTagsResponse struct {
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
-		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage, "displayName": displayName}).ParseFS(files, "templates/*.html")),
+		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage, "displayName": displayName, "sporeLabel": sporeLabel, "sensoryGroup": sensoryGroup}).ParseFS(files, "templates/*.html")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", server.home)
@@ -117,10 +114,7 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	letter := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("letter")))
-	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'Z' {
-		letter = ""
-	}
+	letter := validLetter(r.URL.Query().Get("letter"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
 		page = 1
@@ -166,8 +160,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		previousURL, nextURL = "?"+baseQuery+"&", "?"+baseQuery+"&"
 	}
 	data := pageData{
-		Count: count, TotalCount: s.catalog.Count(), Letter: letter, Letters: s.catalog.Letters(),
-		Page: page, Pages: pages, Species: species,
+		Count: count, Page: page, Pages: pages, Species: species,
 		PreviousURL: previousURL + "page=" + strconv.Itoa(page-1), NextURL: nextURL + "page=" + strconv.Itoa(page+1),
 		HasPrevious: page > 1, HasNext: page < pages,
 		Query: query, Tags: tags, Selected: selected, MinCM: minCM, MaxCM: maxCM, Facets: facets,
@@ -186,6 +179,14 @@ func queryInt(r *http.Request, key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func validLetter(value string) string {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value == "#" || len(value) == 1 && value[0] >= 'A' && value[0] <= 'Z' {
+		return value
+	}
+	return ""
 }
 
 func withCacheControl(next http.Handler, policy func(path string) string) http.Handler {
@@ -242,12 +243,20 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Aliases = append(data.Aliases, species.Synonyme...)
 	for key, value := range species.Merkmale {
+		if isHiddenDetailTrait(key) {
+			continue
+		}
 		if rendered := displayValue(value); rendered != "" {
 			data.Traits = append(data.Traits, trait{Name: label(key), Value: rendered})
 		}
 	}
 	sort.Slice(data.Traits, func(i, j int) bool {
-		return strings.ToLower(data.Traits[i].Name) < strings.ToLower(data.Traits[j].Name)
+		left, right := data.Traits[i], data.Traits[j]
+		leftOrder, rightOrder := detailTraitOrder(left.Name), detailTraitOrder(right.Name)
+		if leftOrder != rightOrder {
+			return leftOrder < rightOrder
+		}
+		return strings.ToLower(left.Name) < strings.ToLower(right.Name)
 	})
 	seenImages := make(map[string]bool)
 	addPhoto := func(path string) {
@@ -282,10 +291,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 		page = 1
 	}
 	const perPage = 50
-	letter := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("letter")))
-	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'Z' {
-		letter = ""
-	}
+	letter := validLetter(r.URL.Query().Get("letter"))
 	results, count, pages := s.catalog.Filter(r.URL.Query().Get("q"), splitTags(r.URL.Query().Get("f")), minCM, maxCM, letter, page, perPage)
 	response := searchResponse{Count: count, Page: page, TotalPages: pages, PerPage: perPage, Results: make([]searchResult, 0, len(results))}
 	for _, species := range results {
@@ -300,7 +306,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 		response.Results = append(response.Results, searchResult{
 			Slug: species.Slug, Name: displayName(species.NameTrivial),
 			ScientificName: species.NameWissenschaftlich,
-			Edibility: species.Edibility, EdibilityLabel: species.EdibilityLabel, EdibilityClass: species.EdibilityClass,
+			Edibility:      species.Edibility, EdibilityLabel: species.EdibilityLabel, EdibilityClass: species.EdibilityClass,
 			Image: imageURLValue,
 		})
 	}
@@ -375,6 +381,72 @@ func label(value string) string {
 		runes[0] = unicode.ToUpper(runes[0])
 	}
 	return string(runes)
+}
+
+func isHiddenDetailTrait(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	switch name {
+	case "priorität", "prioritaet":
+		return true
+	}
+	return strings.Contains(name, "verwechslung")
+}
+
+func detailTraitOrder(name string) int {
+	name = strings.ToLower(strings.TrimSpace(name))
+	switch {
+	case containsTraitTerm(name, "hut", "fruchtkörper"):
+		return 0
+	case containsTraitTerm(name, "lamell", "röhr", "rohr", "por", "stachel", "leisten", "unterseite", "fruchtschicht"):
+		return 1
+	case containsTraitTerm(name, "stiel", "ring", "knoll", "wurzel"):
+		return 2
+	case containsTraitTerm(name, "fleisch", "milch"):
+		return 3
+	case containsTraitTerm(name, "geruch", "geschmack"):
+		return 4
+	case containsTraitTerm(name, "spore"):
+		return 5
+	case containsTraitTerm(name, "vorkommen", "standort", "substrat", "habitat"):
+		return 6
+	case containsTraitTerm(name, "speisewert", "essbarkeit", "gift", "verzehr", "unverträg"):
+		return 7
+	case containsTraitTerm(name, "gattung", "taxonomie"):
+		return 8
+	default:
+		return 9
+	}
+}
+
+func containsTraitTerm(value string, terms ...string) bool {
+	words := strings.FieldsFunc(value, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+	for _, term := range terms {
+		for _, word := range words {
+			if strings.HasPrefix(word, term) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sporeLabel(value string) string {
+	return strings.TrimSpace(strings.TrimPrefix(value, "Sporen "))
+}
+
+func sensoryGroup(tag string) string {
+	switch tag {
+	case "geruch_pilzig", "anis", "rettich", "marzipan", "faulig", "hering", "blumen":
+		return "geruch"
+	case "bitter", "scharf", "pilziger_geschmack", "sonstiger_geschmack":
+		return "geschmack"
+	default:
+		// Shared descriptors such as "mild", "erdig" or "süß" belong in
+		// both lists because the source tags do not distinguish their sense.
+		return "beide"
+	}
 }
 
 func imageURL(path string) string {

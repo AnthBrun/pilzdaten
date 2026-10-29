@@ -1,0 +1,547 @@
+{
+ "hervorragend": {
+  "title": "...hervorragender Speisepilz.",
+  "img": "hervorragend",
+  "img_active": "hervorragend_ja"
+ },
+ "gut": {
+  "title": "...essbarer Pilz.",
+  "img": "gut",
+  "img_active": "gut_ja"
+ },
+ "schlecht": {
+  "title": "Pilz ist ungenießbar.",
+  "img": "schlecht",
+  "img_active": "schlecht_ja"
+ },
+ "giftig": {
+  "title": "Vorsicht! Giftiger Pilz.",
+  "img": "giftig",
+  "img_active": "giftig_ja"
+ },
+ "tot": {
+  "title": "ACHTUNG!!! LEBENSGEFÄHRLICHER PILZ.",
+  "img": "tot",
+  "img_active": "tot_ja"
+ },
+ "nicht_selten": {
+  "title": "Alle Pilze aktiv inkl. der seltenen Arten. Wenn du den Button drückst werden alle seltenen Arten entfernt.",
+  "img": "nicht_selten",
+  "img_active": "nicht_selten_ja"
+ },
+ "roehren": {
+  "title": "Röhrenpilze, Porenpilze, porlingsähnlichaussehende Pilze.",
+  "img": "roehren",
+  "img_active": "roehren_ja"
+ },
+ "lamellen": {
+  "title": "Lamellenpilze, Blätterpilze, Leistenpilze.",
+  "img": "lamellen",
+  "img_active": "lamellen_ja"
+ },
+ "stachel": {
+  "title": "Fruchtkörper hat Stacheln, Stoppeln, hervortretende Erhebungen.",
+  "img": "stachel",
+  "img_active": "stachel_ja"
+ },
+ "kugel": {
+  "title": "Kugelartige- und halbkugelartige Pilze z.B. Boviste, Becherlinge, Hexeneier.",
+  "img": "kugel",
+  "img_active": "kugel_ja"
+ },
+ "hut_koralle": {
+  "title": "Fruchtkörper ist keulen-, zungen- oder korallenartig.",
+  "img": "hut_koralle",
+  "img_active": "hut_koralle_ja"
+ },
+ "konsistenz_gallertartig": {
+  "title": "Fruchtkörper ist gallertartig oder sehr weich.",
+  "img": "konsistenz_gallertartig",
+  "img_active": "konsistenz_gallertartig_ja"
+ },
+ "f": {
+  "title": "Alle Flechten (Lichten)",
+  "img": "f",
+  "img_active": "f_ja"
+ },
+ "sonstige_gattung": {
+  "title": "Alle sonstigen Pilzarten wie Rindenpilze, Schichtpilze  usw... auch pilzähnliche Pflanzen!",
+  "img": "sonstige_gattung",
+  "img_active": "sonstige_gattung_ja"
+ },
+ "trichter": {
+  "title": "Der Fruchtkörper ist trichterförmig, vertieft, eingedellt, genabelt.",
+  "img": "trichter",
+  "img_active": "trichter_ja"
+ },
+ "spitz": {
+  "title": "Der Fruchtkörper ist spitzkegelig, buckelig.",
+  "img": "spitz",
+  "img_active": "spitz_ja"
+ },
+ "schirm": {
+  "title": "Der Fruchtkörper ist schirmförmig, flach.",
+  "img": "schirm",
+  "img_active": "schirm_ja"
+ },
+ "sonstige_form": {
+  "title": "Der Fruchtkörper ist halbkugelförmig oder andere (sonstige) Hutform",
+  "img": "sonstige_form",
+  "img_active": "sonstige_form_ja"
+ },
+ "hut_gerieft": {
+  "title": "Der Fruchtkörper (Hut) ist gerieft, gestreift, gerillt oder auch rissig.",
+  "img": "hut_gerieft",
+  "img_active": "hut_gerieft_ja"
+ },
+ "holz": {
+  "title": "Pilz wächst auf Holz, Pflanzen oder toten Tieren.",
+  "img": "holz",
+  "img_active": "holz_ja"
+ },
+ "auf_boden": {
+  "title": "Pilz wächst auf dem Erde, Boden, Humus.",
+  "img": "auf_boden",
+  "img_active": "auf_boden_ja"
+ },
+ "auf_wiese": {
+  "title": "Pilz wächst auf der Wiese, im Rasen, im Park oder Garten...",
+  "img": "auf_wiese",
+  "img_active": "auf_wiese_ja"
+ },
+ "bueschelig": {
+  "title": "Der Pilz wächst büschelig (dicht aneinander zusammengewachsen) ...ca. 4 Stück gemeinsam mit Artgenossen aus einer Myzel-Quelle bzw. Strunk. WICHTIG! NICHT GESELLIG NEBENEINANDER! Dieser Punkt soll sehr vorsichtig verwendet werden, da es durchaus sein kann, dass normalerweise in Büscheln wachsende Pilze einzeln stehen können bzw. einzeln wachsende Pilze auch in Büschelform auftreten.",
+  "img": "bueschelig",
+  "img_active": "bueschelig_ja"
+ },
+ "konsistenz_hart": {
+  "title": "Fruchtkörper ist hart, holzig oder extrem zäh. Bezug Flechten: Wächst auf Gestein, Felsen, Granit, Silikatgestein",
+  "img": "konsistenz_hart",
+  "img_active": "konsistenz_hart_ja"
+ },
+ "hut_hygrophan": {
+  "title": "Fruchtkörper ist ausbleichend (hygrophan).",
+  "img": "hut_hygrophan",
+  "img_active": "hut_hygrophan_ja"
+ },
+ "haut_schmierig": {
+  "title": "Fruchtkörper ist schmierig.",
+  "img": "haut_schmierig",
+  "img_active": "haut_schmierig_ja"
+ },
+ "wurzel": {
+  "title": "Fruchtkörper wurzelt oder ist striegelig an der Stielbasis oder wurzelnd-striegelig seitwärts z.B. bei Rindenpilzen",
+  "img": "wurzel",
+  "img_active": "wurzel_ja"
+ },
+ "angewachsen": {
+  "title": "...angewachsen.",
+  "img": "angewachsen",
+  "img_active": "angewachsen_ja"
+ },
+ "herablaufend": {
+  "title": "...am Stiel herablaufend.",
+  "img": "herablaufend",
+  "img_active": "herablaufend_ja"
+ },
+ "frei": {
+  "title": "...frei.",
+  "img": "frei",
+  "img_active": "frei_ja"
+ },
+ "milch": {
+  "title": "...milchartige klare, weiße oder rote Flüssigkeit bei Verletzung austretend.",
+  "img": "milch",
+  "img_active": "milch_ja"
+ },
+ "lamellen_eng": {
+  "title": "Lamellen sind eng/dicht stehend.",
+  "img": "lamellen_eng",
+  "img_active": "lamellen_eng_ja"
+ },
+ "lamellen_gegabelt": {
+  "title": "Lamellen oder der Fruchtkörper ist gegabelt oder queradrig am Grund.",
+  "img": "lamellen_gegabelt",
+  "img_active": "lamellen_gegabelt_ja"
+ },
+ "lamellen_gesaegt": {
+  "title": "Lamellenschneiden sind gesägt oder wellig.",
+  "img": "lamellen_gesaegt",
+  "img_active": "lamellen_gesaegt_ja"
+ },
+ "ring": {
+  "title": "...mit Ring am Stiel, auch angedeuteter Ring durch Sporenpulverabwurf.",
+  "img": "ring",
+  "img_active": "ring_ja"
+ },
+ "bruechig": {
+  "title": "...brüchig, querbrüchig.",
+  "img": "bruechig",
+  "img_active": "bruechig_ja"
+ },
+ "knollig": {
+  "title": "...knollig.",
+  "img": "knollig",
+  "img_active": "knollig_ja"
+ },
+ "faserig": {
+  "title": "Das Fleisch im Stiel ist faserig, längsfaserig.",
+  "img": "faserig",
+  "img_active": "faserig_ja"
+ },
+ "netz": {
+  "title": "...mit Netzzeichnung.",
+  "img": "netz",
+  "img_active": "netz_ja"
+ },
+ "flocken": {
+  "title": "...mit Flocken, Schuppen am Stiel oder auch am Hut.",
+  "img": "flocken",
+  "img_active": "flocken_ja"
+ },
+ "genattert": {
+  "title": "...Natterungen, Flecken bis hin zu Grübchen am Stiel",
+  "img": "genattert",
+  "img_active": "genattert_ja"
+ },
+ "stiel_hohl": {
+  "title": "...hohler Stiel oder wattig hohler Stiel.",
+  "img": "stiel_hohl",
+  "img_active": "stiel_hohl_ja"
+ },
+ "weiß": {
+  "title": "Hut (Fruchtkörperspitze) ist weiß.",
+  "img": "hut_weiss",
+  "img_active": "hut_weiss_ja"
+ },
+ "gelb": {
+  "title": "Hut (Fruchtkörperspitze) ist gelb.",
+  "img": "hut_gelb",
+  "img_active": "hut_gelb_ja"
+ },
+ "braun": {
+  "title": "Hut (Fruchtkörperspitze) ist braun.",
+  "img": "hut_braun",
+  "img_active": "hut_braun_ja"
+ },
+ "schwarz": {
+  "title": "Hut (Fruchtkörperspitze)  ist schwarz.",
+  "img": "hut_schwarz",
+  "img_active": "hut_schwarz_ja"
+ },
+ "rot": {
+  "title": "Hut (Fruchtkörperspitze) ist rot.",
+  "img": "hut_rot",
+  "img_active": "hut_rot_ja"
+ },
+ "orange": {
+  "title": "Hut (Fruchtkörperspitze) ist orange.",
+  "img": "hut_orange",
+  "img_active": "hut_orange_ja"
+ },
+ "blau": {
+  "title": "Hut (Fruchtkörperspitze) ist blau, violett, lila.",
+  "img": "hut_blau",
+  "img_active": "hut_blau_ja"
+ },
+ "gruen": {
+  "title": "Hut (Fruchtkörperspitze) ist grün.",
+  "img": "hut_gruen",
+  "img_active": "hut_gruen_ja"
+ },
+ "rosa": {
+  "title": "Hut (Fruchtkörperspitze) ist rosa.",
+  "img": "hut_rosa",
+  "img_active": "hut_rosa_ja"
+ },
+ "grau": {
+  "title": "Hut (Fruchtkörperspitze) ist grau.",
+  "img": "hut_grau",
+  "img_active": "hut_grau_ja"
+ },
+ "lr_weiß": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht weiß.",
+  "img": "lamellen_weiss",
+  "img_active": "lamellen_weiss_ja"
+ },
+ "lr_gelb": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht gelb.",
+  "img": "lamellen_gelb",
+  "img_active": "lamellen_gelb_ja"
+ },
+ "lr_braun": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht braun.",
+  "img": "lamellen_braun",
+  "img_active": "lamellen_braun_ja"
+ },
+ "lr_schwarz": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht schwarz.",
+  "img": "lamellen_schwarz",
+  "img_active": "lamellen_schwarz_ja"
+ },
+ "lr_rot": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht rot.",
+  "img": "lamellen_rot",
+  "img_active": "lamellen_rot_ja"
+ },
+ "lr_orange": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht orange.",
+  "img": "lamellen_orange",
+  "img_active": "lamellen_orange_ja"
+ },
+ "lr_blau": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht blau.",
+  "img": "lamellen_blau",
+  "img_active": "lamellen_blau_ja"
+ },
+ "lr_gruen": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht grün.Ist die Farbe des Sporenpulvers grünlich, olivegelb bis olivbraun, so soll hier auch die Farbe grün zusätzlich angeklickt werden!",
+  "img": "lamellen_gruen",
+  "img_active": "lamellen_gruen_ja"
+ },
+ "lr_rosa": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht rosa.",
+  "img": "lamellen_rosa",
+  "img_active": "lamellen_rosa_ja"
+ },
+ "lr_grau": {
+  "title": "Lamellen, Röhren oder bei becherartigen Pilzen ist die untere Schicht grau.",
+  "img": "lamellen_grau",
+  "img_active": "lamellen_grau_ja"
+ },
+ "stiel_weiß": {
+  "title": "Stiel ist weiß.",
+  "img": "stiel_weiss",
+  "img_active": "stiel_weiss_ja"
+ },
+ "stiel_gelb": {
+  "title": "Stiel ist gelb.",
+  "img": "stiel_gelb",
+  "img_active": "stiel_gelb_ja"
+ },
+ "stiel_braun": {
+  "title": "Stiel ist braun.",
+  "img": "stiel_braun",
+  "img_active": "stiel_braun_ja"
+ },
+ "stiel_schwarz": {
+  "title": "Stiel ist schwarz.",
+  "img": "stiel_schwarz",
+  "img_active": "stiel_schwarz_ja"
+ },
+ "stiel_rot": {
+  "title": "Stiel ist rot.",
+  "img": "stiel_rot",
+  "img_active": "stiel_rot_ja"
+ },
+ "stiel_orange": {
+  "title": "Stiel ist orange.",
+  "img": "stiel_orange",
+  "img_active": "stiel_orange_ja"
+ },
+ "stiel_blau": {
+  "title": "Stiel ist blau.",
+  "img": "stiel_blau",
+  "img_active": "stiel_blau_ja"
+ },
+ "stiel_gruen": {
+  "title": "Stiel ist grün.",
+  "img": "stiel_gruen",
+  "img_active": "stiel_gruen_ja"
+ },
+ "stiel_rosa": {
+  "title": "Stiel ist rosa.",
+  "img": "stiel_rosa",
+  "img_active": "stiel_rosa_ja"
+ },
+ "stiel_grau": {
+  "title": "Stiel ist grau.",
+  "img": "stiel_grau",
+  "img_active": "stiel_grau_ja"
+ },
+ "fl_weiß": {
+  "title": "Fleisch ist weiß",
+  "img": "schnitt_weiss",
+  "img_active": "schnitt_weiss_ja"
+ },
+ "fl_gelb": {
+  "title": "Fleisch ist gelb.",
+  "img": "schnitt_gelb",
+  "img_active": "schnitt_gelb_ja"
+ },
+ "fl_braun": {
+  "title": "Fleisch ist braun.",
+  "img": "schnitt_braun",
+  "img_active": "schnitt_braun_ja"
+ },
+ "fl_schwarz": {
+  "title": "Fleisch ist schwarz.",
+  "img": "schnitt_schwarz",
+  "img_active": "schnitt_schwarz_ja"
+ },
+ "fl_rot": {
+  "title": "Fleisch ist rot.",
+  "img": "schnitt_rot",
+  "img_active": "schnitt_rot_ja"
+ },
+ "fl_orange": {
+  "title": "Fleisch ist orange.",
+  "img": "schnitt_orange",
+  "img_active": "schnitt_orange_ja"
+ },
+ "fl_blau": {
+  "title": "Fleisch ist blau.",
+  "img": "schnitt_blau",
+  "img_active": "schnitt_blau_ja"
+ },
+ "fl_gruen": {
+  "title": "Fleisch ist grün.",
+  "img": "schnitt_gruen",
+  "img_active": "schnitt_gruen_ja"
+ },
+ "fl_rosa": {
+  "title": "Fleisch ist rosa.",
+  "img": "schnitt_rosa",
+  "img_active": "schnitt_rosa_ja"
+ },
+ "fl_grau": {
+  "title": "Fleisch ist grau.",
+  "img": "schnitt_grau",
+  "img_active": "schnitt_grau_ja"
+ },
+ "farbwechsel_grau": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit grau bis schwarz (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_grau",
+  "img_active": "farbwechsel_grau_ja"
+ },
+ "farbwechsel_gelb": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit gelblich (gilbend) (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_gelb",
+  "img_active": "farbwechsel_gelb_ja"
+ },
+ "farbwechsel_braun": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit braun (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_braun",
+  "img_active": "farbwechsel_braun_ja"
+ },
+ "farbwechsel_rot": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit rosa bis rot (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_rot",
+  "img_active": "farbwechsel_rot_ja"
+ },
+ "farbwechsel_blau": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit blau (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_blau",
+  "img_active": "farbwechsel_blau_ja"
+ },
+ "farbwechsel_gruen": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit grün (...dies kann einige Zeit dauern).",
+  "img": "farbwechsel_gruen",
+  "img_active": "farbwechsel_gruen_ja"
+ },
+ "farbwechsel_kein": {
+  "title": "Fleisch oder Milch verfärbt sich nach dem Anschnitt nach einiger Zeit nicht.",
+  "img": "farbwechsel_kein",
+  "img_active": "farbwechsel_kein_ja"
+ },
+ "geruch_pilzig": {
+  "title": "...pilzig, würzig und sehr angenehm.",
+  "img": "geruch_pilzig",
+  "img_active": "geruch_pilzig_ja"
+ },
+ "sueß": {
+  "title": "...süßlich, fruchtartig, obstartig, frisch und angenehm bis säuerlich.",
+  "img": "suess",
+  "img_active": "suess_ja"
+ },
+ "anis": {
+  "title": "Der Pilz riecht nach Anis.",
+  "img": "anis",
+  "img_active": "anis_ja"
+ },
+ "erdig": {
+  "title": "...erdig, muffig, unangenehm, nach Mottenpulver, totem Holz und spermatisch (bei Risspilzen)",
+  "img": "erdig",
+  "img_active": "erdig_ja"
+ },
+ "rettich": {
+  "title": "...rettichartig, rübenartig.",
+  "img": "rettich",
+  "img_active": "rettich_ja"
+ },
+ "marzipan": {
+  "title": "...nussig, nach Marzipan, Bittermandeln, auch oft stechend angenehm nach Blausäure.",
+  "img": "marzipan",
+  "img_active": "marzipan_ja"
+ },
+ "faulig": {
+  "title": "...faulig, verwesend, aasartig, nach Tierkäfig, Zoo, sehr unangenehm.",
+  "img": "faulig",
+  "img_active": "faulig_ja"
+ },
+ "hering": {
+  "title": "... nach Fisch, heringsartig.",
+  "img": "hering",
+  "img_active": "hering_ja"
+ },
+ "blumen": {
+  "title": "...parfümiert, nach Blumen, Veilchen oder Knoblauch.",
+  "img": "blumen",
+  "img_active": "blumen_ja"
+ },
+ "mild": {
+  "title": "...mild, angenehm, neutral.",
+  "img": "mild",
+  "img_active": "mild_ja"
+ },
+ "bitter": {
+  "title": "...bitterlich, adstringierend, zusammenziehend, unangenehm.",
+  "img": "bitter",
+  "img_active": "bitter_ja"
+ },
+ "scharf": {
+  "title": "...scharf, brennend auf der Zunge oder im sonstigen Mundbereich.",
+  "img": "scharf",
+  "img_active": "scharf_ja"
+ },
+ "pilziger_geschmack": {
+  "title": "...pilzig, angenehm, wuerzig, geschmackvoll.",
+  "img": "pilziger_geschmack",
+  "img_active": "pilziger_geschmack_ja"
+ },
+ "sonstiger_geschmack": {
+  "title": "...mehlartig, gurkig, ranzig mehlartig. Hier ist meist der Geruch ebenso mehlartig!",
+  "img": "sonstiger_geschmack",
+  "img_active": "sonstiger_geschmack_ja"
+ },
+ "sp_weiß": {
+  "title": "weiß",
+  "img": "sp_weiss",
+  "img_active": "sp_weiss_ja"
+ },
+ "sp_gelb": {
+  "title": "gelb",
+  "img": "sp_gelb",
+  "img_active": "sp_gelb_ja"
+ },
+ "sp_rot": {
+  "title": "rötlich",
+  "img": "sp_rot",
+  "img_active": "sp_rot_ja"
+ },
+ "sp_braun": {
+  "title": "braun",
+  "img": "sp_braun",
+  "img_active": "sp_braun_ja"
+ },
+ "sp_violett": {
+  "title": "violett",
+  "img": "sp_violett",
+  "img_active": "sp_violett_ja"
+ },
+ "sp_schwarz": {
+  "title": "schwarz",
+  "img": "sp_schwarz",
+  "img_active": "sp_schwarz_ja"
+ }
+}

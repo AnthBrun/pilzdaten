@@ -1,12 +1,18 @@
 // Service Worker der Pilzdatenbank: macht die App im Wald ohne Netz nutzbar.
 // Seiten und Code kommen bevorzugt frisch aus dem Netz (mit kurzem Timeout,
 // weil Funklöcher sonst minutenlang hängen), Bilder bevorzugt aus dem Cache.
-const SHELL_CACHE = "pilz-shell-v1";
+const SHELL_CACHE = "pilz-shell-v2";
 const PAGE_CACHE = "pilz-pages";
 const MEDIA_CACHE = "pilz-media";
 const PACK_MEDIA_CACHE = "pilz-media-pack";
 const DATA_CACHE = "pilz-data";
-const SHELL_URLS = ["/", "/offline", "/static/app.css", "/static/app.js", "/static/icon-192.png", "/static/icon-512.png", "/manifest.webmanifest"];
+// Alles, was die Seiten ohne Netz brauchen. Neue JS-Module hier eintragen.
+const SHELL_URLS = [
+  "/", "/offline", "/manifest.webmanifest",
+  "/static/app.css", "/static/icon-192.png", "/static/icon-512.png",
+  "/static/js/main.js", "/static/js/config.js", "/static/js/state.js", "/static/js/util.js", "/static/js/icons.js",
+  "/static/js/mushroom.js", "/static/js/deck.js", "/static/js/results.js", "/static/js/offline.js", "/static/js/detail.js",
+];
 const NETWORK_TIMEOUT_MS = 4000;
 const MAX_RUNTIME_IMAGES = 400;
 const MAX_PAGES = 150;
@@ -84,6 +90,11 @@ async function handleImage(request) {
   return response;
 }
 
+// "Offline speichern" in js/offline.js bittet darum, die Hülle neu zu laden.
+self.addEventListener("message", (event) => {
+  if (event.data === "refresh-shell") event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_URLS)));
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -100,5 +111,5 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/static/") || url.pathname === "/manifest.webmanifest") {
     event.respondWith(networkFirst(request, SHELL_CACHE));
   }
-  // /api/* läuft direkt übers Netz; ohne Netz rechnet app.js mit dem Offline-Paket.
+  // /api/* läuft direkt übers Netz; ohne Netz rechnet js/offline.js mit dem Offline-Paket.
 });

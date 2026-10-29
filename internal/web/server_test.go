@@ -196,24 +196,28 @@ func TestHomeSeparatesSmellAndTasteFacets(t *testing.T) {
 	if !strings.Contains(taste, `data-trait-tag="bitter"`) || !strings.Contains(taste, `data-trait-tag="pilziger_geschmack"`) {
 		t.Error("taste-specific facet tags are not grouped correctly")
 	}
-	for _, tag := range []string{"sueß", "erdig", "mild"} {
+	// Wie auf 123pilzsuche.de: süß und erdig sind Geruch, mild ist Geschmack.
+	for _, tag := range []string{"sueß", "erdig"} {
 		selector := `data-trait-tag="` + tag + `"`
-		if !strings.Contains(smell, selector) || !strings.Contains(taste, selector) {
-			t.Errorf("ambiguous sensory tag %q is not shown in both groups", tag)
+		if !strings.Contains(smell, selector) || strings.Contains(taste, selector) {
+			t.Errorf("smell tag %q is not shown only under Geruch", tag)
 		}
+	}
+	if !strings.Contains(taste, `data-trait-tag="mild"`) || strings.Contains(smell, `data-trait-tag="mild"`) {
+		t.Error(`taste tag "mild" is not shown only under Geschmack`)
 	}
 }
 
 func TestSensoryGroupClassifiesKnownTags(t *testing.T) {
 	tests := map[string]string{
-		"anis":               "geruch",
-		"geruch_pilzig":      "geruch",
-		"bitter":             "geschmack",
-		"pilziger_geschmack": "geschmack",
-		"erdig":              "beide",
-		"mild":               "beide",
-		"sueß":               "beide",
-		"future_unknown_tag": "beide",
+		"anis":                "geruch",
+		"geruch_pilzig":       "geruch",
+		"bitter":              "geschmack",
+		"pilziger_geschmack":  "geschmack",
+		"erdig":               "geruch",
+		"sueß":                "geruch",
+		"mild":                "geschmack",
+		"sonstiger_geschmack": "geschmack",
 	}
 	for tag, want := range tests {
 		if got := sensoryGroup(tag); got != want {

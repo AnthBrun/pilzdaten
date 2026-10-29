@@ -1,0 +1,611 @@
+{
+ "max_diameter_cm": 25,
+ "min_diameter_cm": 1,
+ "groups": [
+   {
+    "group": "essbarkeit",
+    "title": "Essbarkeit",
+    "options": [
+     {
+      "tag": "hervorragend",
+      "label": "Hervorragend essbar",
+      "count": 406
+     },
+     {
+      "tag": "gut",
+      "label": "Gut essbar",
+      "count": 350
+     },
+     {
+      "tag": "schlecht",
+      "label": "Schlecht / ungenießbar",
+      "count": 2871
+     },
+     {
+      "tag": "giftig",
+      "label": "Giftig",
+      "count": 391
+     },
+     {
+      "tag": "tot",
+      "label": "Tödlich",
+      "count": 164
+     }
+    ]
+   },
+   {
+    "group": "vorkommen",
+    "title": "Vorkommen",
+    "options": [
+     {
+      "tag": "nicht_selten",
+      "label": "Nicht selten",
+      "count": 878
+     },
+     {
+      "tag": "holz",
+      "label": "Wächst auf Holz",
+      "count": 1847
+     },
+     {
+      "tag": "auf_boden",
+      "label": "Wächst auf Boden",
+      "count": 2885
+     },
+     {
+      "tag": "auf_wiese",
+      "label": "Wächst auf Wiese",
+      "count": 715
+     },
+     {
+      "tag": "bueschelig",
+      "label": "Im Büschel / Strauß",
+      "count": 1082
+     }
+    ]
+   },
+  {
+   "group": "hut",
+   "title": "Hut",
+   "options": [
+    {
+     "tag": "weiß",
+     "label": "Hut weiß",
+     "count": 1692
+    },
+    {
+     "tag": "gelb",
+     "label": "Hut gelb",
+     "count": 2213
+    },
+    {
+     "tag": "braun",
+     "label": "Hut braun",
+     "count": 2875
+    },
+    {
+     "tag": "schwarz",
+     "label": "Hut schwarz",
+     "count": 443
+    },
+    {
+     "tag": "rot",
+     "label": "Hut rot",
+     "count": 1260
+    },
+    {
+     "tag": "orange",
+     "label": "Hut orange",
+     "count": 1844
+    },
+    {
+     "tag": "blau",
+     "label": "Hut blau",
+     "count": 470
+    },
+    {
+     "tag": "gruen",
+     "label": "Hut grün",
+     "count": 596
+    },
+    {
+     "tag": "rosa",
+     "label": "Hut rosa",
+     "count": 610
+    },
+    {
+     "tag": "grau",
+     "label": "Hut grau",
+     "count": 1329
+    },
+    {
+     "tag": "hut_koralle",
+     "label": "Hut korallenförmig",
+     "count": 242
+    },
+    {
+     "tag": "hut_gerieft",
+     "label": "Hut gerieft",
+     "count": 746
+    },
+    {
+     "tag": "hut_hygrophan",
+     "label": "Hut hygrophan",
+     "count": 1320
+    }
+   ]
+  },
+  {
+   "group": "lamellen",
+   "title": "Lamellen / Röhren / Stachel",
+   "options": [
+    {
+     "tag": "lamellen",
+     "label": "Lamellen",
+     "count": 1994
+    },
+    {
+     "tag": "roehren",
+     "label": "Röhren",
+     "count": 343
+    },
+    {
+     "tag": "stachel",
+     "label": "Stacheln",
+     "count": 145
+    },
+    {
+     "tag": "lamellen_eng",
+     "label": "Lamellen eng",
+     "count": 1037
+    },
+    {
+     "tag": "lamellen_gegabelt",
+     "label": "Lamellen gegabelt",
+     "count": 620
+    },
+    {
+     "tag": "lamellen_gesaegt",
+     "label": "Lamellen gezähnt",
+     "count": 485
+    },
+    {
+     "tag": "lr_weiß",
+     "label": "Lamellen weiß",
+     "count": 1767
+    },
+    {
+     "tag": "lr_gelb",
+     "label": "Lamellen gelb",
+     "count": 1714
+    },
+    {
+     "tag": "lr_braun",
+     "label": "Lamellen braun",
+     "count": 1634
+    },
+    {
+     "tag": "lr_schwarz",
+     "label": "Lamellen schwarz",
+     "count": 348
+    },
+    {
+     "tag": "lr_rot",
+     "label": "Lamellen rot",
+     "count": 808
+    },
+    {
+     "tag": "lr_orange",
+     "label": "Lamellen orange",
+     "count": 970
+    },
+    {
+     "tag": "lr_blau",
+     "label": "Lamellen blau",
+     "count": 275
+    },
+    {
+     "tag": "lr_gruen",
+     "label": "Lamellen grün",
+     "count": 269
+    },
+    {
+     "tag": "lr_rosa",
+     "label": "Lamellen rosa",
+     "count": 527
+    },
+    {
+     "tag": "lr_grau",
+     "label": "Lamellen grau",
+     "count": 897
+    }
+   ]
+  },
+  {
+   "group": "stiel",
+   "title": "Stiel",
+   "options": [
+    {
+     "tag": "stiel_hohl",
+     "label": "Stiel hohl",
+     "count": 1230
+    },
+    {
+     "tag": "stiel_weiß",
+     "label": "Stiel weiß",
+     "count": 1883
+    },
+    {
+     "tag": "stiel_gelb",
+     "label": "Stiel gelb",
+     "count": 1389
+    },
+    {
+     "tag": "stiel_braun",
+     "label": "Stiel braun",
+     "count": 1752
+    },
+    {
+     "tag": "stiel_schwarz",
+     "label": "Stiel schwarz",
+     "count": 209
+    },
+    {
+     "tag": "stiel_rot",
+     "label": "Stiel rot",
+     "count": 592
+    },
+    {
+     "tag": "stiel_orange",
+     "label": "Stiel orange",
+     "count": 918
+    },
+    {
+     "tag": "stiel_blau",
+     "label": "Stiel blau",
+     "count": 268
+    },
+    {
+     "tag": "stiel_gruen",
+     "label": "Stiel grün",
+     "count": 275
+    },
+    {
+     "tag": "stiel_rosa",
+     "label": "Stiel rosa",
+     "count": 308
+    },
+    {
+     "tag": "stiel_grau",
+     "label": "Stiel grau",
+     "count": 635
+    }
+   ]
+  },
+  {
+   "group": "schnitt",
+   "title": "Fruchtfleisch / Schnitt",
+   "options": [
+    {
+     "tag": "fl_weiß",
+     "label": "Fleisch weiß",
+     "count": 2712
+    },
+    {
+     "tag": "fl_gelb",
+     "label": "Fleisch gelb",
+     "count": 1646
+    },
+    {
+     "tag": "fl_braun",
+     "label": "Fleisch braun",
+     "count": 1585
+    },
+    {
+     "tag": "fl_schwarz",
+     "label": "Fleisch schwarz",
+     "count": 342
+    },
+    {
+     "tag": "fl_rot",
+     "label": "Fleisch rot",
+     "count": 504
+    },
+    {
+     "tag": "fl_orange",
+     "label": "Fleisch orange",
+     "count": 757
+    },
+    {
+     "tag": "fl_blau",
+     "label": "Fleisch blau",
+     "count": 282
+    },
+    {
+     "tag": "fl_gruen",
+     "label": "Fleisch grün",
+     "count": 341
+    },
+    {
+     "tag": "fl_rosa",
+     "label": "Fleisch rosa",
+     "count": 279
+    },
+    {
+     "tag": "fl_grau",
+     "label": "Fleisch grau",
+     "count": 864
+    },
+    {
+     "tag": "milch",
+     "label": "Milchsäftig",
+     "count": 108
+    },
+    {
+     "tag": "bruechig",
+     "label": "Brüchig",
+     "count": 1007
+    },
+    {
+     "tag": "faserig",
+     "label": "Faserig",
+     "count": 1856
+    }
+   ]
+  },
+  {
+   "group": "spore",
+   "title": "Sporenpulver",
+   "options": [
+    {
+     "tag": "sp_weiß",
+     "label": "Sporen weiß",
+     "count": 2210
+    },
+    {
+     "tag": "sp_gelb",
+     "label": "Sporen gelb",
+     "count": 777
+    },
+    {
+     "tag": "sp_rot",
+     "label": "Sporen rot",
+     "count": 764
+    },
+    {
+     "tag": "sp_braun",
+     "label": "Sporen braun",
+     "count": 1367
+    },
+    {
+     "tag": "sp_violett",
+     "label": "Sporen violett",
+     "count": 95
+    },
+    {
+     "tag": "sp_schwarz",
+     "label": "Sporen schwarz",
+     "count": 282
+    }
+   ]
+  },
+  {
+   "group": "struktur",
+   "title": "Wuchsform & Struktur",
+   "options": [
+    {
+     "tag": "trichter",
+     "label": "Trichterförmig",
+     "count": 1267
+    },
+    {
+     "tag": "spitz",
+     "label": "Spitz",
+     "count": 1863
+    },
+    {
+     "tag": "schirm",
+     "label": "Schirmförmig",
+     "count": 1694
+    },
+    {
+     "tag": "kugel",
+     "label": "Kugelig",
+     "count": 893
+    },
+    {
+     "tag": "sonstige_form",
+     "label": "Sonstige Form",
+     "count": 1802
+    },
+    {
+     "tag": "sonstige_gattung",
+     "label": "Sonstige Gattung",
+     "count": 568
+    },
+    {
+     "tag": "f",
+     "label": "Fächerförmig",
+     "count": 376
+    },
+    {
+     "tag": "angewachsen",
+     "label": "Angewachsen",
+     "count": 2116
+    },
+    {
+     "tag": "herablaufend",
+     "label": "Herablaufend",
+     "count": 514
+    },
+    {
+     "tag": "frei",
+     "label": "Frei",
+     "count": 417
+    },
+    {
+     "tag": "ring",
+     "label": "Mit Ring",
+     "count": 351
+    },
+    {
+     "tag": "netz",
+     "label": "Mit Netz",
+     "count": 59
+    },
+    {
+     "tag": "flocken",
+     "label": "Flockig",
+     "count": 1795
+    },
+    {
+     "tag": "knollig",
+     "label": "Knollig",
+     "count": 389
+    },
+    {
+     "tag": "genattert",
+     "label": "Genattert",
+     "count": 768
+    },
+    {
+     "tag": "haut_schmierig",
+     "label": "Haut schmierig",
+     "count": 452
+    },
+    {
+     "tag": "wurzel",
+     "label": "Wurzelnd",
+     "count": 1233
+    },
+    {
+     "tag": "konsistenz_gallertartig",
+     "label": "Gallertartige Konsistenz",
+     "count": 312
+    },
+    {
+     "tag": "konsistenz_hart",
+     "label": "Harte Konsistenz",
+     "count": 562
+    }
+   ]
+  },
+  {
+   "group": "farbwechsel",
+   "title": "Farbwechsel",
+   "options": [
+    {
+     "tag": "farbwechsel_kein",
+     "label": "Kein Farbwechsel",
+     "count": 3737
+    },
+    {
+     "tag": "farbwechsel_grau",
+     "label": "Wird grau",
+     "count": 139
+    },
+    {
+     "tag": "farbwechsel_gelb",
+     "label": "Wird gelb",
+     "count": 270
+    },
+    {
+     "tag": "farbwechsel_braun",
+     "label": "Wird braun",
+     "count": 241
+    },
+    {
+     "tag": "farbwechsel_rot",
+     "label": "Wird rot",
+     "count": 311
+    },
+    {
+     "tag": "farbwechsel_blau",
+     "label": "Wird blau",
+     "count": 165
+    },
+    {
+     "tag": "farbwechsel_gruen",
+     "label": "Wird grün",
+     "count": 47
+    }
+   ]
+  },
+  {
+   "group": "geruch",
+   "title": "Geruch & Geschmack",
+   "options": [
+    {
+     "tag": "geruch_pilzig",
+     "label": "Pilziger Geruch",
+     "count": 590
+    },
+    {
+     "tag": "sueß",
+     "label": "Süß",
+     "count": 476
+    },
+    {
+     "tag": "anis",
+     "label": "Anis",
+     "count": 50
+    },
+    {
+     "tag": "erdig",
+     "label": "Erdig",
+     "count": 352
+    },
+    {
+     "tag": "rettich",
+     "label": "Rettich",
+     "count": 170
+    },
+    {
+     "tag": "marzipan",
+     "label": "Marzipan",
+     "count": 78
+    },
+    {
+     "tag": "faulig",
+     "label": "Faulig",
+     "count": 387
+    },
+    {
+     "tag": "hering",
+     "label": "Hering",
+     "count": 36
+    },
+    {
+     "tag": "blumen",
+     "label": "Blumig",
+     "count": 255
+    },
+    {
+     "tag": "mild",
+     "label": "Mild",
+     "count": 2490
+    },
+    {
+     "tag": "bitter",
+     "label": "Bitter",
+     "count": 522
+    },
+    {
+     "tag": "scharf",
+     "label": "Scharf",
+     "count": 208
+    },
+    {
+     "tag": "pilziger_geschmack",
+     "label": "Pilziger Geschmack",
+     "count": 339
+    },
+    {
+     "tag": "sonstiger_geschmack",
+     "label": "Sonstiger Geschmack",
+     "count": 236
+    }
+   ]
+  }
+ ]
+}

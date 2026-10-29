@@ -1,3 +1,24 @@
+/* Pilzdatenbank – Stylesheet für alle Seiten.
+   Abschnitte (Suche nach "=== Name"):
+   === Grundlagen
+   === Kopfleiste und Offline-Knopf
+   === Startseite: Kopf, Suche, Sicherheitshinweis
+   === Pilz-Lab: Layout
+   === Pilzzeichnung: Hut, Unterseite, Stiel, Schnitt (templates/mushroom.html)
+   === Pilzzeichnung: Untergrund und Büschel
+   === Pilzzeichnung: Lamellen- und Stieldetails
+   === Pilzzeichnung: Silhouetten der Gruppen ohne Hut
+   === Gruppenleiste
+   === Auswahl-Deck (js/deck.js)
+   === Durchmesser und Merkmals-Chips
+   === Trefferliste und Artkarten
+   === Fußzeile
+   === Artseite (templates/detail.html)
+   === Trefferleiste (nur Handy)
+   === Responsive
+   === Reduzierte Bewegung
+*/
+/* === Grundlagen ============================================== */
 :root {
   color-scheme: light;
   --ink: #202a24;
@@ -16,6 +37,8 @@
 body { margin: 0; min-width: 320px; }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
+
+/* === Kopfleiste und Offline-Knopf ================================ */
 .topbar { height: 65px; max-width: 1240px; margin: auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -.03em; }
 .brand-mark { display: grid; place-items: center; width: 32px; height: 32px; background: var(--green); color: var(--lime); border-radius: 50%; font-size: 21px; }
@@ -26,6 +49,8 @@ button, input { font: inherit; }
 .offline-button[data-state="busy"] .offline-dot { background: #d88048; animation: offlinePulse 1s ease-in-out infinite; }
 @keyframes offlinePulse { 50% { opacity: .3; } }
 .offline-badge { padding: 4px 9px; border-radius: 99px; color: #8b5637; background: #fbeee2; font-size: 12px; font-weight: 650; }
+
+/* === Startseite: Kopf, Suche, Sicherheitshinweis ================= */
 main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .hero { padding: 32px 0 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 430px); align-items: end; gap: 8px 28px; }
 .hero .eyebrow { grid-column: 1 / -1; margin: 0; }
@@ -45,6 +70,8 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .safety-icon { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border: 1px solid #b37b31; border-radius: 50%; color: #8d5d20; font-weight: 800; }
 .safety-spoiler p { margin: 0; padding: 0 13px 12px 43px; color: #765e42; font-size: 11px; line-height: 1.5; }
 .safety-spoiler summary:focus-visible { outline: 3px solid #9b713b; outline-offset: 2px; border-radius: 5px; }
+
+/* === Pilz-Lab: Layout ============================================ */
 .catalog-section { border-top: 1px solid var(--line); padding: 22px 0 55px; }
 .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 17px; }
 .section-heading .eyebrow { margin-bottom: 5px; }
@@ -60,9 +87,11 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .wipe-button:hover { background: #f8ebde; }
 .mushroom-stage { position: relative; display: flex; justify-content: center; align-items: center; height: 418px; margin: 2px 0 0; overflow: visible; background: radial-gradient(ellipse at 50% 51%, #f5f6ef 0, #fafaf7 56%, transparent 76%); }
 .mushroom-svg { display: block; width: min(100%, 270px); max-height: 100%; height: auto; overflow: visible; }
+
+/* === Pilzzeichnung: Hut, Unterseite, Stiel, Schnitt (templates/mushroom.html) === */
 .mushroom-part { cursor: pointer; outline: none; touch-action: pan-y; }
 .mushroom-part:focus-visible .cap-fill, .mushroom-part:focus-visible .stem-fill, .mushroom-part:focus-visible .underside-fill, .mushroom-part:focus-visible .flesh-slice { stroke: #3f7855; stroke-width: 4px; }
-.mushroom-part:hover .cap-fill, .mushroom-part:hover .stem-fill, .mushroom-part:hover .underside-fill, .mushroom-part:hover .flesh-slice { filter: brightness(1.12); }
+.mushroom-part:hover .cap-fill, .mushroom-part:hover .stem-fill, .mushroom-part:hover .underside-fill, .mushroom-part:hover .flesh-core { filter: brightness(1.12); }
 .cap-fill { fill: url(#capShade); stroke: #887a66; stroke-width: 2; transition: fill .35s ease, filter .15s; }
 .cap-rim { fill: none; stroke: #786e5e; stroke-width: 2; stroke-linecap: round; }
 .cap-surface { pointer-events: none; }
@@ -102,14 +131,17 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .cap-funnel { fill: #3b2c1a; fill-opacity: .16; stroke: #887a66; stroke-width: 1.4; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .root-lines { fill: none; stroke: #b8ad98; stroke-width: .9; stroke-linecap: round; }
 .stem-hollow { fill: #3b2c1a; fill-opacity: .14; stroke: #3b2c1a; stroke-opacity: .3; stroke-width: .9; }
-.flesh-slice { fill: #a99b84; stroke: #7d6f5a; stroke-width: 1.4; stroke-linejoin: round; transition: fill .35s ease; }
-.flesh-core { fill: #eee7d7; stroke: none; transition: fill .35s ease; }
+.flesh-slice { fill: none; stroke: #7d6f5a; stroke-width: 1.4; stroke-linejoin: round; }
+/* Rinde als nach innen geclippter Rand, damit jede Schnittform denselben Saum bekommt */
+.flesh-core { fill: #eee7d7; stroke: #a99b84; stroke-width: 6; transition: fill .35s ease; }
 .flesh-gills { fill: none; stroke: #3b2c1a; stroke-opacity: .35; stroke-width: .7; stroke-linecap: round; }
 .flesh-fiber-pattern { fill: none; stroke: #3b2c1a; stroke-opacity: .3; stroke-width: .7; stroke-linecap: round; opacity: 0; }
 .flesh-crack, .flesh-milk { opacity: 0; transition: opacity .2s; }
 .crack-gap { fill: none; stroke: #fbf8f0; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
 .crack-line { fill: none; stroke: #7a6a54; stroke-width: .7; stroke-linejoin: round; stroke-linecap: round; }
 .flesh-milk { fill: #fffdf6; stroke: #b4a991; stroke-width: .6; }
+
+/* === Pilzzeichnung: Untergrund und Büschel ======================= */
 .substrate { opacity: 0; transform: translateY(26px); transition: opacity .35s ease, transform .5s cubic-bezier(.2,.9,.3,1.15); pointer-events: none; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
 .substrate.is-visible { opacity: 1 !important; transform: translateY(0); }
 .substrate-base { opacity: 1; transform: none; transition: none; stroke: #3e3a33; }
@@ -138,12 +170,15 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .substrate-part { cursor: pointer; }
 .mini-cap, .mini-stem, .mini-underside { stroke: #887a66; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .mini-underside { fill: #e8dfcb; }
+
+/* === Pilzzeichnung: Lamellen- und Stieldetails =================== */
 .gill-dense { fill: none; stroke: #3b2c1a; stroke-opacity: .42; stroke-width: .6; }
 .gill-forks { fill: none; stroke: #3b2c1a; stroke-opacity: .55; stroke-width: .8; stroke-linejoin: round; }
 .gill-serration { fill: none; stroke: #3b2c1a; stroke-opacity: .55; stroke-width: .8; stroke-linejoin: round; }
 .gill-free { fill: #f6f0e2; stroke: #988b76; stroke-width: .6; }
 .stem-decurrent path { fill: none; stroke: #3b2c1a; stroke-opacity: .4; stroke-width: .8; stroke-linecap: round; }
 .stem-pattern { fill: none; stroke: #7d6549; stroke-opacity: .5; stroke-width: 1.1; stroke-linejoin: round; }
+/* === Pilzzeichnung: Silhouetten der Gruppen ohne Hut ============= */
 /* Andere Pilzgruppen: Silhouette statt Hutpilz */
 .body-shape { display: none; }
 #mushroom[data-group="kugel"] [data-body="kugel"], #mushroom[data-group="hut_koralle"] [data-body="hut_koralle"], #mushroom[data-group="konsistenz_gallertartig"] [data-body="konsistenz_gallertartig"], #mushroom[data-group="f"] [data-body="f"], #mushroom[data-group="sonstige_gattung"] [data-body="sonstige_gattung"] { display: inline; }
@@ -157,13 +192,20 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 #mushroom.has-flocken .tex-flocken, #mushroom.has-hut_gerieft .tex-hut_gerieft, #mushroom.has-hut_hygrophan .tex-hut_hygrophan, #mushroom.has-haut_schmierig .tex-haut_schmierig, #mushroom.has-konsistenz_hart .tex-konsistenz_hart { opacity: 1 !important; }
 .body-branch-tex { fill: none; stroke-width: 8.4; stroke-linecap: round; stroke-linejoin: round; }
 .body-morel-stem { fill: #efe8d8; stroke: #887a66; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-.body-pits { fill: none; stroke: #3b2c1a; stroke-opacity: .4; stroke-width: 1.1; stroke-linecap: round; }
+.body-pits { fill: #3b2c1a; fill-opacity: .38; stroke: none; }
 /* Büschel: kleine Exemplare derselben Gruppe statt Hutpilzen */
 .mini-body { display: none; }
 #mushroom.is-body .mini-mushroom { display: none; }
 #mushroom.is-body .mini-body { display: inline; }
 #mushroom.is-body .body-shape { transform-box: view-box; transform-origin: 112px 285px; transition: transform .3s ease; }
 #mushroom.is-body.has-bueschelig .body-shape { transform: scale(.72); }
+/* Gewählter Untergrund bleibt sichtbar: Silhouette steht auf ihm statt davor */
+#mushroom.is-body:is(.has-auf_boden, .has-auf_wiese) .body-shape { transform: translateY(-4px); }
+#mushroom.is-body.has-holz .body-shape { transform: translateY(-12px); }
+#mushroom.is-body.has-bueschelig:is(.has-auf_boden, .has-auf_wiese) .body-shape { transform: translateY(-4px) scale(.72); }
+#mushroom.is-body.has-bueschelig.has-holz .body-shape { transform: translateY(-12px) scale(.72); }
+#mushroom.is-body:is(.has-auf_boden, .has-auf_wiese) .substrate-cluster.is-visible { transform: translateY(-4px); }
+#mushroom.is-body.has-holz .substrate-cluster.is-visible { transform: translateY(-12px); }
 /* Anschnitt: bei Silhouetten oben rechts als Schnittfläche */
 #mushroom [data-part="flesh"] { transition: transform .3s ease; }
 #mushroom.is-body [data-part="flesh"] { transform: translate(14px, -140px); }
@@ -178,13 +220,9 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .body-branch-outline { stroke: #887a66; stroke-width: 11; }
 .body-gloss { fill: #fff; fill-opacity: .55; }
 .body-stump { fill: #b48a57; stroke: #765533; stroke-width: 1.4; }
-.body-stone { fill: #b3b0a6; stroke: #7d7a72; stroke-width: 1.4; }
-.body-apothecia { fill: none; stroke: #8b5e3c; stroke-width: 4; stroke-linecap: round; }
-.body-log { fill: #d0aa6d; stroke: #765533; stroke-width: 1.5; }
-.body-log-end { fill: #e3c48f; stroke: #765533; stroke-width: 1.2; }
 .mushroom-part:hover .body-fill { filter: brightness(1.1); }
 .mushroom-part:focus-visible .body-fill { stroke: #3f7855; stroke-width: 4px; }
-/* Gruppen-Leiste über der Zeichnung */
+/* === Gruppenleiste =============================================== */
 .group-bar { display: flex; gap: 6px; margin: 12px -4px 0; padding: 2px 4px 6px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
 .group-option { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 74px; min-height: 64px; padding: 6px 4px; border: 2px solid #e2e5dc; border-radius: 10px; color: #3f4b42; background: #f7f8f4; font-size: 11px; line-height: 1.15; text-align: center; cursor: pointer; scroll-snap-align: start; }
 .group-option:hover { border-color: #92a98f; }
@@ -202,6 +240,8 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .underside-option-icon .option-bark { fill: #8b6a46; stroke: #5f472d; stroke-width: .8; }
 .rare-toggle { margin-bottom: 10px; }
 .taste-warning { margin: 0 0 6px; padding: 7px 10px; border-left: 3px solid #bd4747; border-radius: 4px; color: #6e1d1d; background: #fbeaea; font-size: 12px; line-height: 1.4; }
+
+/* === Auswahl-Deck (js/deck.js) =================================== */
 .mushroom-part.is-cycled { animation: partPulse .4s ease; }
 @keyframes partPulse { 50% { opacity: .55; } }
 #option-deck { position: relative; z-index: 1; max-height: 340px; overflow-y: auto; margin: -4px 0 10px; padding: 10px 12px; border: 1px solid #d9dfd4; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px #24372c18; animation: deckIn .18s ease; }
@@ -240,6 +280,8 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .substrate-option-icon .option-bed { fill: #554d42; stroke: #3e3a33; stroke-width: .8; }
 .substrate-option-grass .option-grass-turf { fill: #86a552; stroke: #587342; stroke-width: .8; }
 .substrate-option-grass circle { fill: #e7c76b; stroke: #aa9250; }
+
+/* === Durchmesser und Merkmals-Chips ============================== */
 .diameter-filter { border-top: 1px solid var(--line); padding: 12px 0 8px; }
 .slider-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .diameter-filter h3, .nonvisual-traits > h3 { font-size: 14px; color: #2d3e31; margin: 0 0 8px; }
@@ -272,6 +314,8 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .deck-option:focus-visible, .trait-chip:focus-visible { outline: 3px solid #3f7855; outline-offset: 2px; }
 .trait-chip:hover { border-color: #92a98f; }
 .trait-chip.is-selected { border-color: var(--green); color: #fff; background: var(--green); font-weight: 650; }
+
+/* === Trefferliste und Artkarten ================================== */
 .results-column { min-width: 0; }
 .results-toolbar { position: sticky; top: 9px; z-index: 2; margin: 0 0 12px; padding: 10px 12px; background: rgb(245 244 239 / .96); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(10px); }
 .results-heading-row { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
@@ -323,7 +367,11 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .pagination a, .pagination button { min-height: 44px; color: var(--green); font-weight: 650; padding: 10px 4px; border: 0; background: none; cursor: pointer; }
 .pagination a:hover, .pagination button:hover { text-decoration: underline; }
 .pagination button:disabled { color: #a0a8a0; cursor: default; }
+
+/* === Fußzeile ==================================================== */
 footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: #929b93; font-size: 10px; letter-spacing: .04em; }
+
+/* === Artseite (templates/detail.html) ============================ */
 .back-link:hover { color: var(--green); }
 .detail-page { max-width: 1000px; padding-bottom: 70px; }
 .breadcrumbs { display: flex; gap: 11px; align-items: center; padding: 14px 0; color: #929b93; font-size: 14px; }
@@ -397,10 +445,12 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
 .danger-banner a { color: #8d2323; font-weight: 700; text-decoration: underline; }
 .danger-label { color: #8d4a4a; font-size: 13px; }
 .related-section .species-card { border-width: 5px; }
-/* Trefferleiste unten (nur Handy) */
+/* === Trefferleiste (nur Handy) =================================== */
 .results-dock { display: none; }
 @keyframes dockBump { 40% { transform: translateY(-4px); } }
 
+
+/* === Responsive ================================================== */
 @media (max-width: 950px) {
   .species-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filter-layout { grid-template-columns: minmax(290px, 340px) minmax(0, 1fr); gap: 16px; }
@@ -472,6 +522,8 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
   .card-copy em { font-size: 11px; }
   footer { padding: 18px 14px; gap: 10px; }
 }
+
+/* === Reduzierte Bewegung ========================================= */
 @media (prefers-reduced-motion: reduce) {
   .substrate, .deck-option, #option-deck { transition: none; animation: none; }
   .deck-carousel { scroll-behavior: auto; }

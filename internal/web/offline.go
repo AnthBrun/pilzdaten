@@ -174,3 +174,9 @@ func manifest(w http.ResponseWriter, _ *http.Request) {
 		},
 	})
 }
+
+// offlinePage ist die Hülle, die der Service Worker für nicht gespeicherte
+// Artseiten ausliefert; js/offline.js rendert die Art aus dem Offline-Paket.
+func (s *Server) offlinePage(w http.ResponseWriter, _ *http.Request) {
+	s.render(w, "offline.html", nil)
+}

@@ -1,5 +1,5 @@
 .git
 .gitignore
+.env
+.env.example
 README.md
-TASK.md
-opencode-run1.log

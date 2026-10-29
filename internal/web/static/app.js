@@ -53,6 +53,7 @@ const state = {
   max: maxSlider?.value || maxSlider?.max || "25",
   page: Number(currentURL.searchParams.get("page") || 1),
   letter: currentURL.searchParams.get("letter") || "",
+  availableTags: null,
 };
 let openPart = "";
 let activeSectionIndex = 0;
@@ -128,11 +129,27 @@ async function updateResults() {
   const params = paramsForRequest();
   const key = params.toString();
   const url = `/api/search${params.size ? `?${params}` : ""}`;
+  state.availableTags = null;
+  applyExhausted();
+  const availableParams = new URLSearchParams(params);
+  availableParams.delete("page");
+  availableParams.delete("letter");
+  const availableURL = `/api/available-tags${availableParams.size ? `?${availableParams}` : ""}`;
+  const availablePromise = fetch(availableURL, { headers: { Accept: "application/json" } })
+    .then((response) => {
+      if (!response.ok) throw new Error("Verfügbare Merkmale konnten nicht geladen werden");
+      return response.json();
+    })
+    .then((data) => new Set(data.tags || []))
+    .catch(() => null);
   try {
     const response = await fetch(url, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error("Suche fehlgeschlagen");
     const data = await response.json();
+    const availableTags = await availablePromise;
     if (requestId !== requestSequence) return;
+    state.availableTags = availableTags;
+    applyExhausted();
     if (key === lastRenderKey) return;
     const searchFocused = document.activeElement === searchInput;
     renderResults(data);
@@ -148,7 +165,19 @@ async function updateResults() {
 
 function scheduleUpdate(delay = 120) {
   clearTimeout(updateTimer);
+  requestSequence++;
+  state.availableTags = null;
+  applyExhausted();
   updateTimer = setTimeout(updateResults, delay);
+}
+
+function applyExhausted() {
+  const hasAvailability = state.availableTags instanceof Set;
+  document.querySelectorAll("[data-trait-tag], #option-deck [data-choice-tag]").forEach((option) => {
+    const tag = option.dataset.traitTag || option.dataset.choiceTag;
+    const exhausted = hasAvailability && !state.tags.has(tag) && !state.availableTags.has(tag);
+    option.classList.toggle("is-exhausted", exhausted);
+  });
 }
 
 function colorFor(tag, prefix = "") {
@@ -215,6 +244,7 @@ function updateMushroom() {
     part.classList.toggle("has-selection", selected.length > 0);
   });
   document.querySelectorAll("[data-trait-tag]").forEach((button) => button.classList.toggle("is-selected", state.tags.has(button.dataset.traitTag)));
+  applyExhausted();
 }
 
 function toggleTag(tag, group = "multi") {
@@ -262,6 +292,7 @@ function renderDeck(part) {
     const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
     return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
   }).join("");
+  applyExhausted();
   if (!isMulti) {
     const selected = deckCarousel.querySelector(".deck-option.is-selected");
     if (selected) requestAnimationFrame(() => centerDeckOption(selected));
@@ -407,6 +438,7 @@ window.addEventListener("popstate", () => {
 });
 
 updateMushroom();
+scheduleUpdate(0);
 
 const lightbox = document.querySelector("#lightbox");
 if (lightbox) {

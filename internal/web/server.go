@@ -89,6 +89,10 @@ type searchResponse struct {
 	Results    []searchResult `json:"results"`
 }
 
+type availableTagsResponse struct {
+	Tags []string `json:"tags"`
+}
+
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
@@ -97,7 +101,8 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", server.home)
 	mux.HandleFunc("GET /art/{slug}", server.detail)
-	mux.HandleFunc("GET /api/search", server.search)
+	mux.Handle("GET /api/search", withCacheControl(http.HandlerFunc(server.search), func(string) string { return "no-store" }))
+	mux.Handle("GET /api/available-tags", withCacheControl(http.HandlerFunc(server.availableTags), func(string) string { return "no-store" }))
 	mux.HandleFunc("GET /api/facets", server.facets)
 	mux.Handle("GET /static/", withCacheControl(http.FileServer(http.FS(files)), func(path string) string {
 		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
@@ -271,12 +276,7 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) search(w http.ResponseWriter, r *http.Request) {
-	facets := s.catalog.Facets()
-	minCM := boundedQueryInt(r, "dmin", facets.MinDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
-	maxCM := boundedQueryInt(r, "dmax", facets.MaxDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
-	if minCM > maxCM {
-		minCM, maxCM = maxCM, minCM
-	}
+	minCM, maxCM := diameterRange(r, s.catalog.Facets())
 	page := queryInt(r, "page", 1)
 	if page < 1 {
 		page = 1
@@ -308,6 +308,31 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Suchergebnis konnte nicht ausgegeben werden", http.StatusInternalServerError)
 	}
+}
+
+func (s *Server) availableTags(w http.ResponseWriter, r *http.Request) {
+	minCM, maxCM := diameterRange(r, s.catalog.Facets())
+	counts := s.catalog.AvailableTags(r.URL.Query().Get("q"), splitTags(r.URL.Query().Get("f")), minCM, maxCM)
+	tags := make([]string, 0, len(counts))
+	for tag, count := range counts {
+		if count > 0 {
+			tags = append(tags, tag)
+		}
+	}
+	sort.Strings(tags)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(availableTagsResponse{Tags: tags}); err != nil {
+		http.Error(w, "Verfügbare Merkmale konnten nicht ausgegeben werden", http.StatusInternalServerError)
+	}
+}
+
+func diameterRange(r *http.Request, facets catalog.Facets) (int, int) {
+	minCM := boundedQueryInt(r, "dmin", facets.MinDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+	maxCM := boundedQueryInt(r, "dmax", facets.MaxDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+	if minCM > maxCM {
+		minCM, maxCM = maxCM, minCM
+	}
+	return minCM, maxCM
 }
 
 func boundedQueryInt(r *http.Request, key string, fallback, min, max int) int {

@@ -95,6 +95,17 @@ func TestFilterRequiresAllTagsAppliesDiameterAndKeepsUnknown(t *testing.T) {
 	if count != 4 {
 		t.Fatalf("default diameter range results = %d, want all four species", count)
 	}
+	available := loaded.AvailableTags("", []string{"braun"}, 5, 12)
+	if available["lamellen"] != 3 || available["gut"] != 2 {
+		t.Fatalf("available tags with braun and diameter 5–12 = %#v, want lamellen=3 and gut=2", available)
+	}
+	if _, included := available["braun"]; included {
+		t.Fatalf("selected tag braun should not be included in available tags: %#v", available)
+	}
+	available = loaded.AvailableTags("B Pilz", []string{"braun"}, 5, 12)
+	if available["lamellen"] != 1 || available["gut"] != 0 {
+		t.Fatalf("available tags with query B Pilz = %#v, want lamellen=1 and no gut", available)
+	}
 }
 
 func TestLoadWithAssetsUsesPreferredPhotoAndEdibilityMetadata(t *testing.T) {

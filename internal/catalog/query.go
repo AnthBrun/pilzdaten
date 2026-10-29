@@ -80,10 +80,10 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		if letter != "" && initialLetter(species.NameTrivial) != letter {
 			continue
 		}
-		if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
+		filterData := c.filterData[species.Slug]
+		if !matchesQueryAndDiameter(species, filterData, query, minCM, maxCM) {
 			continue
 		}
-		filterData := c.filterData[species.Slug]
 		present := make(map[string]struct{}, len(filterData.Tags))
 		for _, tag := range filterData.Tags {
 			present[tag] = struct{}{}
@@ -98,12 +98,6 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 			score++
 		}
 		if !matchesTags {
-			continue
-		}
-		// A zero endpoint means the source has no known diameter. Keep those
-		// species visible. Known species remain when their interval overlaps
-		// the selected diameter interval.
-		if filterData.MinCM != 0 && filterData.MaxCM != 0 && (filterData.MinCM > maxCM || filterData.MaxCM < minCM) {
 			continue
 		}
 		matches = append(matches, match{species: species, score: score})
@@ -134,6 +128,63 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		results = append(results, item.species)
 	}
 	return results, total, pages
+}
+
+// AvailableTags returns, for every tag that exists in the catalog, how many
+// species match the given selection plus that tag. Tags with count 0 are
+// combinations with no data. Query and diameter use the same rules as Filter.
+func (c *Catalog) AvailableTags(query string, tags []string, minCM, maxCM int) map[string]int {
+	query = strings.ToLower(strings.TrimSpace(query))
+	selected := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		if tag = strings.TrimSpace(tag); tag != "" {
+			selected[tag] = struct{}{}
+		}
+	}
+
+	knownTags := make(map[string]struct{})
+	for _, filterData := range c.filterData {
+		for _, tag := range filterData.Tags {
+			knownTags[tag] = struct{}{}
+		}
+	}
+	counts := make(map[string]int, len(knownTags))
+	for _, species := range c.all {
+		filterData := c.filterData[species.Slug]
+		if !matchesQueryAndDiameter(species, filterData, query, minCM, maxCM) {
+			continue
+		}
+		present := make(map[string]struct{}, len(filterData.Tags))
+		for _, tag := range filterData.Tags {
+			present[tag] = struct{}{}
+		}
+		matchesSelected := true
+		for tag := range selected {
+			if _, ok := present[tag]; !ok {
+				matchesSelected = false
+				break
+			}
+		}
+		if !matchesSelected {
+			continue
+		}
+		for tag := range present {
+			if _, isSelected := selected[tag]; !isSelected {
+				counts[tag]++
+			}
+		}
+	}
+	return counts
+}
+
+func matchesQueryAndDiameter(species *Species, filterData FilterData, query string, minCM, maxCM int) bool {
+	if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
+		return false
+	}
+	// A zero endpoint means the source has no known diameter. Keep those
+	// species visible. Known species remain when their interval overlaps
+	// the selected diameter interval.
+	return filterData.MinCM == 0 || filterData.MaxCM == 0 || (filterData.MinCM <= maxCM && filterData.MaxCM >= minCM)
 }
 
 func (c *Catalog) Letters() []string {

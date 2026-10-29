@@ -136,6 +136,9 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .trait-chip-group h5 { margin: 0 0 5px; color: #838d84; font-size: 9px; font-weight: 650; }
 .trait-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .trait-chip { max-width: 100%; padding: 4px 7px; border: 1px solid #e2e5dc; border-radius: 99px; color: #5d685f; background: #f7f8f4; font-size: 8px; line-height: 1.15; cursor: pointer; }
+.is-exhausted { opacity: .38; filter: grayscale(.6); transition: opacity .15s; }
+.deck-option.is-exhausted > span:last-child { text-decoration: line-through; }
+.deck-option:focus-visible, .trait-chip:focus-visible { outline: 3px solid #3f7855; outline-offset: 2px; }
 .trait-chip:hover, .trait-chip.is-selected { border-color: #92a98f; color: #254e3b; background: #e8f0e5; }
 .results-column { min-width: 0; }
 .results-toolbar { position: sticky; top: 9px; z-index: 2; margin: 0 0 12px; padding: 10px 12px; background: rgb(245 244 239 / .96); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(10px); }

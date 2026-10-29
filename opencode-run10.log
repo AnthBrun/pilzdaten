@@ -1,0 +1,400 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Inspect catalog filtering and API route patterns
+[ ] Implement available-tags backend endpoint and query method
+[ ] Integrate exhausted styling with frontend filtering updates
+[ ] Run Go and JavaScript checks plus focused behavior verification
+[0m
+[0m✱ [0mGlob "internal/web/static/app.{js,css}"[90m 2 matches[0m
+[0m✱ [0mGlob "internal/web/server.go"[90m 1 match[0m
+[0m✱ [0mGlob "internal/catalog/query.go"[90m 1 match[0m
+[0m✱ [0mGlob "AGENTS.md"[90m 0 matches[0m
+[0m→ [0mRead internal/web/server.go
+[0m→ [0mRead internal/catalog/query.go
+[0m✱ [0mGrep "deck-option|trait-tag|is-exhausted|focus-visible"[90m in internal/web/static/app.css · 12 matches[0m
+[0m✱ [0mGrep "requestSequence|renderDeck|data-trait-tag|data-choice-tag|availableTags|api/search|function.*Search|withCacheControl"[90m in internal/web/static/app.js · 13 matches[0m
+[0m✱ [0mGrep "type Catalog|type FilterData|filterData|func \(c \*Catalog\) Facets"[90m in internal/catalog · 11 matches[0m
+[0m✱ [0mGrep "api/search|requestSequence|renderDeck|filter-update|debounce"[90m in internal/web/static · 9 matches[0m
+[0m→ [0mRead internal/web/static/app.js[90m [limit=390][0m
+[0m→ [0mRead internal/web/static/app.css[90m [offset=90, limit=45][0m
+[0m→ [0mRead internal/catalog/load.go[90m [offset=35, limit=70][0m
+[0m✱ [0mGrep "withCacheControl\(|no-store|Cache-Control"[90m in internal/web · 4 matches[0m
+[0m→ [0mRead internal/web/static/app.js[90m [offset=390, limit=70][0m
+[0m✱ [0mGrep "function apply|renderTraits|data-trait-tag"[90m in internal/web/templates · 1 match[0m
+[0m
+[0m# [0mTodos
+[✓] Inspect catalog filtering and API route patterns
+[•] Implement available-tags backend endpoint and query method
+[ ] Integrate exhausted styling with frontend filtering updates
+[ ] Run Go and JavaScript checks plus focused behavior verification
+[0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m→ [0mRead internal/web/static/app.css[90m [offset=130, limit=45][0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mgofmt -w internal/catalog/query.go internal/web/server.go && go test ./... && go build ./... && node --check internal/web/static/app.js
+/bin/bash: line 1: gofmt: command not found
+[0m
+[0m$ [0mcommand -v go; command -v docker; command -v node
+/usr/bin/docker
+/usr/bin/node
+[0m
+[0m✱ [0mGlob "Makefile"[90m 0 matches[0m
+[0m✱ [0mGlob "Dockerfile*"[90m 1 match[0m
+[0m→ [0mRead Dockerfile
+[0m
+[0m$ [0mgit status --short && git diff --check && git diff
+M internal/catalog/query.go
+ M internal/web/server.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+?? TASK10.md
+?? opencode-run10.log
+?? run-opencode10.sh
+diff --git a/internal/catalog/query.go b/internal/catalog/query.go
+index 73a9170..64126ce 100644
+--- a/internal/catalog/query.go
++++ b/internal/catalog/query.go
+@@ -80,10 +80,10 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
+ 		if letter != "" && initialLetter(species.NameTrivial) != letter {
+ 			continue
+ 		}
+-		if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
++		filterData := c.filterData[species.Slug]
++		if !matchesQueryAndDiameter(species, filterData, query, minCM, maxCM) {
+ 			continue
+ 		}
+-		filterData := c.filterData[species.Slug]
+ 		present := make(map[string]struct{}, len(filterData.Tags))
+ 		for _, tag := range filterData.Tags {
+ 			present[tag] = struct{}{}
+@@ -100,12 +100,6 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
+ 		if !matchesTags {
+ 			continue
+ 		}
+-		// A zero endpoint means the source has no known diameter. Keep those
+-		// species visible. Known species remain when their interval overlaps
+-		// the selected diameter interval.
+-		if filterData.MinCM != 0 && filterData.MaxCM != 0 && (filterData.MinCM > maxCM || filterData.MaxCM < minCM) {
+-			continue
+-		}
+ 		matches = append(matches, match{species: species, score: score})
+ 	}
+ 	sort.Slice(matches, func(i, j int) bool {
+@@ -136,6 +130,63 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
+ 	return results, total, pages
+ }
+ 
++// AvailableTags returns, for every tag that exists in the catalog, how many
++// species match the given selection plus that tag. Tags with count 0 are
++// combinations with no data. Query and diameter use the same rules as Filter.
++func (c *Catalog) AvailableTags(query string, tags []string, minCM, maxCM int) map[string]int {
++	query = strings.ToLower(strings.TrimSpace(query))
++	selected := make(map[string]struct{}, len(tags))
++	for _, tag := range tags {
++		if tag = strings.TrimSpace(tag); tag != "" {
++			selected[tag] = struct{}{}
++		}
++	}
++
++	knownTags := make(map[string]struct{})
++	for _, filterData := range c.filterData {
++		for _, tag := range filterData.Tags {
++			knownTags[tag] = struct{}{}
++		}
++	}
++	counts := make(map[string]int, len(knownTags))
++	for _, species := range c.all {
++		filterData := c.filterData[species.Slug]
++		if !matchesQueryAndDiameter(species, filterData, query, minCM, maxCM) {
++			continue
++		}
++		present := make(map[string]struct{}, len(filterData.Tags))
++		for _, tag := range filterData.Tags {
++			present[tag] = struct{}{}
++		}
++		matchesSelected := true
++		for tag := range selected {
++			if _, ok := present[tag]; !ok {
++				matchesSelected = false
++				break
++			}
++		}
++		if !matchesSelected {
++			continue
++		}
++		for _, tag := range filterData.Tags {
++			if _, isSelected := selected[tag]; !isSelected {
++				counts[tag]++
++			}
++		}
++	}
++	return counts
++}
++
++func matchesQueryAndDiameter(species *Species, filterData FilterData, query string, minCM, maxCM int) bool {
++	if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
++		return false
++	}
++	// A zero endpoint means the source has no known diameter. Keep those
++	// species visible. Known species remain when their interval overlaps
++	// the selected diameter interval.
++	return filterData.MinCM == 0 || filterData.MaxCM == 0 || (filterData.MinCM <= maxCM && filterData.MaxCM >= minCM)
++}
++
+ func (c *Catalog) Letters() []string {
+ 	letters := make([]string, 0, 26)
+ 	for letter := 'A'; letter <= 'Z'; letter++ {
+diff --git a/internal/web/server.go b/internal/web/server.go
+index c098f7b..c9041bd 100644
+--- a/internal/web/server.go
++++ b/internal/web/server.go
+@@ -89,6 +89,10 @@ type searchResponse struct {
+ 	Results    []searchResult `json:"results"`
+ }
+ 
++type availableTagsResponse struct {
++	Tags []string `json:"tags"`
++}
++
+ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
+ 	server := &Server{
+ 		catalog:   data,
+@@ -97,7 +101,8 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
+ 	mux := http.NewServeMux()
+ 	mux.HandleFunc("GET /", server.home)
+ 	mux.HandleFunc("GET /art/{slug}", server.detail)
+-	mux.HandleFunc("GET /api/search", server.search)
++	mux.Handle("GET /api/search", withCacheControl(http.HandlerFunc(server.search), func(string) string { return "no-store" }))
++	mux.Handle("GET /api/available-tags", withCacheControl(http.HandlerFunc(server.availableTags), func(string) string { return "no-store" }))
+ 	mux.HandleFunc("GET /api/facets", server.facets)
+ 	mux.Handle("GET /static/", withCacheControl(http.FileServer(http.FS(files)), func(path string) string {
+ 		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
+@@ -271,12 +276,7 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
+ }
+ 
+ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
+-	facets := s.catalog.Facets()
+-	minCM := boundedQueryInt(r, "dmin", facets.MinDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+-	maxCM := boundedQueryInt(r, "dmax", facets.MaxDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
+-	if minCM > maxCM {
+-		minCM, maxCM = maxCM, minCM
+-	}
++	minCM, maxCM := diameterRange(r, s.catalog.Facets())
+ 	page := queryInt(r, "page", 1)
+ 	if page < 1 {
+ 		page = 1
+@@ -310,6 +310,31 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
+ 	}
+ }
+ 
++func (s *Server) availableTags(w http.ResponseWriter, r *http.Request) {
++	minCM, maxCM := diameterRange(r, s.catalog.Facets())
++	counts := s.catalog.AvailableTags(r.URL.Query().Get("q"), splitTags(r.URL.Query().Get("f")), minCM, maxCM)
++	tags := make([]string, 0, len(counts))
++	for tag, count := range counts {
++		if count > 0 {
++			tags = append(tags, tag)
++		}
++	}
++	sort.Strings(tags)
++	w.Header().Set("Content-Type", "application/json; charset=utf-8")
++	if err := json.NewEncoder(w).Encode(availableTagsResponse{Tags: tags}); err != nil {
++		http.Error(w, "Verfügbare Merkmale konnten nicht ausgegeben werden", http.StatusInternalServerError)
++	}
++}
++
++func diameterRange(r *http.Request, facets catalog.Facets) (int, int) {
++	minCM := boundedQueryInt(r, "dmin", facets.MinDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
++	maxCM := boundedQueryInt(r, "dmax", facets.MaxDiameterCM, facets.MinDiameterCM, facets.MaxDiameterCM)
++	if minCM > maxCM {
++		minCM, maxCM = maxCM, minCM
++	}
++	return minCM, maxCM
++}
++
+ func boundedQueryInt(r *http.Request, key string, fallback, min, max int) int {
+ 	value := queryInt(r, key, fallback)
+ 	if value < min || value > max {
+diff --git a/internal/web/static/app.css b/internal/web/static/app.css
+index d4fb3ba..6bcd294 100644
+--- a/internal/web/static/app.css
++++ b/internal/web/static/app.css
+@@ -136,6 +136,9 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .trait-chip-group h5 { margin: 0 0 5px; color: #838d84; font-size: 9px; font-weight: 650; }
+ .trait-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+ .trait-chip { max-width: 100%; padding: 4px 7px; border: 1px solid #e2e5dc; border-radius: 99px; color: #5d685f; background: #f7f8f4; font-size: 8px; line-height: 1.15; cursor: pointer; }
++.is-exhausted { opacity: .38; filter: grayscale(.6); transition: opacity .15s; }
++.deck-option.is-exhausted > span:last-child { text-decoration: line-through; }
++.deck-option:focus-visible, .trait-chip:focus-visible { outline: 3px solid #3f7855; outline-offset: 2px; }
+ .trait-chip:hover, .trait-chip.is-selected { border-color: #92a98f; color: #254e3b; background: #e8f0e5; }
+ .results-column { min-width: 0; }
+ .results-toolbar { position: sticky; top: 9px; z-index: 2; margin: 0 0 12px; padding: 10px 12px; background: rgb(245 244 239 / .96); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(10px); }
+diff --git a/internal/web/static/app.js b/internal/web/static/app.js
+index 5364d92..abc3f75 100644
+--- a/internal/web/static/app.js
++++ b/internal/web/static/app.js
+@@ -53,6 +53,7 @@ const state = {
+   max: maxSlider?.value || maxSlider?.max || "25",
+   page: Number(currentURL.searchParams.get("page") || 1),
+   letter: currentURL.searchParams.get("letter") || "",
++  availableTags: null,
+ };
+ let openPart = "";
+ let activeSectionIndex = 0;
+@@ -128,11 +129,27 @@ async function updateResults() {
+   const params = paramsForRequest();
+   const key = params.toString();
+   const url = `/api/search${params.size ? `?${params}` : ""}`;
++  state.availableTags = null;
++  applyExhausted();
++  const availableParams = new URLSearchParams(params);
++  availableParams.delete("page");
++  availableParams.delete("letter");
++  const availableURL = `/api/available-tags${availableParams.size ? `?${availableParams}` : ""}`;
++  const availablePromise = fetch(availableURL, { headers: { Accept: "application/json" } })
++    .then((response) => {
++      if (!response.ok) throw new Error("Verfügbare Merkmale konnten nicht geladen werden");
++      return response.json();
++    })
++    .then((data) => new Set(data.tags || []))
++    .catch(() => null);
+   try {
+     const response = await fetch(url, { headers: { Accept: "application/json" } });
+     if (!response.ok) throw new Error("Suche fehlgeschlagen");
+     const data = await response.json();
++    const availableTags = await availablePromise;
+     if (requestId !== requestSequence) return;
++    state.availableTags = availableTags;
++    applyExhausted();
+     if (key === lastRenderKey) return;
+     const searchFocused = document.activeElement === searchInput;
+     renderResults(data);
+@@ -148,9 +165,21 @@ async function updateResults() {
+ 
+ function scheduleUpdate(delay = 120) {
+   clearTimeout(updateTimer);
++  requestSequence++;
++  state.availableTags = null;
++  applyExhausted();
+   updateTimer = setTimeout(updateResults, delay);
+ }
+ 
++function applyExhausted() {
++  const hasAvailability = state.availableTags instanceof Set;
++  document.querySelectorAll("[data-trait-tag], #option-deck [data-choice-tag]").forEach((option) => {
++    const tag = option.dataset.traitTag || option.dataset.choiceTag;
++    const exhausted = hasAvailability && !state.tags.has(tag) && !state.availableTags.has(tag);
++    option.classList.toggle("is-exhausted", exhausted);
++  });
++}
++
+ function colorFor(tag, prefix = "") {
+   const name = prefix ? tag.replace(prefix, "") : tag;
+   return colorHex[name] || "#b9b2a2";
+@@ -215,6 +244,7 @@ function updateMushroom() {
+     part.classList.toggle("has-selection", selected.length > 0);
+   });
+   document.querySelectorAll("[data-trait-tag]").forEach((button) => button.classList.toggle("is-selected", state.tags.has(button.dataset.traitTag)));
++  applyExhausted();
+ }
+ 
+ function toggleTag(tag, group = "multi") {
+@@ -262,6 +292,7 @@ function renderDeck(part) {
+     const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
+     return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+   }).join("");
++  applyExhausted();
+   if (!isMulti) {
+     const selected = deckCarousel.querySelector(".deck-option.is-selected");
+     if (selected) requestAnimationFrame(() => centerDeckOption(selected));
+@@ -407,6 +438,7 @@ window.addEventListener("popstate", () => {
+ });
+ 
+ updateMushroom();
++scheduleUpdate(0);
+ 
+ const lightbox = document.querySelector("#lightbox");
+ if (lightbox) {
+[0m
+[0m% [0mPatch 1 file
+[0m→ [0mRead internal/catalog/query.go[90m [offset=75, limit=125][0m
+[0m
+[0m$ [0mnode --check internal/web/static/app.js && git diff --check
+(no output)
+[0m
+[0m# [0mTodos
+[✓] Inspect catalog filtering and API route patterns
+[✓] Implement available-tags backend endpoint and query method
+[✓] Integrate exhausted styling with frontend filtering updates
+[•] Run Go and JavaScript checks plus focused behavior verification
+[0m
+[0m$ [0mdocker build -t pilzdaten-task10-check .
+ERROR: permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+[0m
+[0m✱ [0mGlob "internal/**/*_test.go"[90m 2 matches[0m
+[0m✱ [0mGlob "data/**"[90m 0 matches[0m
+[0m
+[0m$ [0mid && ls -l /var/run/docker.sock && command -v sudo
+uid=1001(hermes) gid=1001(hermes) groups=1001(hermes),100(users)
+srw-rw---- 1 root docker 0 Oct 26 08:35 /var/run/docker.sock
+/usr/bin/sudo
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead docker-compose.yml
+[0m→ [0mRead cmd/pilzdaten/main.go
+[0m→ [0mRead internal/web/server_test.go
+[0m→ [0mRead internal/catalog/load_test.go
+[0m
+[0m$ [0mls /usr/local/go/bin
+ls: cannot access '/usr/local/go/bin': No such file or directory
+[0m
+[0m$ [0mgit status --short
+M internal/catalog/query.go
+ M internal/web/server.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+?? TASK10.md
+?? opencode-run10.log
+?? run-opencode10.sh
+[0m
+[0m$ [0mgit diff --check && node --check internal/web/static/app.js
+(no output)
+[0m
+[0m% [0mPatch 1 file
+[0m→ [0mRead internal/web/static/app.css[90m [limit=48][0m
+[0m
+[0m$ [0mgit diff --stat && git status --short
+internal/catalog/load_test.go | 11 +++++++
+ internal/catalog/query.go     | 67 +++++++++++++++++++++++++++++++++++++------
+ internal/web/server.go        | 39 ++++++++++++++++++++-----
+ internal/web/static/app.css   |  3 ++
+ internal/web/static/app.js    | 32 +++++++++++++++++++++
+ 5 files changed, 137 insertions(+), 15 deletions(-)
+ M internal/catalog/load_test.go
+ M internal/catalog/query.go
+ M internal/web/server.go
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+?? TASK10.md
+?? opencode-run10.log
+?? run-opencode10.sh
+[0m
+[0m→ [0mRead internal/web/server.go[90m [offset=80, limit=60][0m
+[0m
+[0m$ [0mnode --check internal/web/static/app.js && git diff --check
+(no output)
+[0m
+Implementiert:
+
+- `Catalog.AvailableTags` zählt kompatible Tags mit denselben Query- und Durchmesserregeln wie `Filter`.
+- `GET /api/available-tags` liefert die alphabetisch sortierten verfügbaren Tags; `/api/search` und der neue Endpoint verwenden `Cache-Control: no-store`.
+- Frontend lädt die Verfügbarkeit parallel zur Suche mit gemeinsamem Debounce-/Request-Sequence-Guard. Chips und Deck-Optionen ohne Treffer werden ausgegraut, bleiben aber anklickbar.
+- Ein gezielter `AvailableTags`-Test wurde ergänzt.
+
+**Prüfungen:** `node --check internal/web/static/app.js` und `git diff --check` liefen erfolgreich. Go-Tests und Docker-Build konnte ich nicht ausführen: Go ist nicht installiert, und der Zugriff auf den Docker-Socket wurde mit „permission denied“ abgewiesen.

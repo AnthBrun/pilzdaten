@@ -28,6 +28,9 @@ type Species struct {
 	EdibilityLabel       string         `json:"-"`
 	EdibilityClass       string         `json:"-"`
 	EdibilityWarning     bool           `json:"-"`
+	Priority             int            `json:"-"`
+	Commonness           int            `json:"-"`
+	PhotoCount           int            `json:"-"`
 }
 
 type indexEntry struct {
@@ -154,8 +157,12 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 		filterData := catalog.filterData[species.Slug]
 		if hasLeistenCategory(species.Merkmale) {
 			filterData.Tags = appendUniqueTag(filterData.Tags, "leisten")
-			catalog.filterData[species.Slug] = filterData
 		}
+		filterData.Tags = addFieldTags(filterData.Tags, species.Merkmale)
+		catalog.filterData[species.Slug] = filterData
+		species.Priority = sourcePriority(species.Merkmale)
+		species.PhotoCount = countPhotos(species.Bilddateien)
+		species.Commonness = commonness(species.Merkmale, filterData.Tags)
 		applyEdibility(&species, filterData.Tags)
 		catalog.bySlug[species.Slug] = &species
 		catalog.all = append(catalog.all, &species)
@@ -164,6 +171,7 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 		return nil, fmt.Errorf("species-Datei lesen: %w", err)
 	}
 	catalog.count = len(catalog.bySlug)
+	catalog.addFieldFacets()
 	sort.Slice(catalog.all, func(i, j int) bool {
 		return speciesNameLess(catalog.all[i], catalog.all[j])
 	})
@@ -388,6 +396,16 @@ func (c *Catalog) Count() int {
 func (c *Catalog) Get(slug string) (*Species, bool) {
 	species, ok := c.bySlug[slug]
 	return species, ok
+}
+
+// All liefert alle Arten in Namensreihenfolge.
+func (c *Catalog) All() []*Species {
+	return c.all
+}
+
+// FilterData liefert Filter-Tags und Hutdurchmesser einer Art.
+func (c *Catalog) FilterData(slug string) FilterData {
+	return c.filterData[slug]
 }
 
 func (c *Catalog) Facets() Facets {

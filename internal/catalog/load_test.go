@@ -210,8 +210,8 @@ func TestLoadWithAssetsUsesPreferredPhotoAndEdibilityMetadata(t *testing.T) {
 		t.Fatalf("loaded presentation data = image %q, edibility %q (%s)", species.BestImage, species.EdibilityLabel, species.EdibilityClass)
 	}
 	facets := loaded.Facets()
-	if len(facets.Groups) != 2 || facets.Groups[0].Group != "essbarkeit" {
-		t.Fatalf("first facet group = %#v, want essbarkeit promoted first", facets.Groups)
+	if len(facets.Groups) != 4 || facets.Groups[0].Group != "essbarkeit" || facets.Groups[2].Group != "saison" || facets.Groups[3].Group != "wald" {
+		t.Fatalf("facet groups = %#v, want essbarkeit first and derived saison/wald groups last", facets.Groups)
 	}
 	option := facets.Groups[1].Options[0]
 	if option.Title != "Hut ßbraun." || option.Image != "braun" || option.ActiveImage != "braun_ja" {

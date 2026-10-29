@@ -104,7 +104,10 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		if query != "" {
 			return speciesSearchLess(matches[i], matches[j], query)
 		}
-		return speciesNameLess(matches[i], matches[j])
+		if letter != "" {
+			return speciesNameLess(matches[i], matches[j])
+		}
+		return speciesRelevanceLess(matches[i], matches[j])
 	})
 
 	total := len(matches)
@@ -217,7 +220,7 @@ func speciesSearchLess(left, right *Species, query string) bool {
 	if leftRank != rightRank {
 		return leftRank < rightRank
 	}
-	return speciesNameLess(left, right)
+	return speciesRelevanceLess(left, right)
 }
 
 func speciesSearchRank(species *Species, query string) int {

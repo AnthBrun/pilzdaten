@@ -108,6 +108,72 @@ func TestFilterRequiresAllTagsAppliesDiameterAndKeepsUnknown(t *testing.T) {
 	}
 }
 
+func TestLeistenCategoryIsAddedAsFilterTag(t *testing.T) {
+	dir := t.TempDir()
+	speciesPath := filepath.Join(dir, "species.jsonl")
+	indexPath := filepath.Join(dir, "index.jsonl")
+	filtersPath := filepath.Join(dir, "filter_tags.jsonl")
+	if err := os.WriteFile(speciesPath, []byte(`{"slug":"Leistenpilz","name_trivial":"Leistenpilz","merkmale":{"leisten":"Leisten"}}
+{"slug":"Mischform","name_trivial":"Mischform","merkmale":{"lamellen/leisten":"Lamellen und Leisten"}}
+{"slug":"Lamellenpilz","name_trivial":"Lamellenpilz","merkmale":{"lamellen":"Lamellen"}}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(indexPath, []byte(`{"slug":"Leistenpilz","name":"Leistenpilz"}
+{"slug":"Mischform","name":"Mischform"}
+{"slug":"Lamellenpilz","name":"Lamellenpilz"}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filtersPath, []byte(`{"slug":"Leistenpilz","tags":["lamellen"]}
+{"slug":"Mischform","tags":["lamellen"]}
+{"slug":"Lamellenpilz","tags":["lamellen"]}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadWithFilters(speciesPath, indexPath, filtersPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	results, count, _ := loaded.Filter("", []string{"leisten"}, 1, 25, "", 1, 50)
+	if count != 2 || len(results) != 2 || results[0].Slug != "Leistenpilz" || results[1].Slug != "Mischform" {
+		t.Fatalf("Leisten filter results = %#v (count %d), want Leistenpilz and Mischform", results, count)
+	}
+	available := loaded.AvailableTags("", nil, 1, 25)
+	if available["leisten"] != 2 {
+		t.Fatalf("available Leisten count = %d, want 2", available["leisten"])
+	}
+}
+
+func TestFacetLabelsAreShortenedForCapAndColorChange(t *testing.T) {
+	catalog := &Catalog{facets: Facets{Groups: []FacetGroup{
+		{Group: "hut", Options: []FacetOption{
+			{Tag: "braun", Label: "Hut braun"},
+			{Tag: "hut_gerieft", Label: "Hut gerieft"},
+		}},
+		{Group: "farbwechsel", Options: []FacetOption{
+			{Tag: "farbwechsel_kein", Label: "Kein Farbwechsel"},
+			{Tag: "farbwechsel_grau", Label: "Wird grau"},
+		}},
+		{Group: "stiel", Options: []FacetOption{{Tag: "stiel_braun", Label: "Brauner Stiel"}}},
+	}}}
+
+	catalog.normalizeFacetLabels()
+	got := []string{
+		catalog.facets.Groups[0].Options[0].Label,
+		catalog.facets.Groups[0].Options[1].Label,
+		catalog.facets.Groups[1].Options[0].Label,
+		catalog.facets.Groups[1].Options[1].Label,
+		catalog.facets.Groups[2].Options[0].Label,
+	}
+	want := []string{"braun", "gerieft", "Keiner", "grau", "Brauner Stiel"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("normalized label %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
 func TestLoadWithAssetsUsesPreferredPhotoAndEdibilityMetadata(t *testing.T) {
 	dir := t.TempDir()
 	paths := map[string]string{

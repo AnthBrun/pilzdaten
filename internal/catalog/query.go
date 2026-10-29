@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -40,6 +41,7 @@ func (c *Catalog) List(letter string, page, pageSize int) ([]*Species, int) {
 			filtered = append(filtered, species)
 		}
 	}
+	sort.Slice(filtered, func(i, j int) bool { return speciesNameLess(filtered[i], filtered[j]) })
 	pages := (len(filtered) + pageSize - 1) / pageSize
 	start := (page - 1) * pageSize
 	if start >= len(filtered) {
@@ -71,11 +73,7 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		}
 	}
 
-	type match struct {
-		species *Species
-		score   int
-	}
-	matches := make([]match, 0)
+	matches := make([]*Species, 0)
 	for _, species := range c.all {
 		if letter != "" && initialLetter(species.NameTrivial) != letter {
 			continue
@@ -88,30 +86,19 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		for _, tag := range filterData.Tags {
 			present[tag] = struct{}{}
 		}
-		score := 0
 		matchesTags := true
 		for tag := range selected {
 			if _, ok := present[tag]; !ok {
 				matchesTags = false
 				break
 			}
-			score++
 		}
 		if !matchesTags {
 			continue
 		}
-		matches = append(matches, match{species: species, score: score})
+		matches = append(matches, species)
 	}
-	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].score != matches[j].score {
-			return matches[i].score > matches[j].score
-		}
-		left, right := strings.ToLower(matches[i].species.NameTrivial), strings.ToLower(matches[j].species.NameTrivial)
-		if left == right {
-			return matches[i].species.Slug < matches[j].species.Slug
-		}
-		return left < right
-	})
+	sort.Slice(matches, func(i, j int) bool { return speciesNameLess(matches[i], matches[j]) })
 
 	total := len(matches)
 	pages := (total + pageSize - 1) / pageSize
@@ -124,9 +111,7 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		end = total
 	}
 	results := make([]*Species, 0, end-start)
-	for _, item := range matches[start:end] {
-		results = append(results, item.species)
-	}
+	results = append(results, matches[start:end]...)
 	return results, total, pages
 }
 
@@ -188,19 +173,130 @@ func matchesQueryAndDiameter(species *Species, filterData FilterData, query stri
 }
 
 func (c *Catalog) Letters() []string {
-	letters := make([]string, 0, 26)
+	letters := make([]string, 0, 27)
 	for letter := 'A'; letter <= 'Z'; letter++ {
 		letters = append(letters, string(letter))
 	}
+	letters = append(letters, "#")
 	return letters
 }
 
 func initialLetter(value string) string {
-	r, _ := firstRune(value)
+	r, _ := firstRune(nameSortKey(value))
 	if r == 0 {
 		return ""
 	}
-	return string(unicode.ToUpper(r))
+	r = unicode.ToUpper(r)
+	if r >= 'A' && r <= 'Z' {
+		return string(r)
+	}
+	return "#"
+}
+
+func speciesNameLess(left, right *Species) bool {
+	leftKey, rightKey := nameSortKey(left.NameTrivial), nameSortKey(right.NameTrivial)
+	if leftKey != rightKey {
+		return leftKey < rightKey
+	}
+	leftName, rightName := strings.ToLower(primaryName(left.NameTrivial)), strings.ToLower(primaryName(right.NameTrivial))
+	if leftName != rightName {
+		return leftName < rightName
+	}
+	return left.Slug < right.Slug
+}
+
+func nameSortKey(value string) string {
+	name := primaryName(value)
+	name = strings.TrimSpace(name)
+
+	firstNonDigit := 0
+	for firstNonDigit < len(name) && name[firstNonDigit] >= '0' && name[firstNonDigit] <= '9' {
+		firstNonDigit++
+	}
+	if firstNonDigit > 0 {
+		if number, err := strconv.ParseUint(name[:firstNonDigit], 10, 64); err == nil {
+			name = germanNumberWords(number) + name[firstNonDigit:]
+		}
+	}
+
+	name = strings.ToLower(name)
+	return strings.NewReplacer("ä", "a", "ö", "o", "ü", "u", "ß", "ss").Replace(name)
+}
+
+func primaryName(value string) string {
+	if name, _, found := strings.Cut(value, ","); found {
+		return name
+	}
+	return value
+}
+
+func germanNumberWords(number uint64) string {
+	if number < 1000 {
+		return germanBelowThousand(number)
+	}
+
+	var groups []uint64
+	for number > 0 {
+		groups = append(groups, number%1000)
+		number /= 1000
+	}
+	scales := []string{"", "tausend", "million", "milliarde", "billion", "billiarde", "trillion"}
+	parts := make([]string, 0, len(groups))
+	for index := len(groups) - 1; index >= 0; index-- {
+		group := groups[index]
+		if group == 0 {
+			continue
+		}
+		words := germanBelowThousand(group)
+		switch index {
+		case 0:
+			parts = append(parts, words)
+		case 1:
+			if group == 1 {
+				words = "ein"
+			}
+			parts = append(parts, words+scales[index])
+		default:
+			if group == 1 {
+				words = "eine"
+			}
+			scale := scales[index]
+			if group != 1 {
+				scale += "en"
+			}
+			parts = append(parts, words+" "+scale)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func germanBelowThousand(number uint64) string {
+	units := []string{"null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf", "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"}
+	tens := []string{"", "", "zwanzig", "dreißig", "vierzig", "fünfzig", "sechzig", "siebzig", "achtzig", "neunzig"}
+	if number < 20 {
+		return units[number]
+	}
+	if number < 100 {
+		unit, ten := number%10, number/10
+		if unit == 0 {
+			return tens[ten]
+		}
+		unitWord := units[unit]
+		if unit == 1 {
+			unitWord = "ein"
+		}
+		return unitWord + "und" + tens[ten]
+	}
+	hundreds, remainder := number/100, number%100
+	word := units[hundreds]
+	if hundreds == 1 {
+		word = "ein"
+	}
+	word += "hundert"
+	if remainder > 0 {
+		word += germanBelowThousand(remainder)
+	}
+	return word
 }
 
 func firstRune(value string) (rune, int) {

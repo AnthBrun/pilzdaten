@@ -115,6 +115,7 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 			return nil, err
 		}
 	}
+	catalog.normalizeFacetLabels()
 	if bestImagesPath != "" {
 		catalog.bestImages, err = loadBestImages(bestImagesPath)
 		if err != nil {
@@ -150,7 +151,12 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 		}
 		species.Gattung = entry.Gattung
 		species.BestImage = catalog.bestImages[species.Slug]
-		applyEdibility(&species, catalog.filterData[species.Slug].Tags)
+		filterData := catalog.filterData[species.Slug]
+		if hasLeistenCategory(species.Merkmale) {
+			filterData.Tags = appendUniqueTag(filterData.Tags, "leisten")
+			catalog.filterData[species.Slug] = filterData
+		}
+		applyEdibility(&species, filterData.Tags)
 		catalog.bySlug[species.Slug] = &species
 		catalog.all = append(catalog.all, &species)
 	}
@@ -159,12 +165,7 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 	}
 	catalog.count = len(catalog.bySlug)
 	sort.Slice(catalog.all, func(i, j int) bool {
-		left := strings.ToLower(catalog.all[i].NameTrivial)
-		right := strings.ToLower(catalog.all[j].NameTrivial)
-		if left == right {
-			return catalog.all[i].Slug < catalog.all[j].Slug
-		}
-		return left < right
+		return speciesNameLess(catalog.all[i], catalog.all[j])
 	})
 	return catalog, nil
 }
@@ -224,6 +225,25 @@ func (c *Catalog) applyPictograms(pictograms map[string]Pictogram) {
 	}
 }
 
+func (c *Catalog) normalizeFacetLabels() {
+	for groupIndex := range c.facets.Groups {
+		group := &c.facets.Groups[groupIndex]
+		for optionIndex := range group.Options {
+			option := &group.Options[optionIndex]
+			switch group.Group {
+			case "hut":
+				option.Label = strings.TrimPrefix(option.Label, "Hut ")
+			case "farbwechsel":
+				if option.Tag == "farbwechsel_kein" {
+					option.Label = "Keiner"
+				} else {
+					option.Label = strings.TrimPrefix(option.Label, "Wird ")
+				}
+			}
+		}
+	}
+}
+
 func (c *Catalog) promoteEdibilityFacet() {
 	for index, group := range c.facets.Groups {
 		if group.Group == "essbarkeit" {
@@ -254,6 +274,25 @@ func applyEdibility(species *Species, tags []string) {
 	default:
 		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "", "Essbarkeit nicht erfasst", "unknown"
 	}
+}
+
+func hasLeistenCategory(traits map[string]any) bool {
+	for field := range traits {
+		switch strings.ToLower(strings.TrimSpace(field)) {
+		case "leisten", "lamellen/leisten":
+			return true
+		}
+	}
+	return false
+}
+
+func appendUniqueTag(tags []string, tag string) []string {
+	for _, existing := range tags {
+		if existing == tag {
+			return tags
+		}
+	}
+	return append(tags, tag)
 }
 
 func loadFilterTags(path string) (map[string]FilterData, error) {

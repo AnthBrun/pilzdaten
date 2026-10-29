@@ -8,7 +8,8 @@ import (
 )
 
 // Search returns species matching their common name, scientific name, or any
-// synonym. Matching is case-insensitive and results follow catalog order.
+// synonym. Matching is case-insensitive and exact or prefix name matches rank
+// before broader substring matches.
 func (c *Catalog) Search(query string, limit int) []*Species {
 	query = strings.ToLower(strings.TrimSpace(query))
 	if query == "" {
@@ -18,10 +19,11 @@ func (c *Catalog) Search(query string, limit int) []*Species {
 	for _, species := range c.all {
 		if containsFold(species.NameTrivial, query) || containsFold(species.NameWissenschaftlich, query) || containsAnyFold(species.Synonyme, query) {
 			results = append(results, species)
-			if limit > 0 && len(results) >= limit {
-				break
-			}
 		}
+	}
+	sort.Slice(results, func(i, j int) bool { return speciesSearchLess(results[i], results[j], query) })
+	if limit > 0 && len(results) > limit {
+		results = results[:limit]
 	}
 	return results
 }
@@ -98,7 +100,12 @@ func (c *Catalog) Filter(query string, tags []string, minCM, maxCM int, letter s
 		}
 		matches = append(matches, species)
 	}
-	sort.Slice(matches, func(i, j int) bool { return speciesNameLess(matches[i], matches[j]) })
+	sort.Slice(matches, func(i, j int) bool {
+		if query != "" {
+			return speciesSearchLess(matches[i], matches[j], query)
+		}
+		return speciesNameLess(matches[i], matches[j])
+	})
 
 	total := len(matches)
 	pages := (total + pageSize - 1) / pageSize
@@ -203,6 +210,52 @@ func speciesNameLess(left, right *Species) bool {
 		return leftName < rightName
 	}
 	return left.Slug < right.Slug
+}
+
+func speciesSearchLess(left, right *Species, query string) bool {
+	leftRank, rightRank := speciesSearchRank(left, query), speciesSearchRank(right, query)
+	if leftRank != rightRank {
+		return leftRank < rightRank
+	}
+	return speciesNameLess(left, right)
+}
+
+func speciesSearchRank(species *Species, query string) int {
+	best := 1 << 30
+	for index, name := range strings.Split(species.NameTrivial, ",") {
+		rank := nameMatchRank(name, query)
+		if rank < 3 {
+			if index > 0 {
+				rank += 3
+			}
+			if rank < best {
+				best = rank
+			}
+		}
+	}
+	if rank := nameMatchRank(species.NameWissenschaftlich, query); rank < 3 && rank+6 < best {
+		best = rank + 6
+	}
+	for _, synonym := range species.Synonyme {
+		if rank := nameMatchRank(synonym, query); rank < 3 && rank+9 < best {
+			best = rank + 9
+		}
+	}
+	return best
+}
+
+func nameMatchRank(value, query string) int {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch {
+	case value == query:
+		return 0
+	case strings.HasPrefix(value, query):
+		return 1
+	case strings.Contains(value, query):
+		return 2
+	default:
+		return 3
+	}
 }
 
 func nameSortKey(value string) string {

@@ -51,3 +51,38 @@ func TestListGroupsGermanUmlautsAndNonLetterNames(t *testing.T) {
 		t.Fatalf("Letters() ends with %q and has %d entries; want 26 letters followed by #", letters[len(letters)-1], len(letters))
 	}
 }
+
+func TestSearchRanksTitleMatchesByRelevance(t *testing.T) {
+	catalog := &Catalog{all: []*Species{
+		{Slug: "synonym", NameTrivial: "Anderer Pilz", Synonyme: []string{"Steinpilz"}},
+		{Slug: "contains-k", NameTrivial: "Kiefern-Steinpilz"},
+		{Slug: "scientific", NameTrivial: "Waldpilz", NameWissenschaftlich: "Steinpilzus example"},
+		{Slug: "prefix", NameTrivial: "Steinpilze"},
+		{Slug: "contains-b", NameTrivial: "Birkensteinpilz"},
+		{Slug: "exact", NameTrivial: "Steinpilz"},
+	}}
+	want := []string{"exact", "prefix", "contains-b", "contains-k", "scientific", "synonym"}
+
+	results := catalog.Search("steinpilz", 0)
+	if len(results) != len(want) {
+		t.Fatalf("Search returned %d results, want %d", len(results), len(want))
+	}
+	for index, slug := range want {
+		if results[index].Slug != slug {
+			t.Errorf("Search result %d = %q, want %q", index, results[index].Slug, slug)
+		}
+	}
+	if limited := catalog.Search("steinpilz", 2); len(limited) != 2 || limited[0].Slug != "exact" || limited[1].Slug != "prefix" {
+		t.Errorf("limited Search results = %#v, want exact and prefix matches", limited)
+	}
+
+	filtered, total, _ := catalog.Filter("steinpilz", nil, 1, 25, "", 1, 50)
+	if total != len(want) || len(filtered) != len(want) {
+		t.Fatalf("Filter returned %d results and total %d, want %d", len(filtered), total, len(want))
+	}
+	for index, slug := range want {
+		if filtered[index].Slug != slug {
+			t.Errorf("Filter result %d = %q, want %q", index, filtered[index].Slug, slug)
+		}
+	}
+}

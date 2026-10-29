@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f4ef">
-  <title>{{.Species.NameTrivial}} – Pilzdatenbank</title>
+  <meta name="theme-color" content="#254e3b">
+  <title>{{.DisplayName}} – Pilzdatenbank</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a></header>
   <main class="detail-page">
-    <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/">Artenverzeichnis</a><span>/</span><span>{{.Species.NameTrivial}}</span></nav>
+    <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/" data-back-link>← Zurück zu den Treffern</a></nav>
     <section class="detail-hero">
       <div class="detail-hero-copy">
         <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
@@ -19,12 +21,33 @@
         {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
         {{if .Aliases}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Aliases}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
       </div>
-      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0" aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
+      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0" aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
     </section>
+
+    {{if .Gallery}}
+    <section class="photo-strip-section" aria-labelledby="images-heading">
+      <h2 id="images-heading" class="strip-heading">Bilder <span class="heading-count">({{len .Images}})</span> <span class="strip-hint">wischen →</span></h2>
+      <div class="photo-strip">{{range $index, $image := .Gallery}}<button class="image-open strip-photo" type="button" aria-label="Bild {{$index}} vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"></button>{{end}}</div>
+    </section>
+    {{end}}
+
+    {{if .DangerousRelated}}
+    <section class="danger-banner" aria-label="Gefährliche Verwechslung">
+      <strong>⚠ Verwechslungsgefahr mit giftigen Arten</strong>
+      <p>{{range $index, $species := .DangerousRelated}}{{if $index}}, {{end}}<a href="/art/{{$species.Slug}}">{{displayName $species.NameTrivial}}</a> <span class="danger-label">({{$species.EdibilityLabel}})</span>{{end}}</p>
+    </section>
+    {{end}}
+
+    {{if .Related}}
+    <section class="detail-section related-section" aria-labelledby="related-heading">
+      <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN – GENAU VERGLEICHEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
+      <div class="species-grid related-strip">{{range .Related}}<a class="species-card edibility-card-{{.EdibilityClass}}" href="/art/{{.Slug}}">{{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}<span class="card-copy"><strong>{{displayName .NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span></a>{{end}}</div>
+    </section>
+    {{end}}
 
     <section class="edibility-banner edibility-{{.Species.EdibilityClass}}" aria-label="Essbarkeit">
       <span class="edibility-badge edibility-{{.Species.EdibilityClass}}">{{.Species.EdibilityLabel}}</span>
-      {{if .Species.EdibilityWarning}}<p>Giftiger Pilz — nicht verzehren.</p><p class="safety-warning">Nur als Nachschlagehilfe — Pilze niemals ungeprüft essen!</p>{{else if eq .Species.EdibilityClass "unknown"}}<p>Für diese Art liegt keine Essbarkeits-Angabe vor.</p>{{else}}<p>Angabe aus der Datenquelle; keine Verzehrfreigabe.</p>{{end}}
+      {{if .Species.EdibilityWarning}}<p>Giftiger Pilz — nicht verzehren.</p>{{else if eq .Species.EdibilityClass "unknown"}}<p>Für diese Art liegt keine Essbarkeits-Angabe vor.</p>{{else}}<p>Nur die Angabe der Datenquelle – keine Verzehrfreigabe. Iss nur Pilze, die du zu 100&nbsp;% sicher bestimmt hast.</p>{{end}}
     </section>
 
     {{if .Traits}}
@@ -46,13 +69,6 @@
     {{end}}
 
     {{if .Images}}
-    <section class="detail-section" aria-labelledby="images-heading">
-      <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>
-      {{if .Gallery}}<div class="image-grid">{{range $index, $image := .Gallery}}<figure class="mushroom-image"><button class="image-open" type="button" data-image-index="{{$index}}" aria-label="Bild vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button><figcaption>{{$image.Alt}}</figcaption></figure>{{end}}</div>{{else}}<p class="search-hint">Das Hauptbild ist das einzige erfasste Foto.</p>{{end}}
-    </section>
-    {{end}}
-
-    {{if .Images}}
     <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bildansicht">
       <button class="lightbox-close" type="button" aria-label="Bildansicht schließen">×</button>
       <button class="lightbox-prev" type="button" aria-label="Vorheriges Bild">‹</button>
@@ -60,13 +76,6 @@
       <button class="lightbox-next" type="button" aria-label="Nächstes Bild">›</button>
       <p class="lightbox-count" aria-live="polite"></p>
     </div>
-    {{end}}
-
-    {{if .Related}}
-    <section class="detail-section" aria-labelledby="related-heading">
-      <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
-      <div class="species-grid">{{range .Related}}<a class="species-card" href="/art/{{.Slug}}">{{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}<span class="card-copy"><strong>{{displayName .NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>{{end}}</div>
-    </section>
     {{end}}
 
     {{if .Species.URL}}<p class="source-link">Quelle: <a href="{{.Species.URL}}" rel="noopener noreferrer">Originaleintrag auf 123pilzsuche.de ↗</a></p>{{end}}

@@ -13,6 +13,14 @@ const deckSections = document.querySelector("#deck-sections");
 const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-tag]")].map((node) => [node.dataset.tag, node.dataset.label]));
 const customLabels = { leisten: "Leisten" };
 
+const resultsColumn = document.querySelector("#results");
+const resultsDock = document.querySelector("#results-dock");
+const offlineButton = document.querySelector("#offline-button");
+const monthTags = Array.from({ length: 12 }, (_, index) => `monat_${index + 1}`);
+const currentMonthTag = monthTags[new Date().getMonth()];
+const OFFLINE_DATA_URL = "/api/offline";
+const REQUEST_TIMEOUT_MS = 6000;
+
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
 const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
 const sporeColorHex = { "sp_weiß": "#f2efe4", sp_gelb: "#d9b936", sp_rot: "#bd4b45", sp_braun: "#8b5e3c", sp_violett: "#846497", sp_schwarz: "#333332" };
@@ -48,6 +56,7 @@ const groups = {
   growth: { substrate: new Set(["auf_boden", "auf_wiese", "holz"]) },
   edibility: { edibility: new Set(["hervorragend", "gut", "schlecht", "giftig", "tot"]) },
   spore: { spore: new Set(Object.keys(sporeColorHex)) },
+  saison: { saison: new Set(monthTags) },
 };
 const currentURL = new URL(window.location.href);
 const state = {
@@ -59,6 +68,12 @@ const state = {
   letter: currentURL.searchParams.get("letter") || "",
   availableTags: null,
 };
+// Beim ersten Öffnen ohne Filter zählt der aktuelle Monat: Im Wald sucht man,
+// was jetzt wächst. Der Filter ist als Chip sichtbar und mit einem Tipp weg.
+if (results && !currentURL.search && !readSession("pilz-season-default")) {
+  state.tags.add(currentMonthTag);
+  writeSession("pilz-season-default", "1");
+}
 let openPart = "";
 let updateTimer;
 let requestSequence = 0;
@@ -69,6 +84,14 @@ const pulseTimers = new WeakMap();
 document.querySelectorAll(".spore-option").forEach((button) => {
   button.style.setProperty("--spore-color", sporeColorHex[button.dataset.traitTag] || "#999b96");
 });
+
+function readSession(key) {
+  try { return sessionStorage.getItem(key); } catch (_error) { return null; }
+}
+
+function writeSession(key, value) {
+  try { sessionStorage.setItem(key, value); } catch (_error) { /* privater Modus */ }
+}
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -102,6 +125,12 @@ function updateDiameterLabel() {
   diameterValue.textContent = minSlider.value === minSlider.min && maxSlider.value === maxSlider.max
     ? "alle Werte"
     : `${minSlider.value} – ${maxSlider.value} cm`;
+  document.querySelectorAll("[data-diameter]").forEach((button) => {
+    const [low, high] = button.dataset.diameter.split("-");
+    const selected = minSlider.value === low && maxSlider.value === high;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
 }
 
 function renderActiveFilters() {
@@ -130,10 +159,13 @@ function renderResults(data) {
   const y = window.scrollY;
   resultLabel.textContent = `${data.count} passende ${data.count === 1 ? "Art" : "Arten"}`;
   resultNumber.textContent = data.total_pages > 1 ? `Seite ${data.page} von ${data.total_pages}` : "";
+  const activeMonth = monthTags.find((tag) => state.tags.has(tag));
+  const monthHint = activeMonth ? ` <button class="reset-inline" type="button" data-remove-tag="${activeMonth}">Ohne Monatsfilter suchen</button>` : "";
   results.innerHTML = data.results.length
     ? data.results.map(renderCard).join("")
-    : '<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>';
+    : `<p class="empty-state">Keine passenden Arten gefunden. Entferne zuletzt gesetzte Merkmale.${monthHint}</p>`;
   window.scrollTo(0, y);
+  updateDock(data);
   pagination.innerHTML = `${data.page > 1 ? '<button type="button" data-page="-1">← Zurück</button>' : "<span></span>"}${data.total_pages > 1 ? `<span>Seite ${data.page} / ${data.total_pages}</span>` : ""}${data.page < data.total_pages ? '<button type="button" data-page="1">Weiter →</button>' : ""}`;
 }
 
@@ -150,18 +182,25 @@ async function updateResults() {
   availableParams.delete("page");
   availableParams.delete("letter");
   const availableURL = `/api/available-tags${availableParams.size ? `?${availableParams}` : ""}`;
-  const availablePromise = fetch(availableURL, { headers: { Accept: "application/json" } })
-    .then((response) => {
-      if (!response.ok) throw new Error("Verfügbare Merkmale konnten nicht geladen werden");
-      return response.json();
-    })
-    .then((data) => new Set(data.tags || []))
-    .catch(() => null);
+  let data;
+  let availableTags;
   try {
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error("Suche fehlgeschlagen");
-    const data = await response.json();
-    const availableTags = await availablePromise;
+    if (!navigator.onLine) throw new Error("offline");
+    const availablePromise = fetchJSON(availableURL)
+      .then((available) => new Set(available.tags || []))
+      .catch(() => null);
+    data = await fetchJSON(url);
+    availableTags = await availablePromise;
+  } catch (_error) {
+    const pack = await loadOfflinePack();
+    if (requestId !== requestSequence) return;
+    if (!pack) {
+      results.innerHTML = '<p class="empty-state">Keine Verbindung. Speichere die Daten oben über „Offline speichern“, solange du Netz hast – dann funktioniert die Suche auch im Funkloch.</p>';
+      return;
+    }
+    ({ data, availableTags } = searchOffline(pack, params));
+  }
+  try {
     if (requestId !== requestSequence) return;
     state.availableTags = availableTags;
     applyExhausted();
@@ -172,9 +211,20 @@ async function updateResults() {
     if (searchFocused && searchInput) searchInput.focus({ preventScroll: true });
     syncURL(historyMode);
     lastRenderKey = key;
-  } catch (_error) {
-    if (requestId !== requestSequence) return;
-    window.location.href = `/${params.size ? `?${params}` : ""}`;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function fetchJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" }, signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -403,6 +453,18 @@ activeFilters?.addEventListener("click", (event) => {
   if (event.target.closest("[data-clear-query]")) { state.q = ""; searchInput.value = ""; state.page = 1; scheduleUpdate(0); }
   if (event.target.closest("#reset-filters-inline")) resetFilters();
 });
+results?.addEventListener("click", (event) => {
+  const remove = event.target.closest("[data-remove-tag]");
+  if (remove) { state.tags.delete(remove.dataset.removeTag); state.page = 1; updateMushroom(); scheduleUpdate(0); }
+});
+document.querySelectorAll("[data-diameter]").forEach((button) => button.addEventListener("click", () => {
+  const [low, high] = button.dataset.diameter.split("-");
+  const active = minSlider.value === low && maxSlider.value === high;
+  minSlider.value = active ? minSlider.min : low;
+  maxSlider.value = active ? maxSlider.max : high;
+  state.min = minSlider.value; state.max = maxSlider.value; state.page = 1;
+  updateDiameterLabel(); scheduleUpdate(0);
+}));
 pagination?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-page]");
   if (!button) return;
@@ -447,8 +509,18 @@ window.addEventListener("popstate", () => {
   updateDiameterLabel(); updateMushroom(); scheduleUpdate(0, "replace");
 });
 
-updateMushroom();
-scheduleUpdate(0, "replace");
+if (results) {
+  document.querySelector(`[data-trait-tag="${currentMonthTag}"]`)?.classList.add("is-now");
+  updateDiameterLabel();
+  updateMushroom();
+  scheduleUpdate(0, "replace");
+  window.addEventListener("scroll", syncDock, { passive: true });
+  window.addEventListener("resize", syncDock);
+  resultsDock?.addEventListener("click", (event) => {
+    event.preventDefault();
+    resultsColumn.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+}
 
 const lightbox = document.querySelector("#lightbox");
 if (lightbox) {
@@ -482,4 +554,223 @@ if (lightbox) {
     if (event.key === "ArrowLeft") showImage(currentImage - 1);
     if (event.key === "ArrowRight") showImage(currentImage + 1);
   });
+}
+
+// --- Trefferleiste: auf dem Handy liegt die Ergebnisliste unter dem Pilz-Lab.
+// Die Leiste zeigt nach jedem Tipp sofort, wie viele Arten noch passen.
+function updateDock(data) {
+  if (!resultsDock) return;
+  document.querySelector("#dock-number").textContent = data.count;
+  document.querySelector("#dock-thumbs").innerHTML = data.results.slice(0, 3)
+    .filter((species) => species.image)
+    .map((species) => `<img src="${escapeHTML(species.image)}" alt="" loading="lazy" decoding="async">`).join("");
+  resultsDock.classList.remove("is-updated");
+  void resultsDock.offsetWidth;
+  resultsDock.classList.add("is-updated");
+  syncDock();
+}
+
+function syncDock() {
+  if (!resultsDock || !resultsColumn) return;
+  resultsDock.hidden = resultsColumn.getBoundingClientRect().top < window.innerHeight - 60;
+}
+
+// --- Offline-Paket: alle Arten kompakt im Cache, damit Suche, Filter und
+// Artseiten auch ohne Netz funktionieren.
+let offlinePackPromise = null;
+
+function loadOfflinePack() {
+  if (!("caches" in window)) return Promise.resolve(null);
+  offlinePackPromise ||= caches.match(OFFLINE_DATA_URL)
+    .then((response) => (response ? response.json() : null))
+    .then((pack) => (pack ? indexPack(pack) : null))
+    .catch(() => null);
+  return offlinePackPromise.then((pack) => {
+    if (!pack) offlinePackPromise = null;
+    return pack;
+  });
+}
+
+function indexPack(pack) {
+  pack.bySlug = new Map(pack.species.map((species) => [species.s, species]));
+  for (const species of pack.species) {
+    species.tagSet = new Set(species.t);
+    species.sortKey = species.n.toLowerCase().replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss");
+  }
+  return pack;
+}
+
+function nameMatchRank(value, query) {
+  value = String(value || "").trim().toLowerCase();
+  if (value === query) return 0;
+  if (value.startsWith(query)) return 1;
+  if (value.includes(query)) return 2;
+  return 3;
+}
+
+function offlineSearchRank(species, query) {
+  let best = Infinity;
+  species.a.split(",").forEach((name, index) => {
+    const rank = nameMatchRank(name, query);
+    if (rank < 3) best = Math.min(best, rank + (index > 0 ? 3 : 0));
+  });
+  const scientific = nameMatchRank(species.w, query);
+  if (scientific < 3) best = Math.min(best, scientific + 6);
+  for (const synonym of species.y || []) {
+    const rank = nameMatchRank(synonym, query);
+    if (rank < 3) best = Math.min(best, rank + 9);
+  }
+  return best;
+}
+
+function relevanceCompare(left, right) {
+  const photoBucket = (species) => Math.floor(Math.min(species.k || 0, 40) / 10);
+  return left.p - right.p || (right.c || 0) - (left.c || 0) || photoBucket(right) - photoBucket(left) || left.sortKey.localeCompare(right.sortKey);
+}
+
+// Spiegelt catalog.Filter und catalog.AvailableTags für den Offline-Betrieb.
+function searchOffline(pack, params) {
+  const query = (params.get("q") || "").trim().toLowerCase();
+  const tags = (params.get("f") || "").split(",").filter(Boolean);
+  const min = Number(params.get("dmin") || minSlider.min);
+  const max = Number(params.get("dmax") || maxSlider.max);
+  const page = Math.max(1, Number(params.get("page") || 1));
+  const perPage = 50;
+  const matches = pack.species.filter((species) => {
+    if (query && offlineSearchRank(species, query) === Infinity) return false;
+    const [low, high] = species.d;
+    if (low && high && (low > max || high < min)) return false;
+    return tags.every((tag) => species.tagSet.has(tag));
+  });
+  matches.sort(query ? (left, right) => offlineSearchRank(left, query) - offlineSearchRank(right, query) || relevanceCompare(left, right) : relevanceCompare);
+  const availableTags = new Set();
+  matches.forEach((species) => species.t.forEach((tag) => availableTags.add(tag)));
+  const totalPages = Math.ceil(matches.length / perPage);
+  const data = {
+    count: matches.length, page, total_pages: totalPages, per_page: perPage,
+    results: matches.slice((page - 1) * perPage, page * perPage).map((species) => ({
+      slug: species.s, name: species.n, scientific_name: species.w, edibility_class: species.e, edibility_label: species.l, image: species.i || "",
+    })),
+  };
+  return { data, availableTags };
+}
+
+// --- Offline speichern: Artdaten plus Fotos der wichtigsten Arten.
+const PACK_MEDIA_CACHE = "pilz-media-pack";
+
+function setOfflineButton(text, stateName) {
+  if (!offlineButton) return;
+  offlineButton.querySelector(".offline-text").textContent = text;
+  offlineButton.dataset.state = stateName;
+}
+
+async function refreshOfflineButton() {
+  if (!offlineButton || !("caches" in window) || !("serviceWorker" in navigator)) return;
+  offlineButton.hidden = false;
+  const stored = await caches.match(OFFLINE_DATA_URL);
+  setOfflineButton(stored ? "Offline bereit" : "Offline speichern", stored ? "ready" : "idle");
+}
+
+async function downloadOfflinePack() {
+  setOfflineButton("Lade Artdaten …", "busy");
+  const response = await fetch(OFFLINE_DATA_URL, { cache: "no-store" });
+  if (!response.ok) throw new Error("Offline-Paket nicht verfügbar");
+  const dataCache = await caches.open("pilz-data");
+  await dataCache.put(OFFLINE_DATA_URL, response.clone());
+  const pack = indexPack(await response.json());
+  offlinePackPromise = Promise.resolve(pack);
+  const shell = await caches.open("pilz-shell-v1");
+  await shell.addAll(["/", "/offline", "/static/app.css", "/static/app.js"]);
+  const images = pack.species.filter((species) => species.p === 1 && species.i).map((species) => species.i);
+  const mediaCache = await caches.open(PACK_MEDIA_CACHE);
+  let done = 0;
+  const queue = [...images];
+  async function worker() {
+    while (queue.length) {
+      const image = queue.shift();
+      try {
+        if (!(await mediaCache.match(image))) {
+          const imageResponse = await fetch(image);
+          if (imageResponse.ok) await mediaCache.put(image, imageResponse);
+        }
+      } catch (_error) { /* einzelnes Bild fehlt – weiter */ }
+      done++;
+      if (done % 10 === 0 || done === images.length) setOfflineButton(`Fotos ${done}/${images.length}`, "busy");
+    }
+  }
+  await Promise.all(Array.from({ length: 6 }, worker));
+}
+
+offlineButton?.addEventListener("click", async () => {
+  if (offlineButton.dataset.state === "busy") return;
+  const ready = offlineButton.dataset.state === "ready";
+  const question = ready
+    ? "Offline-Daten sind gespeichert. Jetzt aktualisieren?"
+    : "Für die Suche ohne Netz werden alle Artdaten und die Fotos der rund 600 bekanntesten Arten gespeichert (ca. 24 MB Download, ca. 35 MB Speicher). Am besten im WLAN laden. Jetzt speichern?";
+  if (!window.confirm(question)) return;
+  try {
+    await downloadOfflinePack();
+    setOfflineButton("Offline bereit", "ready");
+  } catch (_error) {
+    setOfflineButton("Fehler – erneut versuchen", "idle");
+  }
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    refreshOfflineButton();
+  });
+}
+
+// --- Artseite: "Zurück" führt zu den eben gefilterten Treffern.
+document.querySelectorAll("[data-back-link]").forEach((link) => link.addEventListener("click", (event) => {
+  if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) {
+    event.preventDefault();
+    history.back();
+  }
+}));
+
+// --- Offline-Artseite: rendert eine Art aus dem Offline-Paket.
+const offlineDetail = document.querySelector("#offline-detail");
+if (offlineDetail) {
+  const slug = decodeURIComponent(location.pathname.replace(/^\/art\//, ""));
+  loadOfflinePack().then((pack) => {
+    const species = pack?.bySlug.get(slug);
+    if (!species) return;
+    document.title = `${species.n} – Pilzdatenbank (offline)`;
+    document.querySelector("#offline-message")?.remove();
+    offlineDetail.insertAdjacentHTML("beforeend", renderOfflineSpecies(pack, species));
+  });
+}
+
+// Offline fehlen ungespeicherte Fotos; ist die Leiste danach leer, verschwindet sie ganz.
+window.dropOfflinePhoto = (image) => {
+  const section = image.closest(".photo-strip-section");
+  image.parentNode.remove();
+  if (section && !section.querySelector(".strip-photo")) section.remove();
+};
+
+function renderTraitList(traits) {
+  return `<dl class="traits-grid">${traits.map(([name, value]) => `<div class="trait-card"><dt>${escapeHTML(name)}</dt><dd>${escapeHTML(value)}</dd></div>`).join("")}</dl>`;
+}
+
+function renderOfflineSpecies(pack, species) {
+  const dangerRank = { deadly: 0, poisonous: 1 };
+  const related = (species.r || []).map((slug) => pack.bySlug.get(slug)).filter(Boolean)
+    .sort((left, right) => (dangerRank[left.e] ?? 2) - (dangerRank[right.e] ?? 2));
+  const dangerous = related.filter((other) => other.e === "deadly" || other.e === "poisonous");
+  const images = species.x || [];
+  const warning = species.e === "deadly" || species.e === "poisonous";
+  return `
+    <section class="detail-hero">
+      <div class="detail-hero-copy"><p class="eyebrow">${escapeHTML(species.g || "PILZPORTRÄT")}</p><h1 class="detail-title">${escapeHTML(species.n)}</h1>${species.w ? `<p class="scientific-name">${escapeHTML(species.w)}</p>` : ""}</div>
+      ${images[0] ? `<figure class="detail-hero-photo"><img src="${escapeHTML(images[0])}" alt="${escapeHTML(species.n)}" onerror="this.parentNode.remove()"></figure>` : ""}
+    </section>
+    ${images.length > 1 ? `<section class="photo-strip-section"><h2 class="strip-heading">Bilder <span class="strip-hint">(nur gespeicherte sichtbar)</span></h2><div class="photo-strip">${images.slice(1).map((image) => `<span class="strip-photo"><img src="${escapeHTML(image)}" alt="" loading="lazy" onerror="dropOfflinePhoto(this)"></span>`).join("")}</div></section>` : ""}
+    ${dangerous.length ? `<section class="danger-banner"><strong>⚠ Verwechslungsgefahr mit giftigen Arten</strong><p>${dangerous.map((other) => `<a href="/art/${encodeURIComponent(other.s)}">${escapeHTML(other.n)}</a> <span class="danger-label">(${escapeHTML(other.l)})</span>`).join(", ")}</p></section>` : ""}
+    ${related.length ? `<section class="detail-section related-section"><div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN – GENAU VERGLEICHEN</p><h2>Verwechslungspartner</h2></div></div><div class="species-grid related-strip">${related.map((other) => renderCard({ slug: other.s, name: other.n, scientific_name: other.w, edibility_class: other.e, edibility_label: other.l, image: other.i })).join("")}</div></section>` : ""}
+    <section class="edibility-banner edibility-${escapeHTML(species.e)}"><span class="edibility-badge edibility-${escapeHTML(species.e)}">${escapeHTML(species.l)}</span><p>${warning ? "Giftiger Pilz — nicht verzehren." : "Nur die Angabe der Datenquelle – keine Verzehrfreigabe."}</p></section>
+    ${species.m?.length ? `<section class="detail-section"><div class="detail-section-heading"><div><p class="eyebrow">ERKENNUNGSMERKMALE</p><h2>Merkmale</h2></div></div>${renderTraitList(species.m)}</section>` : ""}
+    ${species.z?.length ? `<details class="supplemental-traits"><summary><span>Weitere Angaben</span></summary>${renderTraitList(species.z)}</details>` : ""}`;
 }

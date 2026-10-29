@@ -21,6 +21,7 @@ var files embed.FS
 type Server struct {
 	catalog   *catalog.Catalog
 	templates *template.Template
+	offline   offlineData
 }
 
 type pageData struct {
@@ -67,6 +68,7 @@ type detailData struct {
 	Images             []image
 	Gallery            []image
 	Related            []*catalog.Species
+	DangerousRelated   []*catalog.Species
 }
 
 type searchResult struct {
@@ -94,7 +96,7 @@ type availableTagsResponse struct {
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
-		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage, "displayName": displayName, "sporeLabel": sporeLabel, "sensoryGroup": sensoryGroup}).ParseFS(files, "templates/*.html")),
+		templates: template.Must(template.New("pages").Funcs(template.FuncMap{"imageURL": imageURL, "firstImage": firstImage, "displayName": displayName, "sporeLabel": sporeLabel, "sensoryGroup": sensoryGroup, "shortMonth": shortMonth}).ParseFS(files, "templates/*.html")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", server.home)
@@ -102,6 +104,10 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	mux.Handle("GET /api/search", withCacheControl(http.HandlerFunc(server.search), func(string) string { return "no-store" }))
 	mux.Handle("GET /api/available-tags", withCacheControl(http.HandlerFunc(server.availableTags), func(string) string { return "no-store" }))
 	mux.HandleFunc("GET /api/facets", server.facets)
+	mux.HandleFunc("GET /api/offline", server.offlinePackage)
+	mux.HandleFunc("GET /sw.js", serviceWorker)
+	mux.HandleFunc("GET /manifest.webmanifest", manifest)
+	mux.HandleFunc("GET /offline", server.offlinePage)
 	mux.Handle("GET /static/", withCacheControl(http.FileServer(http.FS(files)), func(path string) string {
 		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
 			return "no-cache" // Revalidieren (ETag), damit Updates auf dem Handy ankommen
@@ -243,6 +249,32 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.Aliases = append(data.Aliases, species.Synonyme...)
+	data.Traits, data.SupplementalTraits = speciesTraits(species)
+	data.Images = speciesPhotos(species)
+	if len(data.Images) > 1 {
+		data.Gallery = data.Images[1:]
+	}
+	for _, slug := range species.Verwechslungen {
+		if related, found := s.catalog.Get(slug); found {
+			data.Related = append(data.Related, related)
+			if related.EdibilityWarning {
+				data.DangerousRelated = append(data.DangerousRelated, related)
+			}
+		}
+	}
+	// Giftige Doppelgänger zuerst: Sie sind im Wald die wichtigste Information.
+	sort.SliceStable(data.Related, func(i, j int) bool {
+		return dangerRank(data.Related[i]) < dangerRank(data.Related[j])
+	})
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.ExecuteTemplate(w, "detail.html", data); err != nil {
+		http.Error(w, "Artseite konnte nicht gerendert werden", http.StatusInternalServerError)
+	}
+}
+
+// speciesTraits ordnet die Quellmerkmale wie auf der Artseite: die
+// Erkennungsmerkmale zuerst, Kommentare und Sonderfelder getrennt dahinter.
+func speciesTraits(species *catalog.Species) ([]trait, []trait) {
 	allTraits := make([]trait, 0, len(species.Merkmale))
 	for key, value := range species.Merkmale {
 		if isHiddenDetailTrait(key) {
@@ -260,36 +292,43 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 		}
 		return strings.ToLower(left.Name) < strings.ToLower(right.Name)
 	})
+	var main, supplemental []trait
 	for _, value := range allTraits {
 		if detailTraitOrder(value.Name) < 9 {
-			data.Traits = append(data.Traits, value)
+			main = append(main, value)
 		} else {
-			data.SupplementalTraits = append(data.SupplementalTraits, value)
+			supplemental = append(supplemental, value)
 		}
 	}
-	seenImages := make(map[string]bool)
+	return main, supplemental
+}
+
+// speciesPhotos liefert die echten Fotos einer Art, das bevorzugte Bild zuerst.
+func speciesPhotos(species *catalog.Species) []image {
+	seen := make(map[string]bool)
+	photos := make([]image, 0)
 	addPhoto := func(path string) {
-		if path == "" || !strings.HasSuffix(strings.ToLower(path), ".jpg") || seenImages[path] {
+		if path == "" || !strings.HasSuffix(strings.ToLower(path), ".jpg") || seen[path] {
 			return
 		}
-		seenImages[path] = true
-		data.Images = append(data.Images, image{URL: imageURL(path), Alt: species.NameTrivial})
+		seen[path] = true
+		photos = append(photos, image{URL: imageURL(path), Alt: species.NameTrivial})
 	}
 	addPhoto(species.BestImage)
 	for _, imagePath := range species.Bilddateien {
 		addPhoto(imagePath)
 	}
-	if len(data.Images) > 1 {
-		data.Gallery = data.Images[1:]
-	}
-	for _, slug := range species.Verwechslungen {
-		if related, found := s.catalog.Get(slug); found {
-			data.Related = append(data.Related, related)
-		}
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.ExecuteTemplate(w, "detail.html", data); err != nil {
-		http.Error(w, "Artseite konnte nicht gerendert werden", http.StatusInternalServerError)
+	return photos
+}
+
+func dangerRank(species *catalog.Species) int {
+	switch species.EdibilityClass {
+	case "deadly":
+		return 0
+	case "poisonous":
+		return 1
+	default:
+		return 2
 	}
 }
 
@@ -439,6 +478,22 @@ func containsTraitTerm(value string, terms ...string) bool {
 		}
 	}
 	return false
+}
+
+// shortMonth kürzt Monatsnamen für die Chip-Leiste ("September" → "Sep").
+func shortMonth(name string) string {
+	runes := []rune(name)
+	if len(runes) <= 4 {
+		return name
+	}
+	return string(runes[:3])
+}
+
+func (s *Server) offlinePage(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.templates.ExecuteTemplate(w, "offline.html", nil); err != nil {
+		http.Error(w, "Offline-Seite konnte nicht gerendert werden", http.StatusInternalServerError)
+	}
 }
 
 func sporeLabel(value string) string {

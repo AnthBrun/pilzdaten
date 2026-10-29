@@ -3,18 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f4ef">
+  <meta name="theme-color" content="#254e3b">
   <title>Pilz bestimmen – Merkmale markieren | Pilzdatenbank</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="/" aria-label="Pilzdatenbank Startseite"><span class="brand-mark">✳</span> Pilzdatenbank</a><span class="topbar-note">Wissen aus dem Wald</span></header>
+  <header class="topbar"><a class="brand" href="/" aria-label="Pilzdatenbank Startseite"><span class="brand-mark">✳</span> Pilzdatenbank</a><button class="offline-button" id="offline-button" type="button" hidden><span class="offline-dot" aria-hidden="true"></span><span class="offline-text">Offline speichern</span></button></header>
   <main>
     <section class="hero hero-compact">
       <p class="eyebrow">PILZBESTIMMUNG IM WALD</p>
-      <h1>Was wächst<br><em>hier?</em></h1>
-      <p class="hero-copy">Markiere, was du siehst. Wir zeigen dir passende Pilze.</p>
+      <h1>Was wächst <em>hier?</em></h1>
+      <p class="hero-copy">Tippe auf den Pilz und markiere, was du siehst. Die passenden Arten erscheinen darunter.</p>
       <div class="search-box" role="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Optional: Pilznamen suchen …" autocomplete="off" aria-label="Pilzarten nach Namen suchen">
@@ -28,12 +30,9 @@
 
     <section class="catalog-section" aria-labelledby="catalog-heading">
       {{$page := .}}
-      <div class="section-heading">
-        <div><p class="eyebrow">MERKMALSSUCHE</p><h2 id="catalog-heading">Was siehst du?</h2><p class="section-intro">Markiere alle Merkmale, die passen — je mehr, desto genauer.</p></div>
-      </div>
       <div class="filter-layout">
         <aside class="mushroom-lab" aria-labelledby="lab-title">
-          <div class="lab-heading"><div><p class="eyebrow">DEIN PILZ-LAB</p><h3 id="lab-title">Merkmale setzen</h3></div><button id="reset-filters" class="wipe-button" type="button">Alles wischen</button></div>
+          <div class="lab-heading"><div><p class="eyebrow">WAS SIEHST DU?</p><h2 id="catalog-heading" class="lab-title"><span id="lab-title">Tippe auf den Pilz</span></h2></div><button id="reset-filters" class="wipe-button" type="button">Alles wischen</button></div>
           <div class="mushroom-stage">
             <svg id="mushroom" class="mushroom-svg" viewBox="0 0 240 310" role="group" aria-label="Interaktive Pilzzeichnung. Wähle einen Bereich, um Merkmale festzulegen.">
               <defs>
@@ -128,30 +127,43 @@
             </div>
           </div>
           <section class="diameter-filter" aria-labelledby="diameter-title">
-            <div class="slider-heading"><h4 id="diameter-title">Hutdurchmesser</h4><span class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</span></div>
-            <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label><input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
-            <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label><input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
+            <div class="slider-heading"><h3 id="diameter-title">Hutdurchmesser</h3><span class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</span></div>
+            <div class="diameter-presets" role="group" aria-label="Hutdurchmesser schnell wählen">
+              <button class="trait-chip" type="button" data-diameter="1-3">bis 3 cm</button><button class="trait-chip" type="button" data-diameter="3-8">3–8 cm</button><button class="trait-chip" type="button" data-diameter="8-15">8–15 cm</button><button class="trait-chip" type="button" data-diameter="15-{{.Facets.MaxDiameterCM}}">über 15 cm</button>
+            </div>
+            <details class="diameter-fine">
+              <summary>Genau einstellen</summary>
+              <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label><input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
+              <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label><input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
+            </details>
           </section>
           <section class="nonvisual-traits" aria-labelledby="nonvisual-title">
-            <h4 id="nonvisual-title">Nicht zeichenbare Merkmale</h4>
+            <h3 id="nonvisual-title">Wo und wann?</h3>
             {{range $page.Facets.Groups}}
-              {{if eq .Group "spore"}}
-              <div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips spore-palette" role="group" aria-label="Sporenpulverfarbe">
-                {{range .Options}}<button class="trait-chip spore-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="spore" aria-label="{{.Label}}" title="{{.Label}}"><span class="spore-swatch" aria-hidden="true"></span><span>{{sporeLabel .Label}}</span></button>{{end}}
-              </div></div>
-              {{end}}
-              {{if eq .Group "geruch"}}
-              <div class="trait-chip-group sensory-traits">
-                <h5>Geruch</h5><div class="trait-chips" role="group" aria-label="Geruchsmerkmale">{{range .Options}}{{if or (eq (sensoryGroup .Tag) "geruch") (eq (sensoryGroup .Tag) "beide")}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}</div>
-                <h5>Geschmack</h5><div class="trait-chips" role="group" aria-label="Geschmacksmerkmale">{{range .Options}}{{if or (eq (sensoryGroup .Tag) "geschmack") (eq (sensoryGroup .Tag) "beide")}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}</div>
-              </div>
-              {{end}}
-              {{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h5>Farbwechsel</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}
-              {{if eq .Group "essbarkeit"}}<div class="trait-chip-group"><h5>Essbarkeit</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="edibility">{{.Label}}</button>{{end}}</div></div>{{end}}
+              {{if eq .Group "saison"}}<div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips month-chips" role="group" aria-label="Fundmonat">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="saison" aria-label="{{.Label}}">{{shortMonth .Label}}</button>{{end}}</div></div>{{end}}
+              {{if eq .Group "wald"}}<div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips" role="group" aria-label="Wald und Baumpartner">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}
             {{end}}
+            <details class="more-traits">
+              <summary>Geruch, Geschmack &amp; mehr</summary>
+              {{range $page.Facets.Groups}}
+                {{if eq .Group "geruch"}}
+                <div class="trait-chip-group sensory-traits">
+                  <h4>Geruch</h4><div class="trait-chips" role="group" aria-label="Geruchsmerkmale">{{range .Options}}{{if or (eq (sensoryGroup .Tag) "geruch") (eq (sensoryGroup .Tag) "beide")}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}</div>
+                  <h4>Geschmack <small>(nur Mini-Probe, ausspucken!)</small></h4><div class="trait-chips" role="group" aria-label="Geschmacksmerkmale">{{range .Options}}{{if or (eq (sensoryGroup .Tag) "geschmack") (eq (sensoryGroup .Tag) "beide")}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}{{end}}</div>
+                </div>
+                {{end}}
+                {{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h4>Farbwechsel nach Anschnitt</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}
+                {{if eq .Group "spore"}}
+                <div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips spore-palette" role="group" aria-label="Sporenpulverfarbe">
+                  {{range .Options}}<button class="trait-chip spore-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="spore" aria-label="{{.Label}}" title="{{.Label}}"><span class="spore-swatch" aria-hidden="true"></span><span>{{sporeLabel .Label}}</span></button>{{end}}
+                </div></div>
+                {{end}}
+                {{if eq .Group "essbarkeit"}}<div class="trait-chip-group"><h4>Essbarkeit laut Quelle</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="edibility">{{.Label}}</button>{{end}}</div></div>{{end}}
+              {{end}}
+            </details>
           </section>
         </aside>
-        <div class="results-column">
+        <div class="results-column" id="results">
           <div class="results-toolbar">
             <div class="results-heading-row"><strong id="results-label">{{.Count}} passende Arten</strong><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
             <div id="active-filters" class="active-filters" aria-label="Aktive Filter"{{if not .HasFilters}} hidden{{end}}>
@@ -183,6 +195,7 @@
           </nav>
         </div>
       </div>
+      <a class="results-dock" id="results-dock" href="#results" hidden><span class="dock-count"><strong id="dock-number">{{.Count}}</strong> <span>Treffer</span></span><span class="dock-thumbs" id="dock-thumbs" aria-hidden="true"></span><span class="dock-action">Ansehen ↓</span></a>
       <div id="facet-labels" class="visually-hidden" aria-hidden="true">{{range .Facets.Groups}}{{range .Options}}<span data-tag="{{.Tag}}" data-label="{{.Label}}"></span>{{end}}{{end}}</div>
     </section>
   </main>

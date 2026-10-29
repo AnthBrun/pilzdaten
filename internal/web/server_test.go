@@ -21,7 +21,7 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(imageDir, "pilz.jpg"), []byte("test-image"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	data := `{"slug":"Steinpilz","url":"https://example.test/steinpilz","name_trivial":"Steinpilz","name_wissenschaftlich":"BOLETUS EDULIS","synonyme":["Herrenpilz"],"merkmale":{"priorität":"2","kommentar":"Hinweis","vorkommen":"Wald","sporenpulverfarbe":"braun","fleisch":"weiß","stiel":"lang","lamellen":"hell","hut":"braun","geschmack":"bitter","geruch":"pilzig","relativer speisewert":"2","tipp":"Nur als Beispiel","lustige anmerkung":"Anekdote","verwechslungsgefahr":"Gallenröhrling"},"bilddateien":["pilz.jpg"],"verwechslungen":["Gallenroehrling"]}
+	data := `{"slug":"Steinpilz","url":"https://example.test/steinpilz","name_trivial":"Steinpilz","name_wissenschaftlich":"BOLETUS EDULIS","synonyme":["Herrenpilz"],"merkmale":{"priorität":"2","kommentar":"Hinweis","vorkommen":"Wald","sporenpulverfarbe":"braun","fleisch":"weiß","stiel":"lang","lamellen":"hell","hut":"braun","geschmack":"bitter","geruch":"pilzig","relativer speisewert":"2","tipp":"Nur als Beispiel","lustige anmerkung":"Anekdote","verwechslungsgefahr":"Gallenröhrling"},"bilddateien":["pilz.jpg","pilz2.jpg"],"verwechslungen":["Gallenroehrling"]}
 {"slug":"Gallenroehrling","name_trivial":"Gallenröhrling","name_wissenschaftlich":"Tylopilus felleus","merkmale":{},"bilddateien":[],"verwechslungen":[]}
 `
 	index := `{"slug":"Steinpilz","name":"Steinpilz","wissenschaftlich":"BOLETUS EDULIS","gattung":"Röhrlinge"}

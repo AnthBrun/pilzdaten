@@ -17,7 +17,7 @@ const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-t
 
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
 const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
-const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund", edibility: "Essbarkeit" };
+const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund" };
 const partChoices = {
   cap: [
     { title: "Hutfarbe", kind: "color", group: "colors", tags: colors.map((color) => color) },
@@ -37,7 +37,6 @@ const partChoices = {
     { title: "Merkmale · kombinierbar", kind: "icon", group: "multi", tags: ["milch", "bruechig", "faserig"] },
   ],
   growth: [{ title: "Untergrund · kombinierbar", kind: "icon", group: "multi", tags: ["bueschelig", "holz", "auf_boden", "auf_wiese"] }],
-  edibility: [{ title: "Essbarkeit", kind: "edibility", group: "edibility", tags: ["hervorragend", "gut", "schlecht", "giftig", "tot"] }],
 };
 const groups = {
   cap: { colors: new Set(colors), shape: new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]) },
@@ -180,7 +179,10 @@ function updateMushroom() {
     sonstige_form: "M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z",
   };
   const selectedShape = activeFrom(new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]));
-  document.querySelector("#cap-shape").setAttribute("d", shapePaths[selectedShape] || shapePaths.sonstige_form);
+  const capD = shapePaths[selectedShape] || shapePaths.sonstige_form;
+  const capFill = capColor ? colorFor(capColor) : "url(#capShade)";
+  const stemFill = stemColor ? colorFor(stemColor, "stiel_") : "url(#stemShade)";
+  document.querySelector("#cap-shape").setAttribute("d", capD);
   document.querySelector(".surface-grooves").classList.toggle("is-visible", state.tags.has("hut_gerieft"));
   document.querySelector(".surface-speckles").classList.toggle("is-visible", state.tags.has("flocken"));
   document.querySelector("#cap-shape").classList.toggle("is-hygrophan", state.tags.has("hut_hygrophan"));
@@ -198,14 +200,12 @@ function updateMushroom() {
   document.querySelector(".flesh-fiber-pattern").classList.toggle("is-visible", state.tags.has("faserig"));
   const substrates = { holz: "holz", auf_boden: "erde", auf_wiese: "wiese", bueschelig: "bueschel" };
   for (const [tag, substrate] of Object.entries(substrates)) {
-    document.querySelector(`.substrate[data-substrate="${substrate}"]`).classList.toggle("is-visible", state.tags.has(tag));
+    const element = document.querySelector(`.substrate[data-substrate="${substrate}"]`);
+    if (substrate === "erde") element.classList.add("is-visible");
+    else element.classList.toggle("is-visible", state.tags.has(tag));
   }
-  const growthLabels = Object.keys(substrates).filter((tag) => state.tags.has(tag)).map(labelFor);
-  document.querySelector("#growth-label").textContent = growthLabels.length ? `Untergrund · ${growthLabels.join(" · ")}` : "Untergrund";
-  const edibility = activeFrom(new Set(["hervorragend", "gut", "schlecht", "giftig", "tot"]));
-  const aura = document.querySelector("#edibility-aura");
-  aura.setAttribute("class", `edibility-aura${edibility ? ` aura-${edibility}` : ""}`);
-  document.querySelector("#edibility-label").textContent = edibility ? labelFor(edibility) : "Essbarkeit";
+  document.querySelectorAll(".mini-cap").forEach((p) => { p.setAttribute("d", capD); p.setAttribute("fill", capFill); });
+  document.querySelectorAll(".mini-stem").forEach((p) => { p.setAttribute("fill", stemFill); });
   document.querySelectorAll(".mushroom-part").forEach((part) => {
     const name = partNames[part.dataset.part];
     const selected = [...state.tags].filter((tag) => (partChoices[part.dataset.part] || []).some((section) => section.tags.includes(tag))).map(labelFor);
@@ -257,9 +257,9 @@ function renderDeck(part) {
   deckCarousel.innerHTML = section.tags.map((tag) => {
     const selected = state.tags.has(tag);
     const swatchColor = section.kind === "color" ? colorFor(tag, part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_") : "";
-    const kindClass = section.kind === "color" ? "swatch-choice" : section.kind === "edibility" ? `edibility-choice edible-${tag}` : "icon-choice";
+    const kindClass = section.kind === "color" ? "swatch-choice" : "icon-choice";
     const substrate = part === "growth" ? substrateIconFor(tag) : "";
-    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`);
+    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
     return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
   }).join("");
   if (!isMulti) {
@@ -282,7 +282,7 @@ function iconFor(tag) {
 
 function substrateIconFor(tag) {
   const icons = {
-    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24M7 15V9m7 6V6m7 9V9"/><path d="M4 9c0-3 6-3 6 0m1-3c0-4 7-4 7 0m1 3c0-3 6-3 6 0"/></svg>',
+    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24"/><path class="cluster-cap" d="M3 10c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Zm8 1c.5-4 2-7 4-7s3.5 3 4 7c-2 .7-6 .7-8 0Zm8-1c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Z"/><path d="M6 10v6m7-5v5m7-6v6"/></svg>',
     holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><rect x="2" y="10" width="24" height="6" rx="2"/><path d="M5 12h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
     auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 11c6-2 18-2 24 0v5H2z"/><path d="M2 11c6-2 18-2 24 0M7 14h2m5-2h2m4 3h2"/></svg>',
     auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 15h24M5 15l2-6m3 6V7m3 8 2-7m3 7 1-5m3 5 2-7"/><circle cx="15" cy="6" r="1.5"/></svg>',
@@ -342,7 +342,7 @@ deckCarousel?.addEventListener("click", (event) => {
 });
 deckPrev?.addEventListener("click", () => cycleSection(-1));
 deckNext?.addEventListener("click", () => cycleSection(1));
-document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag)));
+document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag, button.dataset.traitGroup || "multi")));
 document.addEventListener("click", (event) => {
   if (!deck || deck.hidden) return;
   const inside = event.composedPath().some((node) => node === deck || (node.nodeType === 1 && node.classList && node.classList.contains("mushroom-part")));

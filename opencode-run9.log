@@ -1,0 +1,381 @@
+[0m
+> build · gpt-6-mitarbeitende
+[0m
+[0m# [0mTodos
+[•] Inspect the Pilz-Lab template, JavaScript, CSS, and facet data
+[ ] Implement the edibility-chip and substrate behavior changes
+[ ] Adjust SVG substrate geometry and mini-mushroom inheritance
+[ ] Run requested syntax/config checks and inspect the final diff
+[0m
+[0m✱ [0mGlob "../pilzsuche/data/facets.json"[90m 0 matches[0m
+[0m✱ [0mGlob "internal/web/static/app.{js,css}"[90m 2 matches[0m
+[0m✱ [0mGlob "internal/web/templates/index.html"[90m 1 match[0m
+[0m
+[0m$ [0mgit status --short
+?? TASK9.md
+?? opencode-run9.log
+?? run-opencode9.sh
+[0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json
+[0m→ [0mRead internal/web/templates/index.html
+[0m→ [0mRead internal/web/static/app.js
+[0m→ [0mRead internal/web/static/app.css
+Die bisherigen Filterdaten und UI-Strukturen passen zum Umbau. Ich setze Essbarkeit als Radio-Chips um; dabei bleibt `auf_boden` als Filter auswählbar, während die Erdfläche unabhängig davon sichtbar bleibt.
+[0m
+[0m# [0mTodos
+[✓] Inspect the Pilz-Lab template, JavaScript, CSS, and facet data
+[•] Implement the edibility-chip and substrate behavior changes
+[ ] Adjust SVG substrate geometry and mini-mushroom inheritance
+[ ] Run requested syntax/config checks and inspect the final diff
+[0m
+[0m% [0mPatch 4 files
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json[90m [offset=1, limit=75][0m
+[0m✱ [0mGrep "edibility-aura|edibility-dot|aura-|growth-label|edibility-label|data-part="edibility"|softGlow|svg-note|substrate-base|edibility-choice|partChoices\.edibility|edibility: \["[90m in . · 64 matches[0m
+[0m✱ [0mGrep "growth-label|edibility-aura|substrate[data-substrate="erde"]|"group": "vorkommen"|"group": "essbarkeit""[90m in /home/hermes/projects/pilzsuche · 0 matches[0m
+[0m✗ [0mPatch failed
+[91m[1mError: [0mapply_patch verification failed: Error: Failed to find expected lines in /home/hermes/projects/pilzsuche/data/facets.json:
+      }
+     {
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json[90m [offset=25, limit=45][0m
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json[90m [offset=1, limit=30][0m
+[0m% [0mPatch 1 file
+[0m→ [0mRead /home/hermes/projects/pilzsuche/data/facets.json[90m [offset=1, limit=70][0m
+[0m% [0mPatch 1 file
+[0m% [0mPatch 3 files
+[0m
+[0m# [0mTodos
+[✓] Inspect the Pilz-Lab template, JavaScript, CSS, and facet data
+[✓] Implement the edibility-chip and substrate behavior changes
+[✓] Adjust SVG substrate geometry and mini-mushroom inheritance
+[•] Run requested syntax/config checks and inspect the final diff
+[0m
+Die Änderungen sind umgesetzt: Essbarkeit wird aus dem SVG entfernt, die Chips wechseln radioartig, der Boden bleibt als Basis sichtbar, und die Büschel-Minis übernehmen Hutform sowie Hut- und Stielfarbe. Ich prüfe jetzt Syntax, Facet-JSON, Compose-Konfiguration und Diff.
+[0m$ [0mgit diff -- internal/web/templates/index.html internal/web/static/app.js internal/web/static/app.css
+diff --git a/internal/web/static/app.css b/internal/web/static/app.css
+index c640ac4..d4fb3ba 100644
+--- a/internal/web/static/app.css
++++ b/internal/web/static/app.css
+@@ -47,7 +47,6 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .mushroom-stage { position: relative; display: flex; justify-content: center; align-items: center; height: 418px; margin: 2px 0 0; overflow: visible; background: radial-gradient(ellipse at 50% 51%, #f5f6ef 0, #fafaf7 56%, transparent 76%); }
+ .mushroom-svg { display: block; width: min(100%, 270px); max-height: 100%; height: auto; overflow: visible; }
+ .mushroom-part { cursor: pointer; outline: none; touch-action: pan-y; }
+-.mushroom-part[data-part="edibility"] { touch-action: auto; }
+ .mushroom-part:focus-visible .cap-fill, .mushroom-part:focus-visible .stem-fill, .mushroom-part:focus-visible .underside-fill, .mushroom-part:focus-visible .flesh-slice { stroke: #3f7855; stroke-width: 4px; }
+ .mushroom-part:hover .cap-fill, .mushroom-part:hover .stem-fill, .mushroom-part:hover .underside-fill, .mushroom-part:hover .flesh-slice { filter: brightness(1.12); }
+ .cap-fill { fill: url(#capShade); stroke: #887a66; stroke-width: 2; transition: fill .35s ease, filter .15s; }
+@@ -92,20 +91,10 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .substrate-grass .flower-stem { fill: none; stroke: #71845b; stroke-width: 1; }
+ .substrate-grass .flower-head { fill: #e7c76b; stroke: #aa9250; stroke-width: .8; }
+ .substrate-grass .flower-center { fill: #8b7044; stroke: none; }
+-.substrate-cluster .substrate-base { fill: #d5cbb7; stroke: #978872; stroke-width: 1.2; }
+ .substrate-part { cursor: pointer; }
+-.substrate-part #growth-label { fill: #69766d; }
++.mini-cap, .mini-stem { stroke: none; }
+ .mushroom-part.is-cycled { animation: partPulse .4s ease; }
+ @keyframes partPulse { 50% { opacity: .55; } }
+-.svg-note { fill: #758078; font: 9px system-ui, sans-serif; }
+-.edibility-aura { fill: transparent; opacity: 0; transition: fill .2s, opacity .2s; }
+-.aura-hervorragend, .aura-gut { fill: #6ca56f; opacity: .2; filter: url(#softGlow); }
+-.aura-schlecht { fill: #a19a72; opacity: .2; filter: url(#softGlow); }
+-.aura-giftig { fill: #d75a49; opacity: .35; filter: url(#softGlow); }
+-.aura-tot { fill: #9f353b; opacity: .47; filter: url(#softGlow); }
+-.edibility-dot { fill: #ded9cd; stroke: white; stroke-width: 2; }
+-.mushroom-part[data-part="edibility"] { cursor: pointer; }
+-.mushroom-part[data-part="edibility"].has-selection .edibility-dot { fill: #d98740; }
+ #option-deck { position: absolute; z-index: 6; right: 0; bottom: 6px; left: 0; max-height: 190px; overflow-y: auto; padding: 10px 12px; border: 1px solid #d9dfd4; border-radius: 10px; background: #fff; box-shadow: 0 12px 35px #24372c26; animation: deckIn .18s ease; }
+ #option-deck[hidden], #option-deck [hidden] { display: none; }
+ @keyframes deckIn { from { opacity: 0; transform: translateY(-6px); } }
+@@ -127,12 +116,9 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
+ .swatch { display: block; width: 21px; height: 21px; flex: none; border: 1px solid #0002; border-radius: 50%; background: var(--swatch); box-shadow: inset 0 0 0 2px #fff8; }
+ .deck-option.color-option .swatch { width: 26px; height: 26px; }
+ .choice-icon { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 5px; background: #e8ece3; color: #48634e; font-size: 14px; }
+-.edibility-choice .edibility-dot-choice { width: 11px; height: 11px; flex: none; border-radius: 50%; background: #7da876; }
+-.edibility-choice.edible-schlecht .edibility-dot-choice { background: #a79a5f; }
+-.edibility-choice.edible-giftig .edibility-dot-choice { background: #dc7445; }
+-.edibility-choice.edible-tot .edibility-dot-choice { background: #bf4646; }
+ .substrate-option-icon { width: 28px; height: 18px; fill: none; stroke: #72845d; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+ .substrate-option-wood { stroke: #795c40; }
++.substrate-option-icon .cluster-cap { fill: #d8c9ad; }
+ .substrate-option-wood rect { fill: #b99668; }
+ .substrate-option-earth { stroke: #8a765a; }
+ .substrate-option-earth path:first-child { fill: #d8c9ad; }
+diff --git a/internal/web/static/app.js b/internal/web/static/app.js
+index 1a36c56..5364d92 100644
+--- a/internal/web/static/app.js
++++ b/internal/web/static/app.js
+@@ -17,7 +17,7 @@ const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-t
+ 
+ const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
+ const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
+-const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund", edibility: "Essbarkeit" };
++const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund" };
+ const partChoices = {
+   cap: [
+     { title: "Hutfarbe", kind: "color", group: "colors", tags: colors.map((color) => color) },
+@@ -37,7 +37,6 @@ const partChoices = {
+     { title: "Merkmale · kombinierbar", kind: "icon", group: "multi", tags: ["milch", "bruechig", "faserig"] },
+   ],
+   growth: [{ title: "Untergrund · kombinierbar", kind: "icon", group: "multi", tags: ["bueschelig", "holz", "auf_boden", "auf_wiese"] }],
+-  edibility: [{ title: "Essbarkeit", kind: "edibility", group: "edibility", tags: ["hervorragend", "gut", "schlecht", "giftig", "tot"] }],
+ };
+ const groups = {
+   cap: { colors: new Set(colors), shape: new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]) },
+@@ -180,7 +179,10 @@ function updateMushroom() {
+     sonstige_form: "M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z",
+   };
+   const selectedShape = activeFrom(new Set(["spitz", "schirm", "kugel", "trichter", "f", "sonstige_form"]));
+-  document.querySelector("#cap-shape").setAttribute("d", shapePaths[selectedShape] || shapePaths.sonstige_form);
++  const capD = shapePaths[selectedShape] || shapePaths.sonstige_form;
++  const capFill = capColor ? colorFor(capColor) : "url(#capShade)";
++  const stemFill = stemColor ? colorFor(stemColor, "stiel_") : "url(#stemShade)";
++  document.querySelector("#cap-shape").setAttribute("d", capD);
+   document.querySelector(".surface-grooves").classList.toggle("is-visible", state.tags.has("hut_gerieft"));
+   document.querySelector(".surface-speckles").classList.toggle("is-visible", state.tags.has("flocken"));
+   document.querySelector("#cap-shape").classList.toggle("is-hygrophan", state.tags.has("hut_hygrophan"));
+@@ -198,14 +200,12 @@ function updateMushroom() {
+   document.querySelector(".flesh-fiber-pattern").classList.toggle("is-visible", state.tags.has("faserig"));
+   const substrates = { holz: "holz", auf_boden: "erde", auf_wiese: "wiese", bueschelig: "bueschel" };
+   for (const [tag, substrate] of Object.entries(substrates)) {
+-    document.querySelector(`.substrate[data-substrate="${substrate}"]`).classList.toggle("is-visible", state.tags.has(tag));
++    const element = document.querySelector(`.substrate[data-substrate="${substrate}"]`);
++    if (substrate === "erde") element.classList.add("is-visible");
++    else element.classList.toggle("is-visible", state.tags.has(tag));
+   }
+-  const growthLabels = Object.keys(substrates).filter((tag) => state.tags.has(tag)).map(labelFor);
+-  document.querySelector("#growth-label").textContent = growthLabels.length ? `Untergrund · ${growthLabels.join(" · ")}` : "Untergrund";
+-  const edibility = activeFrom(new Set(["hervorragend", "gut", "schlecht", "giftig", "tot"]));
+-  const aura = document.querySelector("#edibility-aura");
+-  aura.setAttribute("class", `edibility-aura${edibility ? ` aura-${edibility}` : ""}`);
+-  document.querySelector("#edibility-label").textContent = edibility ? labelFor(edibility) : "Essbarkeit";
++  document.querySelectorAll(".mini-cap").forEach((p) => { p.setAttribute("d", capD); p.setAttribute("fill", capFill); });
++  document.querySelectorAll(".mini-stem").forEach((p) => { p.setAttribute("fill", stemFill); });
+   document.querySelectorAll(".mushroom-part").forEach((part) => {
+     const name = partNames[part.dataset.part];
+     const selected = [...state.tags].filter((tag) => (partChoices[part.dataset.part] || []).some((section) => section.tags.includes(tag))).map(labelFor);
+@@ -257,9 +257,9 @@ function renderDeck(part) {
+   deckCarousel.innerHTML = section.tags.map((tag) => {
+     const selected = state.tags.has(tag);
+     const swatchColor = section.kind === "color" ? colorFor(tag, part === "cap" ? "" : part === "stem" ? "stiel_" : part === "flesh" ? "fl_" : "lr_") : "";
+-    const kindClass = section.kind === "color" ? "swatch-choice" : section.kind === "edibility" ? `edibility-choice edible-${tag}` : "icon-choice";
++    const kindClass = section.kind === "color" ? "swatch-choice" : "icon-choice";
+     const substrate = part === "growth" ? substrateIconFor(tag) : "";
+-    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : section.kind === "icon" ? `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>` : `<span class="edibility-dot-choice" aria-hidden="true"></span>`);
++    const icon = substrate || (section.kind === "color" ? `<span class="swatch" style="--swatch:${swatchColor}"></span>` : `<span class="choice-icon" aria-hidden="true">${iconFor(tag)}</span>`);
+     return `<button type="button" class="deck-option ${kindClass}${section.kind === "color" ? " color-option" : ""}${selected ? " is-selected" : ""}" data-choice-tag="${escapeHTML(tag)}" data-choice-group="${escapeHTML(section.group)}" aria-pressed="${selected}" title="${escapeHTML(labelFor(tag))}">${icon}<span>${escapeHTML(labelFor(tag))}</span></button>`;
+   }).join("");
+   if (!isMulti) {
+@@ -282,7 +282,7 @@ function iconFor(tag) {
+ 
+ function substrateIconFor(tag) {
+   const icons = {
+-    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24M7 15V9m7 6V6m7 9V9"/><path d="M4 9c0-3 6-3 6 0m1-3c0-4 7-4 7 0m1 3c0-3 6-3 6 0"/></svg>',
++    bueschelig: '<svg class="substrate-option-icon" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 16h24"/><path class="cluster-cap" d="M3 10c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Zm8 1c.5-4 2-7 4-7s3.5 3 4 7c-2 .7-6 .7-8 0Zm8-1c.5-3 2-5 4-5s3.5 2 4 5c-2 .7-6 .7-8 0Z"/><path d="M6 10v6m7-5v5m7-6v6"/></svg>',
+     holz: '<svg class="substrate-option-icon substrate-option-wood" viewBox="0 0 28 18" aria-hidden="true"><rect x="2" y="10" width="24" height="6" rx="2"/><path d="M5 12h13m-8 2h11m-2-4c4 0 5 5 1 6"/></svg>',
+     auf_boden: '<svg class="substrate-option-icon substrate-option-earth" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 11c6-2 18-2 24 0v5H2z"/><path d="M2 11c6-2 18-2 24 0M7 14h2m5-2h2m4 3h2"/></svg>',
+     auf_wiese: '<svg class="substrate-option-icon substrate-option-grass" viewBox="0 0 28 18" aria-hidden="true"><path d="M2 15h24M5 15l2-6m3 6V7m3 8 2-7m3 7 1-5m3 5 2-7"/><circle cx="15" cy="6" r="1.5"/></svg>',
+@@ -342,7 +342,7 @@ deckCarousel?.addEventListener("click", (event) => {
+ });
+ deckPrev?.addEventListener("click", () => cycleSection(-1));
+ deckNext?.addEventListener("click", () => cycleSection(1));
+-document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag)));
++document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag, button.dataset.traitGroup || "multi")));
+ document.addEventListener("click", (event) => {
+   if (!deck || deck.hidden) return;
+   const inside = event.composedPath().some((node) => node === deck || (node.nodeType === 1 && node.classList && node.classList.contains("mushroom-part")));
+diff --git a/internal/web/templates/index.html b/internal/web/templates/index.html
+index d9af7b4..644aa5d 100644
+--- a/internal/web/templates/index.html
++++ b/internal/web/templates/index.html
+@@ -30,36 +30,35 @@
+         <aside class="mushroom-lab" aria-labelledby="lab-title">
+           <div class="lab-heading"><div><p class="eyebrow">DEIN PILZ-LAB</p><h3 id="lab-title">Merkmale setzen</h3></div><button id="reset-filters" class="wipe-button" type="button">Alles wischen</button></div>
+           <div class="mushroom-stage">
+-            <svg id="mushroom" class="mushroom-svg" viewBox="0 0 240 372" role="group" aria-label="Interaktive Pilzzeichnung. Wähle einen Bereich, um Merkmale festzulegen.">
++            <svg id="mushroom" class="mushroom-svg" viewBox="0 0 240 330" role="group" aria-label="Interaktive Pilzzeichnung. Wähle einen Bereich, um Merkmale festzulegen.">
+               <defs>
+                 <linearGradient id="capShade" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#c9bda8"/><stop offset="1" stop-color="#a99b84"/></linearGradient>
+                 <linearGradient id="stemShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ded8c9"/><stop offset=".5" stop-color="#f3efe4"/><stop offset="1" stop-color="#c9c1b0"/></linearGradient>
+-                <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+               </defs>
+-              <ellipse id="edibility-aura" class="edibility-aura" cx="120" cy="159" rx="93" ry="142"/>
+               <g class="mushroom-part substrate-part" data-part="growth" role="button" tabindex="0" aria-label="Untergrund wählen" title="Untergrund wählen">
+-                <rect class="substrate-hitarea" x="40" y="298" width="160" height="52" fill="transparent" pointer-events="all"/>
++                <rect class="substrate-hitarea" x="40" y="300" width="160" height="30" fill="transparent" pointer-events="all"/>
+                 <g class="substrate substrate-earth" data-substrate="erde" aria-hidden="true">
+-                  <path d="M42 326c17-8 29-8 43-2 16-8 33-8 49 0 17-7 38-5 64 2v9H42Z"/>
+-                  <ellipse cx="69" cy="327" rx="4" ry="2.2"/><ellipse cx="99" cy="331" rx="3" ry="1.8"/><ellipse cx="164" cy="327" rx="4.5" ry="2.3"/><ellipse cx="184" cy="331" rx="3" ry="1.8"/>
+-                  <path class="substrate-root" d="M108 322c-5 4-7 8-6 13m25-13c4 4 5 8 4 12"/>
++                 <path d="M42 305c17-3 29-3 43 0 16-3 33-3 49 0 17-3 38-2 64 0v21H42Z"/>
++                  <ellipse cx="69" cy="307" rx="4" ry="2.2"/><ellipse cx="99" cy="318" rx="3" ry="1.8"/><ellipse cx="164" cy="307" rx="4.5" ry="2.3"/><ellipse cx="184" cy="318" rx="3" ry="1.8"/>
++                  <path class="substrate-root" d="M108 305c-5 4-7 8-6 13m25-13c4 4 5 8 4 12"/>
+                 </g>
+                 <g class="substrate substrate-wood" data-substrate="holz" aria-hidden="true">
+-                  <rect x="42" y="307" width="156" height="24" rx="11"/>
+-                  <ellipse cx="183" cy="319" rx="10" ry="9"/><ellipse cx="183" cy="319" rx="6" ry="5.5"/><ellipse cx="183" cy="319" rx="2" ry="2"/>
+-                  <path class="bark-mark" d="M57 310c9 4 15-3 23 1m-20 16c7-3 13 3 20-1"/>
++                  <rect x="42" y="305" width="156" height="21" rx="10"/>
++                  <ellipse cx="183" cy="315.5" rx="9" ry="8"/><ellipse cx="183" cy="315.5" rx="5.5" ry="5"/><ellipse cx="183" cy="315.5" rx="2" ry="2"/>
++                  <path class="bark-mark" d="M57 308c9 4 15-3 23 1m-20 13c7-3 13 3 20-1"/>
+                 </g>
+                 <g class="substrate substrate-grass" data-substrate="wiese" aria-hidden="true">
+-                  <path class="ground-line" d="M42 330c34-3 57 2 83 0s46-3 73 0"/>
+-                  <path d="m53 329 2-12m0 12 7-10m12 9-2-13m0 13 7-9m15 10 1-12m0 12 6-9m13 9-2-14m1 14 7-10m14 10 2-12m0 12 7-9m14 10-1-13m1 13 7-9m13 9 2-12m0 12 6-8"/>
+-                  <path class="flower-stem" d="M151 328v-12"/><circle class="flower-head" cx="151" cy="313" r="2.2"/><circle class="flower-center" cx="151" cy="313" r=".8"/>
++                  <path class="ground-line" d="M42 305c34-3 57 2 83 0s46-3 73 0"/>
++                  <path d="m53 304 2-12m0 12 7-10m12 0-2-13m0 13 7-9m15 10 1-12m0 12 6-9m13 9-2-14m1 14 7-10m14 10 2-12m0 12 7-9m14 10-1-13m1 13 7-9m13 9 2-12m0 12 6-8"/>
++                  <path class="flower-stem" d="M151 303v-12"/><circle class="flower-head" cx="151" cy="288" r="2.2"/><circle class="flower-center" cx="151" cy="288" r=".8"/>
+                 </g>
+                 <g class="substrate substrate-cluster" data-substrate="bueschel" aria-hidden="true">
+-                  <path class="ground-line" d="M48 332h144"/>
+-                  <path d="M61 331v-9m-3 9v-6m6 6v-7m29 7v-11m-3 11v-8m6 8v-9m28 9v-10m-3 10v-7m6 7v-8m28 8v-9m-3 9v-6m6 6v-7"/>
+-                  <path class="substrate-base" d="M55 322c3-5 10-5 13 0m25-4c4-6 12-6 16 0m23-1c4-6 12-6 16 0m23 4c3-5 10-5 13 0"/>
++                  <path class="ground-line" d="M48 305h144"/>
++                  <g class="mini-mushroom" transform="translate(42 267) scale(0.2)"><path class="mini-cap"/><rect class="mini-stem" x="106" y="132" width="28" height="58" rx="9"/></g>
++                  <g class="mini-mushroom" transform="translate(61 248) scale(0.3)"><path class="mini-cap"/><rect class="mini-stem" x="106" y="132" width="28" height="58" rx="9"/></g>
++                  <g class="mini-mushroom" transform="translate(95 267) scale(0.2)"><path class="mini-cap"/><rect class="mini-stem" x="106" y="132" width="28" height="58" rx="9"/></g>
++                  <g class="mini-mushroom" transform="translate(133 258) scale(0.25)"><path class="mini-cap"/><rect class="mini-stem" x="106" y="132" width="28" height="58" rx="9"/></g>
+                 </g>
+-                <text id="growth-label" class="svg-note" x="60" y="364">Untergrund</text>
+               </g>
+               <g class="mushroom-part" data-part="cap" role="button" tabindex="0" aria-label="Hutfarbe, Form und Oberfläche wählen" title="Hut wählen">
+                 <path id="cap-shape" class="cap-fill" d="M30 132C36 82 70 43 120 39c50 4 84 43 90 93-45 15-135 15-180 0Z"/>
+@@ -87,9 +86,6 @@
+                 <path class="flesh-core" d="M164 211c9-4 18-2 20 4 2 6-4 13-13 17l-7-1Z"/>
+                 <path class="flesh-fiber-pattern" d="m161 218 19-8m-17 17 22-9m-17 17 19-8"/>
+               </g>
+-              <g class="mushroom-part" data-part="edibility" role="button" tabindex="0" aria-label="Essbarkeit wählen" title="Essbarkeit wählen">
+-                <circle class="edibility-dot" cx="120" cy="348" r="6"/><text id="edibility-label" class="svg-note" x="132" y="352">Essbarkeit</text>
+-              </g>
+             </svg>
+             <div id="option-deck" role="dialog" aria-modal="false" aria-label="Optionen auswählen" hidden>
+               <div class="deck-header"><strong id="deck-title">Merkmal wählen</strong><button id="deck-close" type="button" aria-label="Schließen">×</button></div>
+@@ -108,7 +104,7 @@
+           </section>
+           <section class="nonvisual-traits" aria-labelledby="nonvisual-title">
+             <h4 id="nonvisual-title">Nicht zeichenbare Merkmale</h4>
+-            {{range $page.Facets.Groups}}{{if eq .Group "spore"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "geruch"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h5>Farbwechsel</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{end}}
++            {{range $page.Facets.Groups}}{{if eq .Group "spore"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "geruch"}}<div class="trait-chip-group"><h5>{{.Title}}</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h5>Farbwechsel</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}">{{.Label}}</button>{{end}}</div></div>{{end}}{{if eq .Group "essbarkeit"}}<div class="trait-chip-group"><h5>Essbarkeit</h5><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="edibility">{{.Label}}</button>{{end}}</div></div>{{end}}{{end}}
+           </section>
+         </aside>
+         <div class="results-column">
+[0m
+[0m$ [0mgit status --short
+M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/index.html
+?? TASK9.md
+?? opencode-run9.log
+?? run-opencode9.sh
+[0m
+[0m$ [0mgit status --short && git diff -- data/facets.json
+fatal: not a git repository (or any of the parent directories): .git
+[0m
+[0m$ [0mpython3 -c 'import json; json.load(open("/home/hermes/projects/pilzsuche/data/facets.json")); print("facets.json: valid")'
+facets.json: valid
+[0m
+[0m$ [0msg docker -c 'docker compose config --quiet'
+(no output)
+[0m
+[0m$ [0mnode --check internal/web/static/app.js
+(no output)
+[0m
+[0m✱ [0mGlob "docker-compose*.yml"[90m 1 match[0m
+[0m✱ [0mGlob "compose*.yaml"[90m 0 matches[0m
+[0m✱ [0mGlob "Makefile"[90m 0 matches[0m
+[0m✱ [0mGlob "*.go"[90m 6 matches[0m
+[0m✱ [0mGlob "README*"[90m 1 match[0m
+[0m→ [0mRead docker-compose.yml
+[0m→ [0mRead README.md
+[0m→ [0mRead cmd/pilzdaten/main.go
+[0m→ [0mRead internal/web/server.go
+[0m→ [0mRead internal/web/server_test.go
+[0m% [0mPatch 1 file
+[0m
+[0m$ [0mgo test ./...
+/bin/bash: line 1: go: command not found
+[0m
+[0m$ [0mcommand -v chromium || command -v chromium-browser || command -v google-chrome || command -v firefox
+(no output)
+[0m
+[0m$ [0mgit diff --check
+(no output)
+[0m
+[0m$ [0mpython3 -c 'import json; f=json.load(open("/home/hermes/projects/pilzsuche/data/facets.json")); groups={g["group"]:g for g in f["groups"]}; assert [o["tag"] for o in groups["essbarkeit"]["options"]] == ["hervorragend","gut","schlecht","giftig","tot"]; assert [o["tag"] for o in groups["vorkommen"]["options"]] == ["nicht_selten","holz","auf_boden","auf_wiese","bueschelig"]; print("facet groups/counts verified")'
+facet groups/counts verified
+[0m
+[0m$ [0mdocker compose ps --status running
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+[0m
+[0m% [0mPatch 1 file
+[0m✱ [0mGrep "edibility-aura|edibility-dot|aura-|growth-label|edibility-label|data-part="edibility"|softGlow|svg-note|substrate-base|edibility-choice|edibility-dot-choice"[90m in internal/web · 0 matches[0m
+[0m✱ [0mGrep ""group": "essbarkeit"|"group": "vorkommen"|"title": "Essbarkeit"|"title": "Vorkommen""[90m in /home/hermes/projects/pilzsuche/data · 4 matches[0m
+[0m
+[0m$ [0mnode --check internal/web/static/app.js && git diff --check
+(no output)
+[0m
+[0m$ [0mcurl -fsS -o /dev/null -w 'HTTP %{http_code}\n' 'http://localhost:8080/'
+HTTP 200
+[0m
+[0m$ [0mpython3 -c 'import urllib.request,re; h=urllib.request.urlopen("http://localhost:8080/").read().decode(); print("viewBox=", re.search(r"viewBox=\"([^\"]+)\"",h).group(1)); print("edibility chip buttons=", len(re.findall(r"data-trait-group=\"edibility\"",h))); print("edibility SVG part=", "data-part=\"edibility\"" in h); print("growth label=", "id=\"growth-label\"" in h); print("visible earth class=", bool(re.search(r"substrate-earth[^\"]*is-visible",h)))'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import urllib.request,re; h=urllib.request.urlopen("http://localhost:8080/").read().decode(); print("viewBox=", re.search(r"viewBox=\"([^\"]+)\"",h).group(1)); print("edibility chip buttons=", len(re.findall(r"data-trait-group=\"edibility\"",h))); print("edibility SVG part=", "data-part=\"edibility\"" in h); print("growth label=", "id=\"growth-label\"" in h); print("visible earth class=", bool(re.search(r"substrate-earth[^\"]*is-visible",h)))
+                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'group'
+[0m
+[0m$ [0mpython3 -c 'import json,urllib.request,urllib.parse; q=urllib.parse.urlencode({"f":"grau,lamellen,lr_weiß,stiel_weiß"}); d=json.load(urllib.request.urlopen("http://localhost:8080/api/search?"+q)); print("API count=",d["count"])'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,urllib.request,urllib.parse; q=urllib.parse.urlencode({"f":"grau,lamellen,lr_weiß,stiel_weiß"}); d=json.load(urllib.request.urlopen("http://localhost:8080/api/search?"+q)); print("API count=",d["count"])
+                                                                                                                             ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 495, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.13/urllib/request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/usr/lib/python3.13/urllib/request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 466, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.13/urllib/request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 400:
+[0m
+[0m$ [0mgit diff --stat && git status --short
+internal/web/static/app.css       | 18 ++----------------
+ internal/web/static/app.js        | 28 ++++++++++++++--------------
+ internal/web/templates/index.html | 38 +++++++++++++++++---------------------
+ 3 files changed, 33 insertions(+), 51 deletions(-)
+ M internal/web/static/app.css
+ M internal/web/static/app.js
+ M internal/web/templates/index.html
+?? TASK9.md
+?? opencode-run9.log
+?? run-opencode9.sh
+[0m
+[0m$ [0mpython3 -c 'import json; f=json.load(open("/home/hermes/projects/pilzsuche/data/facets.json")); print([(g["group"],g["title"],[o["tag"] for o in g["options"]]) for g in f["groups"][:2]])'
+[('essbarkeit', 'Essbarkeit', ['hervorragend', 'gut', 'schlecht', 'giftig', 'tot']), ('vorkommen', 'Vorkommen', ['nicht_selten', 'holz', 'auf_boden', 'auf_wiese', 'bueschelig'])]
+[0m
+[0m$ [0mpython3 -c 'import urllib.request; r=urllib.request.urlopen("http://localhost:8080/"); b=r.read(); print("HTTP",r.status,"bytes",len(b),"content-type",r.headers.get("Content-Type")); print(repr(b[:200]))'
+HTTP 200 bytes 427 content-type text/html;charset=UTF-8
+b'<!DOCTYPE html>\n<html lang="">\n  <head>\n    <meta charset="UTF-8">\n    <link rel="icon" href="/favicon.ico">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Bille'
+[0m
+[0m$ [0msg docker -c 'docker compose config --quiet' && git diff --check && node --check internal/web/static/app.js
+(no output)
+[0m
+[0m# [0mTodos
+[✓] Inspect the Pilz-Lab template, JavaScript, CSS, and facet data
+[✓] Implement the edibility-chip and substrate behavior changes
+[✓] Adjust SVG substrate geometry and mini-mushroom inheritance
+[•] Run syntax/config checks and inspect the final diff
+[ ] Run browser and API acceptance against the updated Pilzdaten server when it is available
+[0m
+**Die vier UX-Änderungen sind umgesetzt.** Essbarkeit ist jetzt eine Radio-Chip-Gruppe statt eines Pilz-Parts. Die Erdfläche bleibt dauerhaft sichtbar; die Substrate sitzen näher am Stiel, und die Büschel-Minis übernehmen Hutform sowie Hut- und Stielfarbe. Die Facets sind in `Essbarkeit` und `Vorkommen` aufgeteilt.
+
+Geändert wurden `internal/web/templates/index.html`, `internal/web/static/app.js`, `internal/web/static/app.css` und `../pilzsuche/data/facets.json`.
+
+**Checks:** `node --check`, `docker compose config --quiet`, Facet-JSON-Validierung und `git diff --check` waren erfolgreich. Die Browser- und API-Abnahme konnte ich nicht verlässlich durchführen: Auf `localhost:8080` antwortet eine andere Anwendung, Go ist nicht installiert und Docker ist nicht erreichbar. Daher sind die Ansichten bei 1280/390 px und der erwartete API-Count noch nicht live verifiziert.

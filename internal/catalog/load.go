@@ -159,11 +159,12 @@ func LoadWithAssets(speciesPath, indexPath, filterTagsPath, facetsPath, bestImag
 			filterData.Tags = appendUniqueTag(filterData.Tags, "leisten")
 		}
 		filterData.Tags = addFieldTags(filterData.Tags, species.Merkmale)
+		applyEdibility(&species, filterData.Tags)
+		filterData.Tags = keepResolvedEdibility(filterData.Tags, species.Edibility)
 		catalog.filterData[species.Slug] = filterData
 		species.Priority = sourcePriority(species.Merkmale)
 		species.PhotoCount = countPhotos(species.Bilddateien)
 		species.Commonness = commonness(species.Merkmale, filterData.Tags)
-		applyEdibility(&species, filterData.Tags)
 		catalog.bySlug[species.Slug] = &species
 		catalog.all = append(catalog.all, &species)
 	}
@@ -282,6 +283,22 @@ func applyEdibility(species *Species, tags []string) {
 	default:
 		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "", "Essbarkeit nicht erfasst", "unknown"
 	}
+}
+
+var edibilityTags = map[string]bool{"tot": true, "giftig": true, "schlecht": true, "hervorragend": true, "gut": true}
+
+// keepResolvedEdibility entfernt widersprüchliche Essbarkeits-Tags der Quelle
+// (z. B. "hervorragend" und "tot" zugleich). Es bleibt nur die vorsichtigste
+// Einstufung, die auch auf Karte und Artseite steht – sonst fände der Filter
+// "Hervorragend essbar" tödlich giftige Arten.
+func keepResolvedEdibility(tags []string, resolved string) []string {
+	kept := tags[:0]
+	for _, tag := range tags {
+		if !edibilityTags[tag] || tag == resolved {
+			kept = append(kept, tag)
+		}
+	}
+	return kept
 }
 
 func hasLeistenCategory(traits map[string]any) bool {

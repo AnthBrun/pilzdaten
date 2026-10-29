@@ -218,3 +218,41 @@ func TestLoadWithAssetsUsesPreferredPhotoAndEdibilityMetadata(t *testing.T) {
 		t.Fatalf("pictogram metadata = %#v", option)
 	}
 }
+
+func TestContradictoryEdibilityTagsKeepOnlyTheCautiousOne(t *testing.T) {
+	dir := t.TempDir()
+	paths := map[string]string{
+		"species": `{"slug":"Glimmer","name_trivial":"Glimmerschüppling","merkmale":{}}
+{"slug":"Stein","name_trivial":"Steinpilz","merkmale":{}}
+`,
+		"index": `{"slug":"Glimmer","name":"Glimmerschüppling"}
+{"slug":"Stein","name":"Steinpilz"}
+`,
+		"filters": `{"slug":"Glimmer","tags":["lamellen","hervorragend","giftig","tot"]}
+{"slug":"Stein","tags":["roehren","hervorragend"]}
+`,
+	}
+	for name, contents := range paths {
+		paths[name] = filepath.Join(dir, name)
+		if err := os.WriteFile(paths[name], []byte(contents), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	loaded, err := LoadWithFilters(paths["species"], paths["index"], paths["filters"], "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	results, count, _ := loaded.Filter("", []string{"hervorragend"}, 1, 25, "", 1, 50)
+	if count != 1 || results[0].Slug != "Stein" {
+		t.Fatalf("filter hervorragend = %d results (%v), want only Stein", count, results)
+	}
+	if _, count, _ := loaded.Filter("", []string{"tot"}, 1, 25, "", 1, 50); count != 1 {
+		t.Fatalf("filter tot = %d results, want Glimmer", count)
+	}
+	if available := loaded.AvailableTags("", []string{"lamellen"}, 1, 25); available["hervorragend"] != 0 || available["giftig"] != 0 {
+		t.Fatalf("available tags for Glimmer = %v, want no contradictory edibility tags", available)
+	}
+	if species, _ := loaded.Get("Glimmer"); species.EdibilityLabel != "Tödlich giftig" {
+		t.Fatalf("Glimmer label = %q, want Tödlich giftig", species.EdibilityLabel)
+	}
+}

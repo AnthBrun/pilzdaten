@@ -21,6 +21,11 @@
       </div>
     </section>
 
+    <details class="safety-spoiler">
+      <summary><span class="safety-icon" aria-hidden="true">!</span><span>Nur Pilze essen, die du selbst zu 100&nbsp;% sicher bestimmt hast.</span></summary>
+      <p>Die Treffer und Essbarkeitsangaben dienen nur der Orientierung und sind keine Verzehrfreigabe. Im Zweifel den Pilz nicht essen.</p>
+    </details>
+
     <section class="catalog-section" aria-labelledby="catalog-heading">
       {{$page := .}}
       <div class="section-heading">
@@ -157,6 +162,11 @@
             </div>
           </div>
           {{if .SuggestMore}}<p class="refine-hint">Noch 2–3 Merkmale markieren für genauere Treffer.</p>{{end}}
+          <div class="edibility-legend" role="note" aria-label="Bedeutung der farbigen Kartenränder">
+            <span class="legend-intro">Randfarbe:</span>
+            <span class="edibility-key key-edible">essbar</span><span class="edibility-key key-poor">ungenießbar</span><span class="edibility-key key-poisonous">giftig</span><span class="edibility-key key-deadly">tödlich</span><span class="edibility-key key-unknown">unbekannt</span>
+            <span class="edibility-note">Die Angaben sind keine Verzehrfreigabe und ersetzen keine sichere Bestimmung.</span>
+          </div>
           <div id="species-results" class="species-grid" aria-live="polite">
             {{range .Species}}
             <a class="species-card edibility-card-{{.EdibilityClass}}" href="/art/{{.Slug}}">
@@ -165,11 +175,6 @@
               <span class="card-arrow" aria-hidden="true">↗</span>
             </a>
             {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}
-          </div>
-          <div class="edibility-legend" aria-label="Bedeutung der farbigen Kartenränder">
-            <span class="legend-intro">Randfarbe:</span>
-            <span class="edibility-key key-edible">essbar</span><span class="edibility-key key-poor">ungenießbar</span><span class="edibility-key key-poisonous">giftig</span><span class="edibility-key key-deadly">tödlich</span><span class="edibility-key key-unknown">unbekannt</span>
-            <span class="edibility-note">Die Angaben sind keine Verzehrfreigabe und ersetzen keine sichere Bestimmung.</span>
           </div>
           <nav class="pagination" aria-label="Seiten">
             {{if .HasPrevious}}<a href="{{.PreviousURL}}">← Zurück</a>{{else}}<span></span>{{end}}

@@ -125,6 +125,17 @@ func TestHomeHidesBottomAlphabetAndRetainsLetterFiltering(t *testing.T) {
 	if strings.Contains(response.Body.String(), "ARTENVERZEICHNIS") || strings.Contains(response.Body.String(), `class="alphabet"`) {
 		t.Error("home page should not render the redundant bottom alphabet")
 	}
+	body := response.Body.String()
+	safetyPosition := strings.Index(body, `class="safety-spoiler"`)
+	legendPosition := strings.Index(body, `class="edibility-legend"`)
+	resultsPosition := strings.Index(body, `id="species-results"`)
+	firstCardPosition := strings.Index(body, `class="species-card`)
+	if safetyPosition < 0 || resultsPosition < safetyPosition || !strings.Contains(body, "zu 100&nbsp;% sicher") {
+		t.Error("home page should show the safety spoiler and its key warning near the beginning")
+	}
+	if legendPosition < 0 || resultsPosition < legendPosition || firstCardPosition >= 0 && legendPosition > firstCardPosition {
+		t.Error("edibility legend should appear before the result cards")
+	}
 	for _, expected := range []string{`viewBox="0 0 240 310"`, `transform="translate(0 -20)"`, `class="substrate substrate-base"`, `data-substrate="erde"`} {
 		if !strings.Contains(response.Body.String(), expected) {
 			t.Errorf("home page does not contain updated mushroom/ground markup %q", expected)

@@ -14,7 +14,7 @@ const facetLabels = new Map([...document.querySelectorAll("#facet-labels [data-t
 
 const colors = ["weiß", "gelb", "braun", "schwarz", "rot", "orange", "blau", "gruen", "rosa", "grau"];
 const colorHex = { "weiß": "#eeeade", gelb: "#e5c64d", braun: "#8b5e3c", schwarz: "#333332", rot: "#bd4b45", orange: "#d98740", blau: "#6d94a7", gruen: "#718b62", rosa: "#d69da5", grau: "#999b96" };
-const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Wuchsform", edibility: "Essbarkeit" };
+const partNames = { cap: "Hut", underside: "Unterseite", stem: "Stiel", flesh: "Fruchtfleisch", growth: "Untergrund", edibility: "Essbarkeit" };
 const partChoices = {
   cap: [
     { title: "Hutfarbe", kind: "color", group: "colors", tags: colors.map((color) => color) },
@@ -33,7 +33,7 @@ const partChoices = {
     { title: "Farbe", kind: "color", group: "colors", tags: colors.map((color) => `fl_${color}`) },
     { title: "Merkmale · kombinierbar", kind: "icon", group: "multi", tags: ["milch", "bruechig", "faserig"] },
   ],
-  growth: [{ title: "Wuchsform · kombinierbar", kind: "icon", group: "multi", tags: ["bueschelig", "holz", "auf_boden", "auf_wiese"] }],
+  growth: [{ title: "Untergrund · kombinierbar", kind: "icon", group: "multi", tags: ["bueschelig", "holz", "auf_boden", "auf_wiese"] }],
   edibility: [{ title: "Essbarkeit", kind: "edibility", group: "edibility", tags: ["hervorragend", "gut", "schlecht", "giftig", "tot"] }],
 };
 const groups = {
@@ -56,6 +56,8 @@ let openPart = "";
 let updateTimer;
 let requestSequence = 0;
 let lastRenderKey = "";
+let cycleBadgeTimer;
+const cyclePulseTimers = new WeakMap();
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -191,9 +193,12 @@ function updateMushroom() {
   document.querySelector(".flesh-slice").classList.toggle("flesh-milky", state.tags.has("milch"));
   document.querySelector(".flesh-slice").classList.toggle("flesh-brittle", state.tags.has("bruechig"));
   document.querySelector(".flesh-fiber-pattern").classList.toggle("is-visible", state.tags.has("faserig"));
-  document.querySelector(".growth-icon").classList.toggle("is-selected", ["bueschelig", "holz", "auf_boden", "auf_wiese"].some((tag) => state.tags.has(tag)));
-  const growthLabels = ["bueschelig", "holz", "auf_boden", "auf_wiese"].filter((tag) => state.tags.has(tag)).map((tag) => ({ bueschelig: "Büschel", holz: "Holz", auf_boden: "Boden", auf_wiese: "Wiese" })[tag]);
-  document.querySelector("#growth-label").textContent = growthLabels.join(" · ") || "Wuchs";
+  const substrates = { holz: "holz", auf_boden: "erde", auf_wiese: "wiese", bueschelig: "bueschel" };
+  for (const [tag, substrate] of Object.entries(substrates)) {
+    document.querySelector(`.substrate[data-substrate="${substrate}"]`).classList.toggle("is-visible", state.tags.has(tag));
+  }
+  const growthLabels = Object.keys(substrates).filter((tag) => state.tags.has(tag)).map(labelFor);
+  document.querySelector("#growth-label").textContent = growthLabels.length ? `Untergrund · ${growthLabels.join(" · ")}` : "Untergrund";
   const edibility = activeFrom(new Set(["hervorragend", "gut", "schlecht", "giftig", "tot"]));
   const aura = document.querySelector("#edibility-aura");
   aura.setAttribute("class", `edibility-aura${edibility ? ` aura-${edibility}` : ""}`);
@@ -258,8 +263,91 @@ function closePopover() {
   document.querySelectorAll(".mushroom-part").forEach((node) => node.classList.remove("is-open"));
 }
 
+function showCycleFeedback(part, tag) {
+  clearTimeout(cyclePulseTimers.get(part));
+  part.classList.remove("is-cycled");
+  void part.getBoundingClientRect();
+  part.classList.add("is-cycled");
+  cyclePulseTimers.set(part, setTimeout(() => part.classList.remove("is-cycled"), 400));
+
+  document.querySelector(".cycle-badge")?.remove();
+  clearTimeout(cycleBadgeTimer);
+  const stage = document.querySelector(".mushroom-stage");
+  const stageRect = stage.getBoundingClientRect();
+  const partRect = part.getBoundingClientRect();
+  const badge = document.createElement("span");
+  badge.className = "cycle-badge";
+  badge.textContent = labelFor(tag);
+  badge.style.left = `${Math.min(stage.clientWidth - 12, partRect.right - stageRect.left)}px`;
+  badge.style.top = `${Math.max(12, partRect.top - stageRect.top - 5)}px`;
+  stage.append(badge);
+  cycleBadgeTimer = setTimeout(() => badge.remove(), 900);
+}
+
+function cyclePart(part, section, direction) {
+  const currentIndex = section.tags.findIndex((tag) => state.tags.has(tag));
+  const startIndex = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
+  const nextIndex = (startIndex + direction + section.tags.length) % section.tags.length;
+  const nextTag = section.tags[nextIndex];
+  const previousOpenPart = openPart;
+  openPart = part.dataset.part;
+  toggleTag(nextTag, section.group);
+  openPart = previousOpenPart;
+  if (previousOpenPart) renderPopover(previousOpenPart);
+  showCycleFeedback(part, nextTag);
+}
+
 document.querySelectorAll(".mushroom-part").forEach((part) => {
-  part.addEventListener("click", () => openPopover(part.dataset.part));
+  let gesture = null;
+  let suppressNextClick = false;
+  let clickSuppressionTimer;
+  if (part.dataset.part !== "edibility") {
+    part.addEventListener("pointerdown", (event) => {
+      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+      gesture = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+      try { part.setPointerCapture(event.pointerId); } catch (_error) {}
+    });
+    part.addEventListener("pointermove", (event) => {
+      if (gesture?.pointerId === event.pointerId) {
+        gesture.dx = event.clientX - gesture.x;
+        gesture.dy = event.clientY - gesture.y;
+      }
+    });
+    part.addEventListener("pointerup", (event) => {
+      if (gesture?.pointerId !== event.pointerId) return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      gesture = null;
+      let section;
+      let direction;
+      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) {
+        section = (partChoices[part.dataset.part] || []).find((choice) => choice.group !== "multi");
+        direction = dx > 0 ? 1 : -1;
+      } else if (event.pointerType === "mouse" && Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) {
+        section = (partChoices[part.dataset.part] || []).filter((choice) => choice.group !== "multi")[1];
+        direction = dy > 0 ? 1 : -1;
+      }
+      if (section) {
+        suppressNextClick = true;
+        clearTimeout(clickSuppressionTimer);
+        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+        cyclePart(part, section, direction);
+      } else if ((Math.abs(dx) > 24 || Math.abs(dy) > 24) && (Math.abs(dx) > Math.abs(dy) || event.pointerType === "mouse")) {
+        suppressNextClick = true;
+        clearTimeout(clickSuppressionTimer);
+        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+      } else if (Math.max(Math.abs(dx), Math.abs(dy)) >= 8) {
+        suppressNextClick = true;
+        clearTimeout(clickSuppressionTimer);
+        clickSuppressionTimer = setTimeout(() => { suppressNextClick = false; }, 0);
+      }
+    });
+    part.addEventListener("pointercancel", () => { gesture = null; });
+  }
+  part.addEventListener("click", () => {
+    if (suppressNextClick) { suppressNextClick = false; return; }
+    openPopover(part.dataset.part);
+  });
   part.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPopover(part.dataset.part); }
   });

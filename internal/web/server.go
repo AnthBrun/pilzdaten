@@ -59,13 +59,14 @@ type image struct {
 }
 
 type detailData struct {
-	DisplayName string
-	Aliases     []string
-	Species     *catalog.Species
-	Traits      []trait
-	Images      []image
-	Gallery     []image
-	Related     []*catalog.Species
+	DisplayName        string
+	Aliases            []string
+	Species            *catalog.Species
+	Traits             []trait
+	SupplementalTraits []trait
+	Images             []image
+	Gallery            []image
+	Related            []*catalog.Species
 }
 
 type searchResult struct {
@@ -242,22 +243,30 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.Aliases = append(data.Aliases, species.Synonyme...)
+	allTraits := make([]trait, 0, len(species.Merkmale))
 	for key, value := range species.Merkmale {
 		if isHiddenDetailTrait(key) {
 			continue
 		}
 		if rendered := displayValue(value); rendered != "" {
-			data.Traits = append(data.Traits, trait{Name: label(key), Value: rendered})
+			allTraits = append(allTraits, trait{Name: label(key), Value: rendered})
 		}
 	}
-	sort.Slice(data.Traits, func(i, j int) bool {
-		left, right := data.Traits[i], data.Traits[j]
+	sort.Slice(allTraits, func(i, j int) bool {
+		left, right := allTraits[i], allTraits[j]
 		leftOrder, rightOrder := detailTraitOrder(left.Name), detailTraitOrder(right.Name)
 		if leftOrder != rightOrder {
 			return leftOrder < rightOrder
 		}
 		return strings.ToLower(left.Name) < strings.ToLower(right.Name)
 	})
+	for _, value := range allTraits {
+		if detailTraitOrder(value.Name) < 9 {
+			data.Traits = append(data.Traits, value)
+		} else {
+			data.SupplementalTraits = append(data.SupplementalTraits, value)
+		}
+	}
 	seenImages := make(map[string]bool)
 	addPhoto := func(path string) {
 		if path == "" || !strings.HasSuffix(strings.ToLower(path), ".jpg") || seenImages[path] {
@@ -409,7 +418,7 @@ func detailTraitOrder(name string) int {
 		return 5
 	case containsTraitTerm(name, "vorkommen", "standort", "substrat", "habitat"):
 		return 6
-	case containsTraitTerm(name, "speisewert", "essbarkeit", "gift", "verzehr", "unverträg"):
+	case containsTraitTerm(name, "essbarkeit", "gift", "verzehr", "unverträg"):
 		return 7
 	case containsTraitTerm(name, "gattung", "taxonomie"):
 		return 8

@@ -21,7 +21,7 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(imageDir, "pilz.jpg"), []byte("test-image"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	data := `{"slug":"Steinpilz","url":"https://example.test/steinpilz","name_trivial":"Steinpilz","name_wissenschaftlich":"BOLETUS EDULIS","synonyme":["Herrenpilz"],"merkmale":{"priorität":"2","kommentar":"Hinweis","vorkommen":"Wald","sporenpulverfarbe":"braun","fleisch":"weiß","stiel":"lang","lamellen":"hell","hut":"braun","geschmack":"bitter","geruch":"pilzig","verwechslungsgefahr":"Gallenröhrling"},"bilddateien":["pilz.jpg"],"verwechslungen":["Gallenroehrling"]}
+	data := `{"slug":"Steinpilz","url":"https://example.test/steinpilz","name_trivial":"Steinpilz","name_wissenschaftlich":"BOLETUS EDULIS","synonyme":["Herrenpilz"],"merkmale":{"priorität":"2","kommentar":"Hinweis","vorkommen":"Wald","sporenpulverfarbe":"braun","fleisch":"weiß","stiel":"lang","lamellen":"hell","hut":"braun","geschmack":"bitter","geruch":"pilzig","relativer speisewert":"2","tipp":"Nur als Beispiel","lustige anmerkung":"Anekdote","verwechslungsgefahr":"Gallenröhrling"},"bilddateien":["pilz.jpg"],"verwechslungen":["Gallenroehrling"]}
 {"slug":"Gallenroehrling","name_trivial":"Gallenröhrling","name_wissenschaftlich":"Tylopilus felleus","merkmale":{},"bilddateien":[],"verwechslungen":[]}
 `
 	index := `{"slug":"Steinpilz","name":"Steinpilz","wissenschaftlich":"BOLETUS EDULIS","gattung":"Röhrlinge"}
@@ -56,6 +56,17 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 	}
 	if !strings.Contains(response.Body.String(), `<h2 id="related-heading">Verwechslungspartner</h2>`) {
 		t.Error("detail page should keep the related-species section with images")
+	}
+	body := response.Body.String()
+	supplementalPosition := strings.Index(body, `<summary><span>Weitere Angaben</span>`)
+	if supplementalPosition < 0 {
+		t.Fatal("detail page does not provide a collapsed section for supplemental source fields")
+	}
+	for _, label := range []string{"Kommentar", "Relativer speisewert", "Tipp", "Lustige anmerkung"} {
+		position := strings.Index(body, "<dt>"+label+"</dt>")
+		if position <= supplementalPosition {
+			t.Errorf("supplemental field %q should be inside the collapsed additional-data section", label)
+		}
 	}
 	orderedTraits := []string{"<dt>Hut</dt>", "<dt>Lamellen</dt>", "<dt>Stiel</dt>", "<dt>Fleisch</dt>", "<dt>Geruch</dt>", "<dt>Geschmack</dt>", "<dt>Sporenpulverfarbe</dt>", "<dt>Vorkommen</dt>", "<dt>Kommentar</dt>"}
 	lastPosition := -1

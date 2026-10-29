@@ -36,6 +36,15 @@
     </section>
     {{end}}
 
+    {{if .SupplementalTraits}}
+    <details class="supplemental-traits">
+      <summary><span>Weitere Angaben</span><span class="count-pill">{{len .SupplementalTraits}} Angaben</span></summary>
+      <dl class="traits-grid">
+        {{range .SupplementalTraits}}<div class="trait-card"><dt>{{.Name}}</dt><dd>{{.Value}}</dd></div>{{end}}
+      </dl>
+    </details>
+    {{end}}
+
     {{if .Images}}
     <section class="detail-section" aria-labelledby="images-heading">
       <div class="detail-section-heading"><div><p class="eyebrow">IM WALD ENTDECKT</p><h2 id="images-heading">Bilder <span class="heading-count">({{len .Images}})</span></h2></div></div>

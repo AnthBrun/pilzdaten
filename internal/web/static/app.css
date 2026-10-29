@@ -266,6 +266,14 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
 .trait-card { background: var(--white); border: 1px solid #e8e9e2; border-radius: 5px; padding: 15px 17px; min-width: 0; }
 .trait-card dt { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: #66806b; margin-bottom: 8px; }
 .trait-card dd { font-size: 13px; line-height: 1.65; color: #39463d; margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.supplemental-traits { margin-top: 25px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.supplemental-traits summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 2px; cursor: pointer; list-style: none; color: var(--green); font-size: 14px; font-weight: 650; }
+.supplemental-traits summary::-webkit-details-marker { display: none; }
+.supplemental-traits summary::after { content: "+"; order: 1; color: #778179; font-size: 18px; font-weight: 400; }
+.supplemental-traits[open] summary::after { content: "−"; }
+.supplemental-traits .count-pill { margin-left: auto; }
+.supplemental-traits .traits-grid { padding-bottom: 16px; }
+.supplemental-traits summary:focus-visible { outline: 3px solid #3f7855; outline-offset: 2px; border-radius: 4px; }
 .image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .mushroom-image { margin: 0; background: white; border: 1px solid #e8e9e2; border-radius: 5px; overflow: hidden; }
 .image-open { display: flex; justify-content: center; align-items: center; width: 100%; padding: 0; border: 0; background: #f4f4ee; cursor: zoom-in; }

@@ -37,13 +37,31 @@ func TestDetailRendersTraitsImagesAndRelatedSpecies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	originalsPath := filepath.Join(dir, "originals.json")
+	if err := os.WriteFile(originalsPath, []byte(`{"pilz2.jpg":"gross/pilz2.jpg"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := loaded.LoadOriginals(originalsPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(imageDir, "gross"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imageDir, "gross", "pilz2.jpg"), []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	handler := New(loaded, imageDir)
+	original := httptest.NewRecorder()
+	handler.ServeHTTP(original, httptest.NewRequest("GET", "/original/gross/pilz2.jpg", nil))
+	if original.Code != 200 || original.Body.String() != "original" {
+		t.Errorf("original image status = %d, body = %q", original.Code, original.Body.String())
+	}
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest("GET", "/art/Steinpilz", nil))
 	if response.Code != 200 {
 		t.Fatalf("detail status = %d, want 200", response.Code)
 	}
-	for _, expected := range []string{"BOLETUS EDULIS", "Herrenpilz", "Merkmale", "Geruch", "Geschmack", "bitter", "braun", "Bilder", "/media/pilz.jpg", `loading="lazy"`, "Gallenröhrling", "Essbarkeit nicht erfasst"} {
+	for _, expected := range []string{"BOLETUS EDULIS", "Herrenpilz", "Merkmale", "Geruch", "Geschmack", "bitter", "braun", "Bilder", "/media/pilz.jpg", `loading="lazy"`, "Gallenröhrling", "Essbarkeit nicht erfasst", `data-full="/original/gross/pilz2.jpg" aria-label="Bild 2 vergrößern"`} {
 		if !strings.Contains(response.Body.String(), expected) {
 			t.Errorf("detail page does not contain %q", expected)
 		}

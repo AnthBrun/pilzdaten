@@ -21,13 +21,13 @@
         {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
         {{if .Aliases}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Aliases}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
       </div>
-      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0" aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
+      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0"{{with (index .Images 0).Full}} data-full="{{.}}"{{end}} aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
     </section>
 
     {{if .Gallery}}
     <section class="photo-strip-section" aria-labelledby="images-heading">
       <h2 id="images-heading" class="strip-heading">Bilder <span class="heading-count">({{len .Images}})</span> <span class="strip-hint">wischen →</span></h2>
-      <div class="photo-strip">{{range $index, $image := .Gallery}}<button class="image-open strip-photo" type="button" aria-label="Bild {{$index}} vergrößern"><img src="{{$image.URL}}" alt="{{$image.Alt}}" loading="lazy" decoding="async"></button>{{end}}</div>
+      <div class="photo-strip">{{range .Gallery}}<button class="image-open strip-photo" type="button"{{with .Full}} data-full="{{.}}"{{end}} aria-label="Bild {{.Number}} vergrößern"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"></button>{{end}}</div>
     </section>
     {{end}}
 

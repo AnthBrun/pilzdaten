@@ -7,7 +7,7 @@ Grundlage ist ein lokaler Crawl von [123pilzsuche.de](https://123pilzsuche.de). 
 - Ein einzelner Go-Server, nur Standardbibliothek, keine Datenbank.
 - Alle Daten werden beim Start in den Speicher geladen.
 - Templates, CSS und JS sind in das Binary eingebettet.
-- Die aufbereiteten Daten (~17 MB) liegen im Repo unter `data/`. Die Fotos (~900 MB) liegen außerhalb, ihr Ort wird über `IMAGE_DIR` angegeben.
+- Die aufbereiteten Daten (~17 MB) liegen im Repo unter `data/`. Die Fotos (~900 MB Vorschauen, ~20 GB große Originale) liegen außerhalb, ihr Ort wird über `IMAGE_DIR` angegeben.
 
 ## Schnellstart
 
@@ -42,16 +42,18 @@ pilzdaten/                        dieses Repo
     ├── filter_tags.jsonl         Filter-Tags und Hutdurchmesser je Art
     ├── facets.json               Filtergruppen mit Labels
     ├── best_images.jsonl         bevorzugtes Foto je Art
-    └── pictogram_map.json        Tooltip-Texte der Merkmale
+    ├── pictogram_map.json        Tooltip-Texte der Merkmale
+    └── originals.json            optional: Vorschaubild -> großes Original (Lightbox)
 
 <beliebiger Ort>/                 IMAGE_DIR (im Container /images, read-only)
 └── daten/details/
-    └── <Slug>-Dateien/
-        ├── image004.jpg          Fotos
-        └── …
+    ├── <Slug>-Dateien/
+    │   ├── image004.jpg          Fotos (Vorschauen, ~400 px)
+    │   └── …
+    └── <Name>.jpg                große Originale (bis 1200 px, aus originals.json)
 ```
 
-Alle sechs Datendateien sind Pflicht. Fehlt eine oder ist `IMAGE_DIR` nicht gesetzt, bricht der Server beim Start mit einer Meldung ab.
+Die sechs Datendateien außer `originals.json` sind Pflicht. Fehlt eine oder ist `IMAGE_DIR` nicht gesetzt, bricht der Server beim Start mit einer Meldung ab.
 
 | Datei | Inhalt | Wofür |
 |---|---|---|
@@ -74,13 +76,14 @@ URL:          /media/daten/details/Fliegenpilz-Dateien/image004.jpg
 
 - Nur `.jpg` zählt als Foto. Die `.gif`-Einträge in `bilddateien` sind Marker der Quelle und werden ignoriert.
 - Fehlende Bilder führen nicht zu Fehlern, sie fehlen dann nur in der Anzeige.
+- Die Quelle bindet nur verkleinerte Vorschauen ein (~400 px, viele Galeriebilder nur ~150 px). Die großen Originale lädt `python3 crawler.py originals` im Crawl-Ordner; die Zuordnung steht in `originals.json`. Die Lightbox zeigt zuerst die Vorschau und tauscht sie gegen das Original unter `/original/…`, sobald es geladen ist. Ohne `originals.json` oder offline bleibt es bei der Vorschau. Originale landen bewusst nicht im Offline-Cache.
 
 ### Daten aktualisieren
 
-Nach einem neuen Crawl die sechs Dateien aus `pilzsuche/data/` nach `data/` kopieren, committen und neu bauen:
+Nach einem neuen Crawl die Dateien aus `pilzsuche/data/` nach `data/` kopieren, committen und neu bauen:
 
 ```sh
-cp ../pilzsuche/data/{species.jsonl,index_arts.jsonl,filter_tags.jsonl,facets.json,best_images.jsonl,pictogram_map.json} data/
+cp ../pilzsuche/data/{species.jsonl,index_arts.jsonl,filter_tags.jsonl,facets.json,best_images.jsonl,pictogram_map.json,originals.json} data/
 docker compose up -d --build
 ```
 
@@ -128,7 +131,8 @@ internal/web/                HTTP
 | `GET /api/available-tags` | Tags, die mit der aktuellen Auswahl noch Treffer liefern. Die übrigen graut das Frontend aus. |
 | `GET /api/facets` | Filtergruppen |
 | `GET /api/offline` | Offline-Paket: alle Arten kompakt, gzip, mit ETag |
-| `GET /media/…` | Fotos aus `IMAGE_DIR` |
+| `GET /media/…` | Fotos (Vorschauen) aus `IMAGE_DIR` |
+| `GET /original/…` | Große Originale aus `IMAGE_DIR` (nur Lightbox, nicht im Offline-Cache) |
 | `GET /static/…` | CSS, JS, Icons (eingebettet) |
 | `GET /sw.js`, `/manifest.webmanifest`, `/offline` | PWA |
 

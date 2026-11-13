@@ -26,7 +26,8 @@ type Server struct {
 }
 
 // New baut den HTTP-Router. imageDir ist das Wurzelverzeichnis der Artfotos,
-// es wird unter /media/ ausgeliefert (siehe README, "Bilder").
+// es wird unter /media/ (Vorschauen) und /original/ (große Originale) ausgeliefert
+// (siehe README, "Bilder").
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
@@ -56,6 +57,7 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 		return "public, max-age=86400"
 	}))
 	mux.Handle("GET /media/", http.StripPrefix("/media/", withCacheControl(http.FileServer(http.Dir(imageDir)), oneDay)))
+	mux.Handle("GET /original/", http.StripPrefix("/original/", withCacheControl(http.FileServer(http.Dir(imageDir)), oneDay)))
 	return mux
 }
 

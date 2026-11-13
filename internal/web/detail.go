@@ -31,8 +31,10 @@ type trait struct {
 }
 
 type image struct {
-	URL string
-	Alt string
+	URL    string
+	Full   string // großes Original für die Lightbox, leer wenn nicht vorhanden
+	Alt    string
+	Number int // 1-basierte Position unter allen Fotos der Art (Hauptbild = 1)
 }
 
 func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +52,7 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Aliases = append(data.Aliases, species.Synonyme...)
 	data.Traits, data.SupplementalTraits = speciesTraits(species)
-	data.Images = speciesPhotos(species)
+	data.Images = speciesPhotos(species, s.catalog.Original)
 	if len(data.Images) > 1 {
 		data.Gallery = data.Images[1:]
 	}
@@ -81,7 +83,8 @@ func dangerRank(species *catalog.Species) int {
 }
 
 // speciesPhotos liefert die echten Fotos einer Art, das bevorzugte Bild zuerst.
-func speciesPhotos(species *catalog.Species) []image {
+// original liefert zum Bildpfad das große Original oder "".
+func speciesPhotos(species *catalog.Species, original func(string) string) []image {
 	seen := make(map[string]bool)
 	photos := make([]image, 0)
 	addPhoto := func(path string) {
@@ -89,7 +92,11 @@ func speciesPhotos(species *catalog.Species) []image {
 			return
 		}
 		seen[path] = true
-		photos = append(photos, image{URL: imageURL(path), Alt: species.NameTrivial})
+		photo := image{URL: imageURL(path), Alt: species.NameTrivial, Number: len(photos) + 1}
+		if full := original(path); full != "" {
+			photo.Full = originalURL(full)
+		}
+		photos = append(photos, photo)
 	}
 	addPhoto(species.BestImage)
 	for _, imagePath := range species.Bilddateien {

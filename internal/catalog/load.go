@@ -80,6 +80,7 @@ type Catalog struct {
 	all        []*Species
 	filterData map[string]FilterData
 	bestImages map[string]string
+	originals  map[string]string
 	facets     Facets
 	count      int
 }
@@ -432,6 +433,27 @@ func loadIndex(path string) (map[string]indexEntry, error) {
 
 func (c *Catalog) Count() int {
 	return c.count
+}
+
+// LoadOriginals liest die Zuordnung Vorschaubild -> großes Original
+// (originals.json aus dem Crawl, Pfade wie in bilddateien).
+func (c *Catalog) LoadOriginals(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("Originale %q öffnen: %w", path, err)
+	}
+	defer file.Close()
+	originals := make(map[string]string)
+	if err := json.NewDecoder(file).Decode(&originals); err != nil {
+		return fmt.Errorf("Originale %q lesen: %w", path, err)
+	}
+	c.originals = originals
+	return nil
+}
+
+// Original liefert den Pfad des großen Originals zu einem Vorschaubild oder "".
+func (c *Catalog) Original(preview string) string {
+	return c.originals[preview]
 }
 
 func (c *Catalog) Get(slug string) (*Species, bool) {

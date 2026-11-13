@@ -21,10 +21,19 @@ export function initLightbox() {
 
   function show(index) {
     current = (index + imageButtons.length) % imageButtons.length;
-    const source = imageButtons[current].querySelector("img");
+    const button = imageButtons[current];
+    const source = button.querySelector("img");
+    // Erst die (geladene) Vorschau zeigen, dann das große Original nachladen.
+    // Offline oder ohne Original bleibt die Vorschau stehen.
     lightboxImage.src = source.currentSrc || source.src;
     lightboxImage.alt = source.alt;
     counter.textContent = `${current + 1} / ${imageButtons.length}`;
+    const full = button.dataset.full;
+    if (!full) return;
+    const shown = current;
+    const loader = new Image();
+    loader.onload = () => { if (current === shown) lightboxImage.src = full; };
+    loader.src = full;
   }
   function open(index) {
     returnFocus = document.activeElement;

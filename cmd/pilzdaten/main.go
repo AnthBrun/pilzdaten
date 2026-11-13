@@ -33,6 +33,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Daten konnten nicht geladen werden: %v", err)
 	}
+	// Optional: große Originale für die Lightbox (crawler.py originals).
+	if _, err := os.Stat(file("originals.json")); err == nil {
+		if err := data.LoadOriginals(file("originals.json")); err != nil {
+			log.Fatalf("Daten konnten nicht geladen werden: %v", err)
+		}
+	}
 	log.Printf("%d Arten aus %s geladen, Bilder aus %s", data.Count(), dataDir, imageDir)
 
 	mux := web.New(data, imageDir)

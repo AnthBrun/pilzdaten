@@ -96,7 +96,7 @@ func offlineSpeciesFor(data *catalog.Catalog, species *catalog.Species) offlineS
 	if entry.Tags == nil {
 		entry.Tags = []string{}
 	}
-	for _, image := range speciesPhotos(species) {
+	for _, image := range speciesPhotos(species, noOriginal) {
 		if entry.Image == "" {
 			entry.Image = image.URL
 		}
@@ -180,3 +180,6 @@ func manifest(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) offlinePage(w http.ResponseWriter, _ *http.Request) {
 	s.render(w, "offline.html", nil)
 }
+
+// noOriginal: Das Offline-Paket enthält nur Vorschaubilder, keine großen Originale.
+func noOriginal(string) string { return "" }

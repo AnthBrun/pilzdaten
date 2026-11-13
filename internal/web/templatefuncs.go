@@ -19,11 +19,21 @@ var templateFuncs = template.FuncMap{
 // imageURL macht aus einem Bildpfad der Quelle ("daten/details/<Slug>-Dateien/image004.jpg")
 // die URL unter /media/.
 func imageURL(path string) string {
+	return "/media/" + escapePath(path)
+}
+
+// originalURL liefert die URL eines großen Originals. Sie liegt bewusst nicht
+// unter /media/, damit der Service Worker Originale nicht in den Foto-Cache legt.
+func originalURL(path string) string {
+	return "/original/" + escapePath(path)
+}
+
+func escapePath(path string) string {
 	parts := strings.Split(strings.TrimLeft(path, "/"), "/")
 	for i, part := range parts {
 		parts[i] = url.PathEscape(part)
 	}
-	return "/media/" + strings.Join(parts, "/")
+	return strings.Join(parts, "/")
 }
 
 // isPhoto unterscheidet echte Fotos (.jpg) von den kleinen .gif-Markern der Quelle.

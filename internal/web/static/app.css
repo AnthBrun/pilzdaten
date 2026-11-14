@@ -423,7 +423,8 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
 .source-link a:hover { text-decoration: underline; }
 .lightbox { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 4vh 5vw; background: rgb(12 17 14 / .94); color: white; }
 .lightbox.is-open { display: flex; }
-.lightbox-image { display: block; max-width: 95vw; max-height: 92vh; object-fit: contain; }
+.lightbox-image { display: block; max-width: 95vw; max-height: 92vh; object-fit: contain; transition: transform .22s ease-out; user-select: none; -webkit-user-drag: none; }
+.lightbox-image.is-dragging { transition: none; }
 .lightbox button { position: absolute; z-index: 1; border: 0; background: rgb(255 255 255 / .13); color: white; border-radius: 50%; width: 44px; height: 44px; font-size: 28px; line-height: 1; cursor: pointer; }
 .lightbox button:hover { background: rgb(255 255 255 / .25); }
 .lightbox-close { top: 18px; right: 20px; }
@@ -528,4 +529,5 @@ footer { max-width: 1240px; margin: auto; padding: 24px 32px; border-top: 1px so
   .substrate, .deck-option, #option-deck { transition: none; animation: none; }
   .deck-carousel { scroll-behavior: auto; }
   .mushroom-part.is-cycled { animation: none; }
+  .lightbox-image { transition: none; }
 }

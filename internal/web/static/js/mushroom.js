@@ -2,7 +2,7 @@
 // (templates/mushroom.html). Die Zeichnung selbst ist reines SVG; hier
 // werden nur Farben, Formen und Sichtbarkeiten umgeschaltet.
 import { capShapes, colorFor, colorTags, groupTags, labelFor, partChoices, partNames, substrateTags, surfaceTags, undersideTypes } from "./config.js";
-import { activeFrom } from "./util.js";
+import { activeFrom, t } from "./util.js";
 
 const capPaths = {
   spitz: "M30 132C50 75 81 38 120 28c39 10 70 47 90 104-45 15-135 15-180 0Z",
@@ -107,7 +107,7 @@ function describeParts(tags) {
     const name = partNames[part.dataset.part];
     const sections = partChoices[part.dataset.part] || [];
     const selected = [...tags].filter((tag) => sections.some((section) => section.tags.includes(tag))).map(labelFor);
-    const title = selected.length ? `${name}: ${selected.join(", ")}` : `${name} wählen`;
+    const title = selected.length ? `${name}: ${selected.join(", ")}` : t("{part} wählen", { part: name });
     part.setAttribute("title", title);
     part.setAttribute("aria-label", title);
     part.classList.toggle("has-selection", selected.length > 0);

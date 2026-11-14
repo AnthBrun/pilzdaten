@@ -1,0 +1,3 @@
+{{define "lang-switch"}}{{if gt (len langs) 1}}<form class="lang-switch" method="get"><label class="visually-hidden" for="lang-select">{{t "Sprache"}}</label><select id="lang-select" name="lang">{{range langs}}<option value="{{.Code}}" lang="{{.Code}}"{{if eq .Code lang}} selected{{end}}>{{.Name}}</option>{{end}}</select><noscript><button type="submit">{{t "Wechseln"}}</button></noscript></form>{{end}}{{end}}
+
+{{define "footer"}}<footer><span>{{t "Pilzdatenbank"}}</span><span>{{t "Datenquelle: 123pilzsuche.de"}}</span>{{if ne lang "de"}}<span class="mt-note">{{t "Maschinell übersetzt. Im Zweifel gilt der deutsche Originaltext."}} <a href="?lang=de">Deutsch</a></span>{{end}}</footer>{{end}}

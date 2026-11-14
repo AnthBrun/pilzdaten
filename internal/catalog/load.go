@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"html"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"pilzdaten/internal/i18n"
 )
 
 // Species is one structured entry from species.jsonl. Merkmale is deliberately
@@ -31,6 +34,8 @@ type Species struct {
 	Priority             int            `json:"-"`
 	Commonness           int            `json:"-"`
 	PhotoCount           int            `json:"-"`
+	// LocalNames: übersetzte Trivialnamen je Sprache, damit die Suche sie findet.
+	LocalNames map[string]string `json:"-"`
 }
 
 type indexEntry struct {
@@ -83,6 +88,26 @@ type Catalog struct {
 	originals  map[string]string
 	facets     Facets
 	count      int
+}
+
+// LoadDir lädt den Katalog aus einem Datenordner (siehe README, "Daten"):
+// die sechs Pflichtdateien und, falls vorhanden, originals.json.
+func LoadDir(dir string) (*Catalog, error) {
+	file := func(name string) string { return filepath.Join(dir, name) }
+	data, err := LoadWithAssets(
+		file("species.jsonl"), file("index_arts.jsonl"), file("filter_tags.jsonl"),
+		file("facets.json"), file("best_images.jsonl"), file("pictogram_map.json"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	// Optional: große Originale für die Lightbox (crawler.py originals).
+	if _, err := os.Stat(file("originals.json")); err == nil {
+		if err := data.LoadOriginals(file("originals.json")); err != nil {
+			return nil, err
+		}
+	}
+	return data, nil
 }
 
 func Load(speciesPath, indexPath string) (*Catalog, error) {
@@ -289,6 +314,16 @@ func (c *Catalog) promoteEdibilityFacet() {
 	}
 }
 
+// Essbarkeits-Labels; i18n.N meldet sie für die Übersetzung an.
+var (
+	labelDeadly    = i18n.N("Tödlich giftig")
+	labelPoisonous = i18n.N("Giftig")
+	labelPoor      = i18n.N("Ungenießbar / schlecht")
+	labelExcellent = i18n.N("Hervorragend essbar")
+	labelEdible    = i18n.N("Gut essbar")
+	labelUnknown   = i18n.N("Essbarkeit nicht erfasst")
+)
+
 func applyEdibility(species *Species, tags []string) {
 	known := make(map[string]bool, len(tags))
 	for _, tag := range tags {
@@ -296,17 +331,17 @@ func applyEdibility(species *Species, tags []string) {
 	}
 	switch {
 	case known["tot"]:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass, species.EdibilityWarning = "tot", "Tödlich giftig", "deadly", true
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass, species.EdibilityWarning = "tot", labelDeadly, "deadly", true
 	case known["giftig"]:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass, species.EdibilityWarning = "giftig", "Giftig", "poisonous", true
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass, species.EdibilityWarning = "giftig", labelPoisonous, "poisonous", true
 	case known["schlecht"]:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "schlecht", "Ungenießbar / schlecht", "poor"
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "schlecht", labelPoor, "poor"
 	case known["hervorragend"]:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "hervorragend", "Hervorragend essbar", "excellent"
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "hervorragend", labelExcellent, "excellent"
 	case known["gut"]:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "gut", "Gut essbar", "edible"
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "gut", labelEdible, "edible"
 	default:
-		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "", "Essbarkeit nicht erfasst", "unknown"
+		species.Edibility, species.EdibilityLabel, species.EdibilityClass = "", labelUnknown, "unknown"
 	}
 }
 
@@ -449,6 +484,22 @@ func (c *Catalog) LoadOriginals(path string) error {
 	}
 	c.originals = originals
 	return nil
+}
+
+// SetLocalNames hinterlegt übersetzte Trivialnamen einer Sprache
+// (translate bekommt den deutschen Namensstring und liefert die Übersetzung).
+// Die Suche findet Arten danach auch über diese Namen.
+func (c *Catalog) SetLocalNames(lang string, translate func(string) string) {
+	for _, species := range c.all {
+		local := translate(species.NameTrivial)
+		if local == "" || local == species.NameTrivial {
+			continue
+		}
+		if species.LocalNames == nil {
+			species.LocalNames = map[string]string{}
+		}
+		species.LocalNames[lang] = local
+	}
 }
 
 // Original liefert den Pfad des großen Originals zu einem Vorschaubild oder "".

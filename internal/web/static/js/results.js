@@ -2,7 +2,7 @@
 // Durchmesser-Anzeige und die Trefferleiste unten auf dem Handy.
 import { groupTags, labelFor, monthTags } from "./config.js";
 import { hasCustomDiameter, state } from "./state.js";
-import { escapeHTML } from "./util.js";
+import { escapeHTML, t } from "./util.js";
 
 const results = document.querySelector("#species-results");
 const resultLabel = document.querySelector("#results-label");
@@ -16,31 +16,31 @@ const resultsDock = document.querySelector("#results-dock");
 // species: { slug, name, scientific_name, edibility_class, edibility_label, image }
 export function renderCard(species) {
   const name = escapeHTML(species.name);
-  const scientific = escapeHTML(species.scientific_name || "Wissenschaftlicher Name nicht erfasst");
+  const scientific = escapeHTML(species.scientific_name || t("Wissenschaftlicher Name nicht erfasst"));
   const edibilityClass = escapeHTML(species.edibility_class || "unknown");
-  const edibilityLabel = escapeHTML(species.edibility_label || "Essbarkeit nicht erfasst");
+  const edibilityLabel = escapeHTML(species.edibility_label || t("Essbarkeit nicht erfasst"));
   const image = species.image ? `<img class="card-image" src="${escapeHTML(species.image)}" alt="${name}" loading="lazy" decoding="async">` : '<span class="card-image card-image-empty" aria-hidden="true">✳</span>';
-  return `<a class="species-card edibility-card-${edibilityClass}" href="/art/${escapeHTML(encodeURIComponent(species.slug))}">${image}<span class="card-copy"><strong>${name}</strong><em>${scientific}</em><span class="visually-hidden">Essbarkeit: ${edibilityLabel}. Keine Verzehrfreigabe.</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>`;
+  return `<a class="species-card edibility-card-${edibilityClass}" href="/art/${escapeHTML(encodeURIComponent(species.slug))}">${image}<span class="card-copy"><strong>${name}</strong><em>${scientific}</em><span class="visually-hidden">${t("Essbarkeit: {label}. Keine Verzehrfreigabe.", { label: edibilityLabel })}</span></span><span class="card-arrow" aria-hidden="true">↗</span></a>`;
 }
 
 // data: Antwort von /api/search (oder searchOffline).
 export function renderResults(data) {
   const y = window.scrollY;
-  resultLabel.textContent = `${data.count} passende ${data.count === 1 ? "Art" : "Arten"}`;
-  resultNumber.textContent = data.total_pages > 1 ? `Seite ${data.page} von ${data.total_pages}` : "";
+  resultLabel.textContent = data.count === 1 ? t("{count} passende Art", { count: data.count }) : t("{count} passende Arten", { count: data.count });
+  resultNumber.textContent = data.total_pages > 1 ? t("Seite {page} von {pages}", { page: data.page, pages: data.total_pages }) : "";
   // Bei null Treffern die zwei häufigsten Ursachen mit einem Tipp lösbar machen.
   const activeMonth = monthTags.find((tag) => state.tags.has(tag));
   const activeGroup = groupTags.find((tag) => state.tags.has(tag));
   const hints = [
-    activeMonth && `<button class="reset-inline" type="button" data-remove-tag="${activeMonth}">Ohne Monatsfilter suchen</button>`,
-    activeGroup && `<button class="reset-inline" type="button" data-remove-tag="${activeGroup}">In allen Pilzgruppen suchen</button>`,
+    activeMonth && `<button class="reset-inline" type="button" data-remove-tag="${activeMonth}">${escapeHTML(t("Ohne Monatsfilter suchen"))}</button>`,
+    activeGroup && `<button class="reset-inline" type="button" data-remove-tag="${activeGroup}">${escapeHTML(t("In allen Pilzgruppen suchen"))}</button>`,
   ].filter(Boolean).map((hint) => ` ${hint}`).join("");
   results.innerHTML = data.results.length
     ? data.results.map(renderCard).join("")
-    : `<p class="empty-state">Keine passenden Arten gefunden. Entferne zuletzt gesetzte Merkmale.${hints}</p>`;
+    : `<p class="empty-state">${escapeHTML(t("Keine passenden Arten gefunden. Entferne zuletzt gesetzte Merkmale."))}${hints}</p>`;
   window.scrollTo(0, y);
   updateDock(data);
-  pagination.innerHTML = `${data.page > 1 ? '<button type="button" data-page="-1">← Zurück</button>' : "<span></span>"}${data.total_pages > 1 ? `<span>Seite ${data.page} / ${data.total_pages}</span>` : ""}${data.page < data.total_pages ? '<button type="button" data-page="1">Weiter →</button>' : ""}`;
+  pagination.innerHTML = `${data.page > 1 ? `<button type="button" data-page="-1">${escapeHTML(t("← Zurück"))}</button>` : "<span></span>"}${data.total_pages > 1 ? `<span>${escapeHTML(t("Seite {page} / {pages}", { page: data.page, pages: data.total_pages }))}</span>` : ""}${data.page < data.total_pages ? `<button type="button" data-page="1">${escapeHTML(t("Weiter →"))}</button>` : ""}`;
 }
 
 export function renderMessage(html) {
@@ -54,15 +54,15 @@ export function renderActiveFilters() {
   activeFilters.hidden = !hasFilters;
   activeFilters.innerHTML = [
     ...[...state.tags].map((tag) => `<button class="filter-chip" type="button" data-remove-tag="${escapeHTML(tag)}">${escapeHTML(labelFor(tag))} <span aria-hidden="true">×</span></button>`),
-    ...(customDiameter ? [`<button class="filter-chip" type="button" data-reset-diameter>Hut ${escapeHTML(state.min)}–${escapeHTML(state.max)} cm <span aria-hidden="true">×</span></button>`] : []),
+    ...(customDiameter ? [`<button class="filter-chip" type="button" data-reset-diameter>${escapeHTML(t("Hut {min}–{max} cm", { min: state.min, max: state.max }))} <span aria-hidden="true">×</span></button>`] : []),
     ...(state.q ? [`<button class="filter-chip" type="button" data-clear-query>„${escapeHTML(state.q)}“ <span aria-hidden="true">×</span></button>`] : []),
-    ...(hasFilters ? ['<button class="reset-inline" type="button" id="reset-filters-inline">Zurücksetzen</button>'] : []),
+    ...(hasFilters ? [`<button class="reset-inline" type="button" id="reset-filters-inline">${escapeHTML(t("Zurücksetzen"))}</button>`] : []),
   ].join("");
 }
 
 export function renderDiameter() {
   if (!diameterValue) return;
-  diameterValue.textContent = hasCustomDiameter() ? `${state.min} – ${state.max} cm` : "alle Werte";
+  diameterValue.textContent = hasCustomDiameter() ? `${state.min} – ${state.max} cm` : t("alle Werte");
   document.querySelectorAll("[data-diameter]").forEach((button) => {
     const [low, high] = button.dataset.diameter.split("-");
     const selected = state.min === low && state.max === high;

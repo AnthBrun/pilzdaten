@@ -162,7 +162,7 @@ func TestHomeHidesBottomAlphabetAndRetainsLetterFiltering(t *testing.T) {
 	legendPosition := strings.Index(body, `class="edibility-legend"`)
 	resultsPosition := strings.Index(body, `id="species-results"`)
 	firstCardPosition := strings.Index(body, `class="species-card`)
-	if safetyPosition < 0 || resultsPosition < safetyPosition || !strings.Contains(body, "zu 100&nbsp;% sicher") {
+	if safetyPosition < 0 || resultsPosition < safetyPosition || !strings.Contains(body, "zu 100\u00a0% sicher") {
 		t.Error("home page should show the safety spoiler and its key warning near the beginning")
 	}
 	if legendPosition < 0 || resultsPosition < legendPosition || firstCardPosition >= 0 && legendPosition > firstCardPosition {

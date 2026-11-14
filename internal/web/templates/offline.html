@@ -1,20 +1,21 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#254e3b">
-  <title>Pilzdatenbank (offline)</title>
+  <title>{{t "Pilzdatenbank (offline)"}}</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/static/app.css">
+  <script type="application/json" id="i18n">{{jsDict}}</script>
   <script type="module" src="/static/js/main.js"></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a><span class="offline-badge">offline</span></header>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> {{t "Pilzdatenbank"}}</a><span class="offline-badge">{{t "offline"}}</span></header>
   <main class="detail-page" id="offline-detail">
-    <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/" data-back-link>← Zurück zu den Treffern</a></nav>
-    <p class="empty-state" id="offline-message">Diese Seite ist offline nicht gespeichert. Tippe oben auf „Offline speichern“, solange du Netz hast.</p>
+    <nav class="breadcrumbs" aria-label="{{t "Brotkrumennavigation"}}"><a href="/" data-back-link>{{t "← Zurück zu den Treffern"}}</a></nav>
+    <p class="empty-state" id="offline-message">{{t "Diese Seite ist offline nicht gespeichert. Tippe oben auf „Offline speichern“, solange du Netz hast."}}</p>
   </main>
-  <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+  {{template "footer"}}
 </body>
 </html>

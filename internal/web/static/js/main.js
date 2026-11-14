@@ -13,15 +13,28 @@ import { updateMushroom } from "./mushroom.js";
 import { initOffline, initOfflineDetail, loadOfflinePack, searchOffline } from "./offline.js";
 import { renderActiveFilters, renderDiameter, renderMessage, renderOptionStates, renderResults, syncDock } from "./results.js";
 import { paramsForRequest, readStateFromURL, resetState, setDiameter, state, syncURL, toggleTagInState } from "./state.js";
-import { fetchJSON, readSession, scrollBehavior, writeSession } from "./util.js";
+import { escapeHTML, fetchJSON, readSession, scrollBehavior, t, writeSession } from "./util.js";
 
 initOffline();
+initLanguageSwitch();
 initBackLinks();
 initLightbox();
 initOfflineDetail();
 
 const results = document.querySelector("#species-results");
 if (results) initFinder();
+
+// Sprachwahl: Cookie setzen und die Seite mit allen Filtern neu laden.
+// Ohne JS schickt das Formular ?lang=… (dann ohne die Filter).
+function initLanguageSwitch() {
+  const select = document.querySelector("#lang-select");
+  select?.addEventListener("change", () => {
+    document.cookie = `lang=${encodeURIComponent(select.value)}; path=/; max-age=31536000; samesite=lax`;
+    const url = new URL(location.href);
+    url.searchParams.delete("lang");
+    location.replace(url);
+  });
+}
 
 // --- Startseite: Pilz-Lab, Filter und Treffer.
 function initFinder() {
@@ -74,7 +87,7 @@ function initFinder() {
       const pack = await loadOfflinePack();
       if (requestId !== requestSequence) return;
       if (!pack) {
-        renderMessage("Keine Verbindung. Speichere die Daten oben über „Offline speichern“, solange du Netz hast – dann funktioniert die Suche auch im Funkloch.");
+        renderMessage(escapeHTML(t("Keine Verbindung. Speichere die Daten oben über „Offline speichern“, solange du Netz hast – dann funktioniert die Suche auch im Funkloch.")));
         return;
       }
       ({ data, availableTags } = searchOffline(pack, params));

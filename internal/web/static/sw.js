@@ -1,7 +1,7 @@
 // Service Worker der Pilzdatenbank: macht die App im Wald ohne Netz nutzbar.
 // Seiten und Code kommen bevorzugt frisch aus dem Netz (mit kurzem Timeout,
 // weil Funklöcher sonst minutenlang hängen), Bilder bevorzugt aus dem Cache.
-const SHELL_CACHE = "pilz-shell-v2";
+const SHELL_CACHE = "pilz-shell-v3";
 const PAGE_CACHE = "pilz-pages";
 const MEDIA_CACHE = "pilz-media";
 const PACK_MEDIA_CACHE = "pilz-media-pack";

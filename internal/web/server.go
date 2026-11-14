@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 )
 
 //go:embed templates/*.html static/*
@@ -21,17 +23,34 @@ const pageSize = 50
 
 type Server struct {
 	catalog   *catalog.Catalog
-	templates *template.Template
-	offline   offlineData
+	i18n      *i18n.Bundle
+	templates map[string]*template.Template // je Sprache, mit sprachgebundenem t/tf
+	offlineMu sync.Mutex
+	offline   map[string]*offlineData // Offline-Paket je Sprache
 }
 
 // New baut den HTTP-Router. imageDir ist das Wurzelverzeichnis der Artfotos,
 // es wird unter /media/ (Vorschauen) und /original/ (große Originale) ausgeliefert
 // (siehe README, "Bilder").
 func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
+	return NewWithTranslations(data, imageDir, nil)
+}
+
+// NewWithTranslations wie New, mit Übersetzungen (nil = nur Deutsch).
+// Die übersetzten Trivialnamen werden zusätzlich durchsuchbar gemacht.
+func NewWithTranslations(data *catalog.Catalog, imageDir string, bundle *i18n.Bundle) *http.ServeMux {
 	server := &Server{
 		catalog:   data,
-		templates: template.Must(template.New("pages").Funcs(templateFuncs).ParseFS(files, "templates/*.html")),
+		i18n:      bundle,
+		templates: map[string]*template.Template{},
+		offline:   map[string]*offlineData{},
+	}
+	for _, lang := range bundle.Languages() {
+		server.templates[lang.Code] = template.Must(template.New("pages").Funcs(templateFuncs).Funcs(server.langFuncs(lang.Code)).ParseFS(files, "templates/*.html"))
+		if lang.Code != i18n.Source {
+			code := lang.Code
+			data.SetLocalNames(code, func(text string) string { return bundle.T(code, text) })
+		}
 	}
 	noStore := func(string) string { return "no-store" }
 	oneDay := func(string) string { return "public, max-age=86400" }
@@ -61,11 +80,37 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 	return mux
 }
 
-func (s *Server) render(w http.ResponseWriter, name string, data any) {
+func (s *Server) render(w http.ResponseWriter, lang, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.templates.ExecuteTemplate(w, name, data); err != nil {
-		http.Error(w, "Seite konnte nicht gerendert werden", http.StatusInternalServerError)
+	w.Header().Set("Content-Language", lang)
+	w.Header().Add("Vary", "Cookie, Accept-Language")
+	if err := s.templates[lang].ExecuteTemplate(w, name, data); err != nil {
+		http.Error(w, s.t(lang, msgRenderFailed), http.StatusInternalServerError)
 	}
+}
+
+var msgRenderFailed = i18n.N("Seite konnte nicht gerendert werden")
+
+// --- Sprache
+
+const langCookie = "lang"
+
+// requestLang wählt die Sprache: ?lang= (wird als Cookie gemerkt), dann das
+// Cookie, dann Accept-Language, sonst Deutsch.
+func (s *Server) requestLang(w http.ResponseWriter, r *http.Request) string {
+	if code := r.URL.Query().Get("lang"); code != "" && s.i18n.Has(code) {
+		http.SetCookie(w, &http.Cookie{Name: langCookie, Value: code, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
+		return code
+	}
+	if cookie, err := r.Cookie(langCookie); err == nil && s.i18n.Has(cookie.Value) {
+		return cookie.Value
+	}
+	return s.i18n.Match(r.Header.Get("Accept-Language"))
+}
+
+// t übersetzt einen deutschen Text in die Sprache lang.
+func (s *Server) t(lang, text string) string {
+	return s.i18n.T(lang, text)
 }
 
 func withCacheControl(next http.Handler, policy func(path string) string) http.Handler {

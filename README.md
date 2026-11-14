@@ -43,7 +43,11 @@ pilzdaten/                        dieses Repo
     ├── facets.json               Filtergruppen mit Labels
     ├── best_images.jsonl         bevorzugtes Foto je Art
     ├── pictogram_map.json        Tooltip-Texte der Merkmale
-    └── originals.json            optional: Vorschaubild -> großes Original (Lightbox)
+    ├── originals.json            optional: Vorschaubild -> großes Original (Lightbox)
+    └── i18n/                     optional: Übersetzungen (siehe "Übersetzungen")
+        ├── <sprache>/ui.json         Oberfläche, Filter-Labels
+        ├── <sprache>/content.json    Namen, Gattungen, Merkmale
+        └── glossary/<sprache>.tsv    optional: feste Fachbegriffe für DeepL
 
 <beliebiger Ort>/                 IMAGE_DIR (im Container /images, read-only)
 └── daten/details/
@@ -87,10 +91,38 @@ cp ../pilzsuche/data/{species.jsonl,index_arts.jsonl,filter_tags.jsonl,facets.js
 docker compose up -d --build
 ```
 
+## Übersetzungen
+
+Deutsch ist die Quellsprache. Jede weitere Sprache ist ein Ordner `data/i18n/<code>/` mit zwei Wörterbüchern „deutscher Text → Übersetzung“. Sie werden mit DeepL erzeugt und committet, zur Laufzeit braucht die App kein DeepL.
+
+```sh
+# Schlüssel in .env eintragen: DEEPL_API_KEY=…  (Free-Schlüssel enden auf :fx)
+go run ./cmd/translate -lang en -dry-run    # zählt Texte und Zeichen, sendet nichts
+go run ./cmd/translate -lang en -limit 100  # Probelauf mit 100 Texten je Datei
+go run ./cmd/translate -lang en,fr          # alles Fehlende übersetzen
+docker compose up -d --build
+```
+
+- **Was übersetzt wird:** Oberfläche (~400 Texte, ~11.000 Zeichen) sowie Trivialnamen, Gattungen, Merkmalsnamen und -texte (~35.700 Texte, ~4,5 Mio. Zeichen je Sprache). Wissenschaftliche Namen und Synonyme bleiben.
+- **Nur Neues wird gesendet:** Schlüssel ist der deutsche Text. Ändert er sich, fehlt er im Wörterbuch und wird beim nächsten Lauf neu übersetzt; Texte, die es nicht mehr gibt, werden entfernt. Nach jedem Paket wird gespeichert, ein abgebrochener Lauf (Strg+C, Kontingent) macht beim nächsten Start weiter.
+- **Platzhalter** wie `{count}` gehen als XML-Tag an DeepL und bleiben erhalten.
+- **Glossar:** `data/i18n/glossary/<code>.tsv` mit `deutsch<TAB>übersetzung` je Zeile legt Fachbegriffe fest (z. B. `Lamellen	gills`).
+- **Sprachwahl:** `?lang=<code>` (wird als Cookie gemerkt), sonst Cookie, sonst `Accept-Language`, sonst Deutsch. Der Umschalter oben erscheint, sobald es mehr als eine Sprache gibt. Übersetzte Seiten zeigen unten einen Hinweis auf die maschinelle Übersetzung.
+- **Suche:** findet Arten über übersetzte und deutsche Namen. Sortierung und A–Z richten sich weiter nach dem deutschen Namen.
+- **Pseudo-Sprache zum Prüfen:** `go run ./cmd/translate -lang qa -pseudo` setzt jeden Text in `‹…›`. Was danach ohne Klammern erscheint, läuft nicht durch die Übersetzung. Der Ordner `data/i18n/qa` ist von Git und Docker ausgeschlossen.
+
+**Neue Texte im Code:**
+
+- Template: `{{t "Text"}}`, mit Platzhaltern `{{tf "Seite {page}" "page" .Page}}`. Artdaten: `{{name .}}`, `{{edibility .}}`, `{{t .Species.Gattung}}`.
+- JS: `t("Text")` bzw. `t("{count} Arten", { count })` aus `js/util.js`. Immer ein String-Literal übergeben, sonst findet `cmd/translate` den Text nicht.
+- Go: feste Texte als Paketvariable mit `i18n.N("Text")` anmelden und beim Ausgeben mit `s.t(lang, text)` übersetzen.
+
 ## Aufbau des Codes
 
 ```
 cmd/pilzdaten/main.go        Start: Umgebungsvariablen lesen, Katalog laden, Server starten
+cmd/translate/               Übersetzungen mit DeepL erzeugen (siehe "Übersetzungen")
+internal/i18n/               Wörterbücher laden, Sprache wählen, Platzhalter
 data/                        Aufbereitete Daten aus dem Crawl (siehe oben)
 internal/catalog/            Daten laden und abfragen (ohne HTTP)
   load.go                    Dateien einlesen, Essbarkeit auflösen, Labels kürzen
@@ -102,12 +134,14 @@ internal/web/                HTTP
   detail.go                  Artseite
   api.go                     JSON-API
   offline.go                 Offline-Paket, Service Worker, Manifest, Offline-Hülle
-  templatefuncs.go           Helfer für Templates (Bild-URLs, Namen)
+  templatefuncs.go           Helfer für Templates (Bild-URLs, Namen, t/tf je Sprache)
+  texts.go                   Sammelt alle zu übersetzenden Texte für cmd/translate
   templates/
     index.html               Startseite
     mushroom.html            Pilzzeichnung (SVG) und Gruppensymbole
     detail.html              Artseite
     offline.html             Hülle für Artseiten ohne Netz
+    partials.html            Sprachumschalter, Fußzeile
   static/
     app.css                  Alle Styles, gegliedert in "=== Abschnitte"
     sw.js                    Service Worker (Caching-Strategie)
@@ -163,6 +197,7 @@ Mit Namenssuche kommen zuerst exakte Treffer, dann solche, die mit dem Suchbegri
 1. „Offline speichern“ lädt `/api/offline` (~3 MB gzip) und die Fotos der Priorität-1-Arten (~20 MB) in den Browser-Cache.
 2. Ohne Netz sucht `js/offline.js` im Paket. Nicht besuchte Artseiten liefert der Service Worker als `/offline` aus, und `js/offline.js` füllt sie aus dem Paket.
 3. Nach Daten-Updates muss man auf dem Handy erneut auf „Offline bereit“ tippen, um zu aktualisieren.
+4. Das Paket ist in der gewählten Sprache. Nach einem Sprachwechsel zeigt der Knopf wieder „Offline speichern“.
 
 ## Häufige Änderungen
 
@@ -201,3 +236,4 @@ curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
 | `DATA_DIR` | `data` (im Image `/data`) | Ordner mit den sechs Datendateien |
 | `ADDR` | `:8080` | Listen-Adresse |
 | `APP_PORT` | `8080` | Nur Docker Compose: Host-Port |
+| `DEEPL_API_KEY` | – | Nur `cmd/translate`: DeepL-Schlüssel, aus der Umgebung oder `.env` |

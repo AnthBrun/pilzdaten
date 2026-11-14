@@ -1,10 +1,14 @@
 package web
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/url"
 	"strings"
 	"unicode"
+
+	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 )
 
 var templateFuncs = template.FuncMap{
@@ -14,6 +18,32 @@ var templateFuncs = template.FuncMap{
 	"sporeLabel":   sporeLabel,
 	"sensoryGroup": sensoryGroup,
 	"shortMonth":   shortMonth,
+}
+
+// langFuncs sind die sprachgebundenen Template-Funktionen. Jede Sprache hat
+// ihr eigenes Template-Set, deshalb braucht {{t "…"}} keinen Sprachparameter.
+//
+//	t "Text"                  übersetzt einen deutschen Text
+//	tf "Seite {n}" "n" .Page  übersetzt und setzt Platzhalter ein
+//	name .                    Anzeigename einer Art (erster Trivialname)
+//	edibility .               Essbarkeits-Label einer Art
+//	lang / langs              aktuelle Sprache / alle angebotenen Sprachen
+//	jsDict                    Oberflächen-Wörterbuch fürs JS (js/i18n.js)
+func (s *Server) langFuncs(lang string) template.FuncMap {
+	return template.FuncMap{
+		"t":  func(text string) string { return s.t(lang, text) },
+		"tf": func(text string, pairs ...any) string { return i18n.Format(s.t(lang, text), pairs...) },
+		"name": func(species *catalog.Species) string {
+			return displayName(s.t(lang, species.NameTrivial))
+		},
+		"edibility": func(species *catalog.Species) string { return s.t(lang, species.EdibilityLabel) },
+		"lang":      func() string { return lang },
+		"langs":     func() []i18n.Lang { return s.i18n.Languages() },
+		"jsDict": func() template.JS {
+			encoded, _ := json.Marshal(s.i18n.UI(lang)) // escaped <, >, & – sicher im <script>
+			return template.JS(encoded)
+		},
+	}
 }
 
 // imageURL macht aus einem Bildpfad der Quelle ("daten/details/<Slug>-Dateien/image004.jpg")

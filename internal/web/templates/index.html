@@ -1,123 +1,124 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#254e3b">
-  <title>Pilz bestimmen – Merkmale markieren | Pilzdatenbank</title>
+  <title>{{t "Pilz bestimmen – Merkmale markieren | Pilzdatenbank"}}</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="stylesheet" href="/static/app.css">
+  <script type="application/json" id="i18n">{{jsDict}}</script>
   <script type="module" src="/static/js/main.js"></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="/" aria-label="Pilzdatenbank Startseite"><span class="brand-mark">✳</span> Pilzdatenbank</a><button class="offline-button" id="offline-button" type="button" hidden><span class="offline-dot" aria-hidden="true"></span><span class="offline-text">Offline speichern</span></button></header>
+  <header class="topbar"><a class="brand" href="/" aria-label="{{t "Pilzdatenbank Startseite"}}"><span class="brand-mark">✳</span> {{t "Pilzdatenbank"}}</a><div class="topbar-actions">{{template "lang-switch"}}<button class="offline-button" id="offline-button" type="button" hidden><span class="offline-dot" aria-hidden="true"></span><span class="offline-text">{{t "Offline speichern"}}</span></button></div></header>
   <main>
     <section class="hero hero-compact">
-      <p class="eyebrow">PILZBESTIMMUNG IM WALD</p>
-      <h1>Was wächst <em>hier?</em></h1>
-      <p class="hero-copy">Tippe auf den Pilz und markiere, was du siehst. Die passenden Arten erscheinen darunter.</p>
+      <p class="eyebrow">{{t "PILZBESTIMMUNG IM WALD"}}</p>
+      <h1>{{t "Was wächst"}} <em>{{t "hier?"}}</em></h1>
+      <p class="hero-copy">{{t "Tippe auf den Pilz und markiere, was du siehst. Die passenden Arten erscheinen darunter."}}</p>
       <div class="search-box" role="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="Optional: Pilznamen suchen …" autocomplete="off" aria-label="Pilzarten nach Namen suchen">
+        <input id="species-search" type="search" name="q" value="{{.Query}}" placeholder="{{t "Optional: Pilznamen suchen …"}}" autocomplete="off" aria-label="{{t "Pilzarten nach Namen suchen"}}">
       </div>
     </section>
 
     <details class="safety-spoiler">
-      <summary><span class="safety-icon" aria-hidden="true">!</span><span>Nur Pilze essen, die du selbst zu 100&nbsp;% sicher bestimmt hast.</span></summary>
-      <p>Die Treffer und Essbarkeitsangaben dienen nur der Orientierung und sind keine Verzehrfreigabe. Im Zweifel den Pilz nicht essen.</p>
+      <summary><span class="safety-icon" aria-hidden="true">!</span><span>{{t "Nur Pilze essen, die du selbst zu 100 % sicher bestimmt hast."}}</span></summary>
+      <p>{{t "Die Treffer und Essbarkeitsangaben dienen nur der Orientierung und sind keine Verzehrfreigabe. Im Zweifel den Pilz nicht essen."}}</p>
     </details>
 
     <section class="catalog-section" aria-labelledby="catalog-heading">
       {{$page := .}}
       <div class="filter-layout">
         <aside class="mushroom-lab" aria-labelledby="lab-title">
-          <div class="lab-heading"><div><p class="eyebrow">WAS SIEHST DU?</p><h2 id="catalog-heading" class="lab-title"><span id="lab-title">Tippe auf den Pilz</span></h2></div><button id="reset-filters" class="wipe-button" type="button">Alles wischen</button></div>
-          <div class="group-bar" role="group" aria-label="Pilzgruppe wählen">
-            {{range $page.Facets.Groups}}{{if eq .Group "gruppe"}}{{range .Options}}<button class="group-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="gruppe" title="{{if .Title}}{{.Title}}{{else}}{{.Label}}{{end}}"><svg class="group-icon" viewBox="0 0 32 24" aria-hidden="true"><use href="#gi-{{.Tag}}"/></svg><span>{{.Label}}</span></button>{{end}}{{end}}{{end}}
+          <div class="lab-heading"><div><p class="eyebrow">{{t "WAS SIEHST DU?"}}</p><h2 id="catalog-heading" class="lab-title"><span id="lab-title">{{t "Tippe auf den Pilz"}}</span></h2></div><button id="reset-filters" class="wipe-button" type="button">{{t "Alles wischen"}}</button></div>
+          <div class="group-bar" role="group" aria-label="{{t "Pilzgruppe wählen"}}">
+            {{range $page.Facets.Groups}}{{if eq .Group "gruppe"}}{{range .Options}}<button class="group-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="gruppe" title="{{if .Title}}{{t .Title}}{{else}}{{t .Label}}{{end}}"><svg class="group-icon" viewBox="0 0 32 24" aria-hidden="true"><use href="#gi-{{.Tag}}"/></svg><span>{{t .Label}}</span></button>{{end}}{{end}}{{end}}
           </div>
           {{template "group-icons"}}
           <div class="mushroom-stage">
             {{template "mushroom"}}
-            <div id="option-deck" role="region" aria-label="Merkmalsauswahl" hidden>
-              <div class="deck-header"><strong id="deck-title">Merkmal wählen</strong><button id="deck-close" type="button" aria-label="Schließen">×</button></div>
+            <div id="option-deck" role="region" aria-label="{{t "Merkmalsauswahl"}}" hidden>
+              <div class="deck-header"><strong id="deck-title">{{t "Merkmal wählen"}}</strong><button id="deck-close" type="button" aria-label="{{t "Schließen"}}">×</button></div>
               <div id="deck-sections" class="deck-sections"></div>
             </div>
           </div>
           <section class="diameter-filter" aria-labelledby="diameter-title">
-            <div class="slider-heading"><h3 id="diameter-title">Hutdurchmesser</h3><span class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}alle Werte{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</span></div>
-            <div class="diameter-presets" role="group" aria-label="Hutdurchmesser schnell wählen">
-              <button class="trait-chip" type="button" data-diameter="1-3">bis 3 cm</button><button class="trait-chip" type="button" data-diameter="3-8">3–8 cm</button><button class="trait-chip" type="button" data-diameter="8-15">8–15 cm</button><button class="trait-chip" type="button" data-diameter="15-{{.Facets.MaxDiameterCM}}">über 15 cm</button>
+            <div class="slider-heading"><h3 id="diameter-title">{{t "Hutdurchmesser"}}</h3><span class="diameter-value" id="diameter-value">{{if and (eq .MinCM .Facets.MinDiameterCM) (eq .MaxCM .Facets.MaxDiameterCM)}}{{t "alle Werte"}}{{else}}{{.MinCM}} – {{.MaxCM}} cm{{end}}</span></div>
+            <div class="diameter-presets" role="group" aria-label="{{t "Hutdurchmesser schnell wählen"}}">
+              <button class="trait-chip" type="button" data-diameter="1-3">{{t "bis 3 cm"}}</button><button class="trait-chip" type="button" data-diameter="3-8">3–8 cm</button><button class="trait-chip" type="button" data-diameter="8-15">8–15 cm</button><button class="trait-chip" type="button" data-diameter="15-{{.Facets.MaxDiameterCM}}">{{t "über 15 cm"}}</button>
             </div>
             <details class="diameter-fine">
-              <summary>Genau einstellen</summary>
-              <label class="range-label" for="diameter-min">Von <span class="visually-hidden">Zentimeter</span></label><input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
-              <label class="range-label" for="diameter-max">Bis <span class="visually-hidden">Zentimeter</span></label><input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
+              <summary>{{t "Genau einstellen"}}</summary>
+              <label class="range-label" for="diameter-min">{{t "Von"}} <span class="visually-hidden">{{t "Zentimeter"}}</span></label><input id="diameter-min" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MinCM}}">
+              <label class="range-label" for="diameter-max">{{t "Bis"}} <span class="visually-hidden">{{t "Zentimeter"}}</span></label><input id="diameter-max" class="diameter-range" type="range" min="{{.Facets.MinDiameterCM}}" max="{{.Facets.MaxDiameterCM}}" value="{{.MaxCM}}">
             </details>
           </section>
           <section class="nonvisual-traits" aria-labelledby="nonvisual-title">
-            <h3 id="nonvisual-title">Wo und wann?</h3>
-            {{range $page.Facets.Groups}}{{if eq .Group "vorkommen"}}{{range .Options}}{{if eq .Tag "nicht_selten"}}<button class="trait-chip rare-toggle" type="button" data-trait-tag="{{.Tag}}" title="{{.Title}}">Seltene Arten ausblenden</button>{{end}}{{end}}{{end}}{{end}}
+            <h3 id="nonvisual-title">{{t "Wo und wann?"}}</h3>
+            {{range $page.Facets.Groups}}{{if eq .Group "vorkommen"}}{{range .Options}}{{if eq .Tag "nicht_selten"}}<button class="trait-chip rare-toggle" type="button" data-trait-tag="{{.Tag}}" title="{{t .Title}}">{{t "Seltene Arten ausblenden"}}</button>{{end}}{{end}}{{end}}{{end}}
             {{range $page.Facets.Groups}}
-              {{if eq .Group "saison"}}<div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips month-chips" role="group" aria-label="Fundmonat">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="saison" aria-label="{{.Label}}">{{shortMonth .Label}}</button>{{end}}</div></div>{{end}}
-              {{if eq .Group "wald"}}<div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips" role="group" aria-label="Wald und Baumpartner">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{.Title}}"{{end}}>{{.Label}}</button>{{end}}</div></div>{{end}}
+              {{if eq .Group "saison"}}<div class="trait-chip-group"><h4>{{t .Title}}</h4><div class="trait-chips month-chips" role="group" aria-label="{{t "Fundmonat"}}">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="saison" aria-label="{{t .Label}}">{{shortMonth (t .Label)}}</button>{{end}}</div></div>{{end}}
+              {{if eq .Group "wald"}}<div class="trait-chip-group"><h4>{{t .Title}}</h4><div class="trait-chips" role="group" aria-label="{{t "Wald und Baumpartner"}}">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{t .Title}}"{{end}}>{{t .Label}}</button>{{end}}</div></div>{{end}}
             {{end}}
             <details class="more-traits">
-              <summary>Geruch, Geschmack &amp; mehr</summary>
+              <summary>{{t "Geruch, Geschmack & mehr"}}</summary>
               {{range $page.Facets.Groups}}
                 {{if eq .Group "geruch"}}
                 <div class="trait-chip-group sensory-traits">
-                  <h4>Geruch</h4><div class="trait-chips" role="group" aria-label="Geruchsmerkmale">{{range .Options}}{{if eq (sensoryGroup .Tag) "geruch"}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{.Title}}"{{end}}>{{.Label}}</button>{{end}}{{end}}</div>
-                  <h4>Geschmack</h4><p class="taste-warning">Niemals Knollenblätterpilze, Wulstlinge oder andere Amaniten kosten! Sonst nur eine winzige Probe am rohen Pilz – und immer ausspucken.</p><div class="trait-chips" role="group" aria-label="Geschmacksmerkmale">{{range .Options}}{{if eq (sensoryGroup .Tag) "geschmack"}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{.Title}}"{{end}}>{{.Label}}</button>{{end}}{{end}}</div>
+                  <h4>{{t "Geruch"}}</h4><div class="trait-chips" role="group" aria-label="{{t "Geruchsmerkmale"}}">{{range .Options}}{{if eq (sensoryGroup .Tag) "geruch"}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{t .Title}}"{{end}}>{{t .Label}}</button>{{end}}{{end}}</div>
+                  <h4>{{t "Geschmack"}}</h4><p class="taste-warning">{{t "Niemals Knollenblätterpilze, Wulstlinge oder andere Amaniten kosten! Sonst nur eine winzige Probe am rohen Pilz – und immer ausspucken."}}</p><div class="trait-chips" role="group" aria-label="{{t "Geschmacksmerkmale"}}">{{range .Options}}{{if eq (sensoryGroup .Tag) "geschmack"}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{t .Title}}"{{end}}>{{t .Label}}</button>{{end}}{{end}}</div>
                 </div>
                 {{end}}
-                {{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h4>Farbwechsel nach Anschnitt</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{.Title}}"{{end}}>{{.Label}}</button>{{end}}</div></div>{{end}}
+                {{if eq .Group "farbwechsel"}}<div class="trait-chip-group"><h4>{{t "Farbwechsel nach Anschnitt"}}</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}"{{if .Title}} title="{{t .Title}}"{{end}}>{{t .Label}}</button>{{end}}</div></div>{{end}}
                 {{if eq .Group "spore"}}
-                <div class="trait-chip-group"><h4>{{.Title}}</h4><div class="trait-chips spore-palette" role="group" aria-label="Sporenpulverfarbe">
-                  {{range .Options}}<button class="trait-chip spore-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="spore" aria-label="{{.Label}}" title="{{.Label}}"><span class="spore-swatch" aria-hidden="true"></span><span>{{sporeLabel .Label}}</span></button>{{end}}
+                <div class="trait-chip-group"><h4>{{t .Title}}</h4><div class="trait-chips spore-palette" role="group" aria-label="{{t "Sporenpulverfarbe"}}">
+                  {{range .Options}}<button class="trait-chip spore-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="spore" aria-label="{{t .Label}}" title="{{t .Label}}"><span class="spore-swatch" aria-hidden="true"></span><span>{{t (sporeLabel .Label)}}</span></button>{{end}}
                 </div></div>
                 {{end}}
-                {{if eq .Group "essbarkeit"}}<div class="trait-chip-group"><h4>Essbarkeit laut Quelle</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="edibility">{{.Label}}</button>{{end}}</div></div>{{end}}
+                {{if eq .Group "essbarkeit"}}<div class="trait-chip-group"><h4>{{t "Essbarkeit laut Quelle"}}</h4><div class="trait-chips">{{range .Options}}<button class="trait-chip" type="button" data-trait-tag="{{.Tag}}" data-trait-group="edibility">{{t .Label}}</button>{{end}}</div></div>{{end}}
               {{end}}
             </details>
           </section>
         </aside>
         <div class="results-column" id="results">
           <div class="results-toolbar">
-            <div class="results-heading-row"><strong id="results-label">{{.Count}} passende Arten</strong><span class="result-number">{{if gt .Pages 1}}Seite {{.Page}} von {{.Pages}}{{end}}</span></div>
-            <div id="active-filters" class="active-filters" aria-label="Aktive Filter"{{if not .HasFilters}} hidden{{end}}>
+            <div class="results-heading-row"><strong id="results-label">{{if eq .Count 1}}{{tf "{count} passende Art" "count" .Count}}{{else}}{{tf "{count} passende Arten" "count" .Count}}{{end}}</strong><span class="result-number">{{if gt .Pages 1}}{{tf "Seite {page} von {pages}" "page" .Page "pages" .Pages}}{{end}}</span></div>
+            <div id="active-filters" class="active-filters" aria-label="{{t "Aktive Filter"}}"{{if not .HasFilters}} hidden{{end}}>
               {{range .ActiveFilters}}<button class="filter-chip" type="button" data-remove-tag="{{.Tag}}">{{.Label}} <span aria-hidden="true">×</span></button>{{end}}
-              {{if or (ne .MinCM .Facets.MinDiameterCM) (ne .MaxCM .Facets.MaxDiameterCM)}}<button class="filter-chip" type="button" data-reset-diameter>Hut {{.MinCM}}–{{.MaxCM}} cm <span aria-hidden="true">×</span></button>{{end}}
+              {{if or (ne .MinCM .Facets.MinDiameterCM) (ne .MaxCM .Facets.MaxDiameterCM)}}<button class="filter-chip" type="button" data-reset-diameter>{{tf "Hut {min}–{max} cm" "min" .MinCM "max" .MaxCM}} <span aria-hidden="true">×</span></button>{{end}}
               {{if .Query}}<button class="filter-chip" type="button" data-clear-query>„{{.Query}}“ <span aria-hidden="true">×</span></button>{{end}}
-              {{if .HasFilters}}<button class="reset-inline" type="button" id="reset-filters-inline">Zurücksetzen</button>{{end}}
+              {{if .HasFilters}}<button class="reset-inline" type="button" id="reset-filters-inline">{{t "Zurücksetzen"}}</button>{{end}}
             </div>
           </div>
-          {{if .SuggestMore}}<p class="refine-hint">Noch 2–3 Merkmale markieren für genauere Treffer.</p>{{end}}
-          <div class="edibility-legend" role="note" aria-label="Bedeutung der farbigen Kartenränder">
-            <span class="legend-intro">Randfarbe:</span>
-            <span class="edibility-key key-edible">essbar</span><span class="edibility-key key-poor">ungenießbar</span><span class="edibility-key key-poisonous">giftig</span><span class="edibility-key key-deadly">tödlich</span><span class="edibility-key key-unknown">unbekannt</span>
-            <span class="edibility-note">Die Angaben sind keine Verzehrfreigabe und ersetzen keine sichere Bestimmung.</span>
+          {{if .SuggestMore}}<p class="refine-hint">{{t "Noch 2–3 Merkmale markieren für genauere Treffer."}}</p>{{end}}
+          <div class="edibility-legend" role="note" aria-label="{{t "Bedeutung der farbigen Kartenränder"}}">
+            <span class="legend-intro">{{t "Randfarbe:"}}</span>
+            <span class="edibility-key key-edible">{{t "essbar"}}</span><span class="edibility-key key-poor">{{t "ungenießbar"}}</span><span class="edibility-key key-poisonous">{{t "giftig"}}</span><span class="edibility-key key-deadly">{{t "tödlich"}}</span><span class="edibility-key key-unknown">{{t "unbekannt"}}</span>
+            <span class="edibility-note">{{t "Die Angaben sind keine Verzehrfreigabe und ersetzen keine sichere Bestimmung."}}</span>
           </div>
           <div id="species-results" class="species-grid" aria-live="polite">
             {{range .Species}}
             <a class="species-card edibility-card-{{.EdibilityClass}}" href="/art/{{.Slug}}">
-              {{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{.NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
-              <span class="card-copy"><strong>{{displayName .NameTrivial}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}Wissenschaftlicher Name nicht erfasst{{end}}</em><span class="visually-hidden">Essbarkeit: {{.EdibilityLabel}}. Keine Verzehrfreigabe.</span></span>
+              {{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{name .}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{name .}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}
+              <span class="card-copy"><strong>{{name .}}</strong><em>{{if .NameWissenschaftlich}}{{.NameWissenschaftlich}}{{else}}{{t "Wissenschaftlicher Name nicht erfasst"}}{{end}}</em><span class="visually-hidden">{{tf "Essbarkeit: {label}. Keine Verzehrfreigabe." "label" (edibility .)}}</span></span>
               <span class="card-arrow" aria-hidden="true">↗</span>
             </a>
-            {{else}}<p class="empty-state">Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an.</p>{{end}}
+            {{else}}<p class="empty-state">{{t "Keine passenden Arten gefunden. Passe deine Suche oder Merkmale an."}}</p>{{end}}
           </div>
-          <nav class="pagination" aria-label="Seiten">
-            {{if .HasPrevious}}<a href="{{.PreviousURL}}">← Zurück</a>{{else}}<span></span>{{end}}
-            {{if gt .Pages 1}}<span>Seite {{.Page}} / {{.Pages}}</span>{{end}}
-            {{if .HasNext}}<a href="{{.NextURL}}">Weiter →</a>{{end}}
+          <nav class="pagination" aria-label="{{t "Seiten"}}">
+            {{if .HasPrevious}}<a href="{{.PreviousURL}}">{{t "← Zurück"}}</a>{{else}}<span></span>{{end}}
+            {{if gt .Pages 1}}<span>{{tf "Seite {page} / {pages}" "page" .Page "pages" .Pages}}</span>{{end}}
+            {{if .HasNext}}<a href="{{.NextURL}}">{{t "Weiter →"}}</a>{{end}}
           </nav>
         </div>
       </div>
-      <a class="results-dock" id="results-dock" href="#results" hidden><span class="dock-count"><strong id="dock-number">{{.Count}}</strong> <span>Treffer</span></span><span class="dock-thumbs" id="dock-thumbs" aria-hidden="true"></span><span class="dock-action">Ansehen ↓</span></a>
-      <div id="facet-labels" class="visually-hidden" aria-hidden="true">{{range .Facets.Groups}}{{range .Options}}<span data-tag="{{.Tag}}" data-label="{{.Label}}"></span>{{end}}{{end}}</div>
+      <a class="results-dock" id="results-dock" href="#results" hidden><span class="dock-count"><strong id="dock-number">{{.Count}}</strong> <span>{{t "Treffer"}}</span></span><span class="dock-thumbs" id="dock-thumbs" aria-hidden="true"></span><span class="dock-action">{{t "Ansehen ↓"}}</span></a>
+      <div id="facet-labels" class="visually-hidden" aria-hidden="true">{{range .Facets.Groups}}{{range .Options}}<span data-tag="{{.Tag}}" data-label="{{t .Label}}"></span>{{end}}{{end}}</div>
     </section>
   </main>
-  <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+  {{template "footer"}}
 </body>
 </html>

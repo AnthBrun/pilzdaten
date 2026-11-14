@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 	"pilzdaten/internal/web"
 )
 
@@ -25,23 +27,21 @@ func main() {
 		log.Fatalf("IMAGE_DIR %q ist kein lesbarer Ordner", imageDir)
 	}
 
-	file := func(name string) string { return filepath.Join(dataDir, name) }
-	data, err := catalog.LoadWithAssets(
-		file("species.jsonl"), file("index_arts.jsonl"), file("filter_tags.jsonl"),
-		file("facets.json"), file("best_images.jsonl"), file("pictogram_map.json"),
-	)
+	data, err := catalog.LoadDir(dataDir)
 	if err != nil {
 		log.Fatalf("Daten konnten nicht geladen werden: %v", err)
 	}
-	// Optional: große Originale für die Lightbox (crawler.py originals).
-	if _, err := os.Stat(file("originals.json")); err == nil {
-		if err := data.LoadOriginals(file("originals.json")); err != nil {
-			log.Fatalf("Daten konnten nicht geladen werden: %v", err)
-		}
+	translations, err := i18n.Load(filepath.Join(dataDir, "i18n"))
+	if err != nil {
+		log.Fatalf("Übersetzungen konnten nicht geladen werden: %v", err)
 	}
-	log.Printf("%d Arten aus %s geladen, Bilder aus %s", data.Count(), dataDir, imageDir)
+	languages := make([]string, 0)
+	for _, lang := range translations.Languages() {
+		languages = append(languages, lang.Code)
+	}
+	log.Printf("%d Arten aus %s geladen, Bilder aus %s, Sprachen: %s", data.Count(), dataDir, imageDir, strings.Join(languages, ", "))
 
-	mux := web.New(data, imageDir)
+	mux := web.NewWithTranslations(data, imageDir, translations)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = w.Write([]byte("ok\n"))

@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+
+	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 )
 
 // GET /api/search – Treffer einer Seite, Antwortform siehe searchResponse.
@@ -32,6 +35,7 @@ type availableTagsResponse struct {
 }
 
 func (s *Server) search(w http.ResponseWriter, r *http.Request) {
+	lang := s.requestLang(w, r)
 	minCM, maxCM := diameterRange(r, s.catalog.Facets())
 	page := queryPage(r)
 	letter := validLetter(r.URL.Query().Get("letter"))
@@ -47,12 +51,13 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 			imageURLValue = imageURL(imagePath)
 		}
 		response.Results = append(response.Results, searchResult{
-			Slug: species.Slug, Name: displayName(species.NameTrivial),
+			Slug: species.Slug, Name: displayName(s.t(lang, species.NameTrivial)),
 			ScientificName: species.NameWissenschaftlich,
-			Edibility:      species.Edibility, EdibilityLabel: species.EdibilityLabel, EdibilityClass: species.EdibilityClass,
+			Edibility:      species.Edibility, EdibilityLabel: s.t(lang, species.EdibilityLabel), EdibilityClass: species.EdibilityClass,
 			Image: imageURLValue,
 		})
 	}
+	w.Header().Add("Vary", "Cookie, Accept-Language")
 	writeJSON(w, response)
 }
 
@@ -70,13 +75,38 @@ func (s *Server) availableTags(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /api/facets – alle Filtergruppen mit Labels und Anzahlen.
-func (s *Server) facets(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, s.catalog.Facets())
+func (s *Server) facets(w http.ResponseWriter, r *http.Request) {
+	lang := s.requestLang(w, r)
+	w.Header().Add("Vary", "Cookie, Accept-Language")
+	writeJSON(w, s.localFacets(lang))
 }
+
+// localFacets liefert die Filtergruppen mit übersetzten Labels und Titeln.
+func (s *Server) localFacets(lang string) catalog.Facets {
+	facets := s.catalog.Facets()
+	if lang == i18n.Source {
+		return facets
+	}
+	groups := make([]catalog.FacetGroup, len(facets.Groups))
+	for groupIndex, group := range facets.Groups {
+		group.Title = s.t(lang, group.Title)
+		options := make([]catalog.FacetOption, len(group.Options))
+		for optionIndex, option := range group.Options {
+			option.Label, option.Title = s.t(lang, option.Label), s.t(lang, option.Title)
+			options[optionIndex] = option
+		}
+		group.Options = options
+		groups[groupIndex] = group
+	}
+	facets.Groups = groups
+	return facets
+}
+
+var msgWriteFailed = "Antwort konnte nicht ausgegeben werden"
 
 func writeJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(value); err != nil {
-		http.Error(w, "Antwort konnte nicht ausgegeben werden", http.StatusInternalServerError)
+		http.Error(w, msgWriteFailed, http.StatusInternalServerError)
 	}
 }

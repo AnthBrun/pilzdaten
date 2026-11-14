@@ -1,58 +1,59 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#254e3b">
-  <title>{{.DisplayName}} – Pilzdatenbank</title>
+  <title>{{.DisplayName}} – {{t "Pilzdatenbank"}}</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="stylesheet" href="/static/app.css">
+  <script type="application/json" id="i18n">{{jsDict}}</script>
   <script type="module" src="/static/js/main.js"></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> Pilzdatenbank</a></header>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">✳</span> {{t "Pilzdatenbank"}}</a><div class="topbar-actions">{{template "lang-switch"}}</div></header>
   <main class="detail-page">
-    <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><a href="/" data-back-link>← Zurück zu den Treffern</a></nav>
+    <nav class="breadcrumbs" aria-label="{{t "Brotkrumennavigation"}}"><a href="/" data-back-link>{{t "← Zurück zu den Treffern"}}</a></nav>
     <section class="detail-hero">
       <div class="detail-hero-copy">
-        <p class="eyebrow">{{if .Species.Gattung}}{{.Species.Gattung}}{{else}}PILZPORTRÄT{{end}}</p>
+        <p class="eyebrow">{{if .Species.Gattung}}{{t .Species.Gattung}}{{else}}{{t "PILZPORTRÄT"}}{{end}}</p>
         <h1 class="detail-title">{{.DisplayName}}</h1>
         {{if .Species.NameWissenschaftlich}}<p class="scientific-name">{{.Species.NameWissenschaftlich}}</p>{{end}}
-        {{if .Aliases}}<div class="synonyms"><span>Auch bekannt als</span>{{range .Aliases}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
+        {{if .Aliases}}<div class="synonyms"><span>{{t "Auch bekannt als"}}</span>{{range .Aliases}}<span class="synonym">{{.}}</span>{{end}}</div>{{end}}
       </div>
-      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0"{{with (index .Images 0).Full}} data-full="{{.}}"{{end}} aria-label="Hauptbild vergrößern"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" decoding="async"><span class="visually-hidden">Bild vergrößern</span></button></figure>{{end}}
+      {{if .Images}}<figure class="detail-hero-photo"><button class="image-open" type="button" data-image-index="0"{{with (index .Images 0).Full}} data-full="{{.}}"{{end}} aria-label="{{t "Hauptbild vergrößern"}}"><img src="{{(index .Images 0).URL}}" alt="{{(index .Images 0).Alt}}" decoding="async"><span class="visually-hidden">{{t "Bild vergrößern"}}</span></button></figure>{{end}}
     </section>
 
     {{if .Gallery}}
     <section class="photo-strip-section" aria-labelledby="images-heading">
-      <h2 id="images-heading" class="strip-heading">Bilder <span class="heading-count">({{len .Images}})</span> <span class="strip-hint">wischen →</span></h2>
-      <div class="photo-strip">{{range .Gallery}}<button class="image-open strip-photo" type="button"{{with .Full}} data-full="{{.}}"{{end}} aria-label="Bild {{.Number}} vergrößern"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"></button>{{end}}</div>
+      <h2 id="images-heading" class="strip-heading">{{t "Bilder"}} <span class="heading-count">({{len .Images}})</span> <span class="strip-hint">{{t "wischen →"}}</span></h2>
+      <div class="photo-strip">{{range .Gallery}}<button class="image-open strip-photo" type="button"{{with .Full}} data-full="{{.}}"{{end}} aria-label="{{tf "Bild {number} vergrößern" "number" .Number}}"><img src="{{.URL}}" alt="{{.Alt}}" loading="lazy" decoding="async"></button>{{end}}</div>
     </section>
     {{end}}
 
     {{if .DangerousRelated}}
-    <section class="danger-banner" aria-label="Gefährliche Verwechslung">
-      <strong>⚠ Verwechslungsgefahr mit giftigen Arten</strong>
-      <p>{{range $index, $species := .DangerousRelated}}{{if $index}}, {{end}}<a href="/art/{{$species.Slug}}">{{displayName $species.NameTrivial}}</a> <span class="danger-label">({{$species.EdibilityLabel}})</span>{{end}}</p>
+    <section class="danger-banner" aria-label="{{t "Gefährliche Verwechslung"}}">
+      <strong>⚠ {{t "Verwechslungsgefahr mit giftigen Arten"}}</strong>
+      <p>{{range $index, $species := .DangerousRelated}}{{if $index}}, {{end}}<a href="/art/{{$species.Slug}}">{{name $species}}</a> <span class="danger-label">({{edibility $species}})</span>{{end}}</p>
     </section>
     {{end}}
 
     {{if .Related}}
     <section class="detail-section related-section" aria-labelledby="related-heading">
-      <div class="detail-section-heading"><div><p class="eyebrow">ÄHNLICHE ARTEN – GENAU VERGLEICHEN</p><h2 id="related-heading">Verwechslungspartner</h2></div><span class="count-pill">{{len .Related}} Arten</span></div>
-      <div class="species-grid related-strip">{{range .Related}}<a class="species-card edibility-card-{{.EdibilityClass}}" href="/art/{{.Slug}}">{{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{displayName .NameTrivial}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}<span class="card-copy"><strong>{{displayName .NameTrivial}}</strong><em>{{.NameWissenschaftlich}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{.EdibilityLabel}}</span></span></a>{{end}}</div>
+      <div class="detail-section-heading"><div><p class="eyebrow">{{t "ÄHNLICHE ARTEN – GENAU VERGLEICHEN"}}</p><h2 id="related-heading">{{t "Verwechslungspartner"}}</h2></div><span class="count-pill">{{tf "{count} Arten" "count" (len .Related)}}</span></div>
+      <div class="species-grid related-strip">{{range .Related}}<a class="species-card edibility-card-{{.EdibilityClass}}" href="/art/{{.Slug}}">{{if .BestImage}}<img class="card-image" src="{{imageURL .BestImage}}" alt="{{name .}}" loading="lazy" decoding="async">{{else if .Bilddateien}}<img class="card-image" src="{{imageURL (firstImage .Bilddateien)}}" alt="{{name .}}" loading="lazy" decoding="async">{{else}}<span class="card-image card-image-empty" aria-hidden="true">✳</span>{{end}}<span class="card-copy"><strong>{{name .}}</strong><em>{{.NameWissenschaftlich}}</em><span class="edibility-badge edibility-{{.EdibilityClass}}">{{edibility .}}</span></span></a>{{end}}</div>
     </section>
     {{end}}
 
-    <section class="edibility-banner edibility-{{.Species.EdibilityClass}}" aria-label="Essbarkeit">
-      <span class="edibility-badge edibility-{{.Species.EdibilityClass}}">{{.Species.EdibilityLabel}}</span>
-      {{if .Species.EdibilityWarning}}<p>Giftiger Pilz — nicht verzehren.</p>{{else if eq .Species.EdibilityClass "unknown"}}<p>Für diese Art liegt keine Essbarkeits-Angabe vor.</p>{{else}}<p>Nur die Angabe der Datenquelle – keine Verzehrfreigabe. Iss nur Pilze, die du zu 100&nbsp;% sicher bestimmt hast.</p>{{end}}
+    <section class="edibility-banner edibility-{{.Species.EdibilityClass}}" aria-label="{{t "Essbarkeit"}}">
+      <span class="edibility-badge edibility-{{.Species.EdibilityClass}}">{{edibility .Species}}</span>
+      {{if .Species.EdibilityWarning}}<p>{{t "Giftiger Pilz — nicht verzehren."}}</p>{{else if eq .Species.EdibilityClass "unknown"}}<p>{{t "Für diese Art liegt keine Essbarkeits-Angabe vor."}}</p>{{else}}<p>{{t "Nur die Angabe der Datenquelle – keine Verzehrfreigabe. Iss nur Pilze, die du zu 100 % sicher bestimmt hast."}}</p>{{end}}
     </section>
 
     {{if .Traits}}
     <section class="detail-section" aria-labelledby="traits-heading">
-      <div class="detail-section-heading"><div><p class="eyebrow">ERKENNUNGSMERKMALE</p><h2 id="traits-heading">Merkmale</h2></div><span class="count-pill">{{len .Traits}} Angaben</span></div>
+      <div class="detail-section-heading"><div><p class="eyebrow">{{t "ERKENNUNGSMERKMALE"}}</p><h2 id="traits-heading">{{t "Merkmale"}}</h2></div><span class="count-pill">{{tf "{count} Angaben" "count" (len .Traits)}}</span></div>
       <dl class="traits-grid">
         {{range .Traits}}<div class="trait-card"><dt>{{.Name}}</dt><dd>{{.Value}}</dd></div>{{end}}
       </dl>
@@ -61,7 +62,7 @@
 
     {{if .SupplementalTraits}}
     <details class="supplemental-traits">
-      <summary><span>Weitere Angaben</span><span class="count-pill">{{len .SupplementalTraits}} Angaben</span></summary>
+      <summary><span>{{t "Weitere Angaben"}}</span><span class="count-pill">{{tf "{count} Angaben" "count" (len .SupplementalTraits)}}</span></summary>
       <dl class="traits-grid">
         {{range .SupplementalTraits}}<div class="trait-card"><dt>{{.Name}}</dt><dd>{{.Value}}</dd></div>{{end}}
       </dl>
@@ -69,17 +70,17 @@
     {{end}}
 
     {{if .Images}}
-    <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bildansicht">
-      <button class="lightbox-close" type="button" aria-label="Bildansicht schließen">×</button>
-      <button class="lightbox-prev" type="button" aria-label="Vorheriges Bild">‹</button>
+    <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="{{t "Bildansicht"}}">
+      <button class="lightbox-close" type="button" aria-label="{{t "Bildansicht schließen"}}">×</button>
+      <button class="lightbox-prev" type="button" aria-label="{{t "Vorheriges Bild"}}">‹</button>
       <img class="lightbox-image" alt="">
-      <button class="lightbox-next" type="button" aria-label="Nächstes Bild">›</button>
+      <button class="lightbox-next" type="button" aria-label="{{t "Nächstes Bild"}}">›</button>
       <p class="lightbox-count" aria-live="polite"></p>
     </div>
     {{end}}
 
-    {{if .Species.URL}}<p class="source-link">Quelle: <a href="{{.Species.URL}}" rel="noopener noreferrer">Originaleintrag auf 123pilzsuche.de ↗</a></p>{{end}}
+    {{if .Species.URL}}<p class="source-link">{{t "Quelle:"}} <a href="{{.Species.URL}}" rel="noopener noreferrer">{{t "Originaleintrag auf 123pilzsuche.de ↗"}}</a></p>{{end}}
   </main>
-  <footer><span>Pilzdatenbank</span><span>Datenquelle: 123pilzsuche.de</span></footer>
+  {{template "footer"}}
 </body>
 </html>

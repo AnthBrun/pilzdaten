@@ -17,7 +17,7 @@ func (c *Catalog) Search(query string, limit int) []*Species {
 	}
 	results := make([]*Species, 0)
 	for _, species := range c.all {
-		if containsFold(species.NameTrivial, query) || containsFold(species.NameWissenschaftlich, query) || containsAnyFold(species.Synonyme, query) {
+		if matchesName(species, query) {
 			results = append(results, species)
 		}
 	}
@@ -173,7 +173,7 @@ func (c *Catalog) AvailableTags(query string, tags []string, minCM, maxCM int) m
 }
 
 func matchesQueryAndDiameter(species *Species, filterData FilterData, query string, minCM, maxCM int) bool {
-	if query != "" && !containsFold(species.NameTrivial, query) && !containsFold(species.NameWissenschaftlich, query) && !containsAnyFold(species.Synonyme, query) {
+	if query != "" && !matchesName(species, query) {
 		return false
 	}
 	// A zero endpoint means the source has no known diameter. Keep those
@@ -225,14 +225,20 @@ func speciesSearchLess(left, right *Species, query string) bool {
 
 func speciesSearchRank(species *Species, query string) int {
 	best := 1 << 30
-	for index, name := range strings.Split(species.NameTrivial, ",") {
-		rank := nameMatchRank(name, query)
-		if rank < 3 {
-			if index > 0 {
-				rank += 3
-			}
-			if rank < best {
-				best = rank
+	nameLists := []string{species.NameTrivial}
+	for _, local := range species.LocalNames {
+		nameLists = append(nameLists, local)
+	}
+	for _, names := range nameLists {
+		for index, name := range strings.Split(names, ",") {
+			rank := nameMatchRank(name, query)
+			if rank < 3 {
+				if index > 0 {
+					rank += 3
+				}
+				if rank < best {
+					best = rank
+				}
 			}
 		}
 	}
@@ -360,6 +366,20 @@ func firstRune(value string) (rune, int) {
 		return r, len(string(r))
 	}
 	return 0, 0
+}
+
+// matchesName prüft deutsche und übersetzte Trivialnamen, den
+// wissenschaftlichen Namen und die Synonyme.
+func matchesName(species *Species, query string) bool {
+	if containsFold(species.NameTrivial, query) || containsFold(species.NameWissenschaftlich, query) || containsAnyFold(species.Synonyme, query) {
+		return true
+	}
+	for _, local := range species.LocalNames {
+		if containsFold(local, query) {
+			return true
+		}
+	}
+	return false
 }
 
 func containsFold(value, query string) bool {

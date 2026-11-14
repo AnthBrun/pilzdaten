@@ -2,7 +2,7 @@
 // Optionen aus partChoices als wischbare Reihen.
 import { colorFor, labelFor, partChoices, partNames } from "./config.js";
 import { optionIcon } from "./icons.js";
-import { escapeHTML, scrollBehavior } from "./util.js";
+import { escapeHTML, scrollBehavior, t } from "./util.js";
 
 const deck = document.querySelector("#option-deck");
 const deckTitle = document.querySelector("#deck-title");
@@ -17,7 +17,7 @@ export function renderDeck(tags) {
   if (!deck || !sections.length) return;
   // Wischposition jeder Reihe bleibt beim Neuzeichnen erhalten.
   const scrollPositions = new Map([...deckSections.querySelectorAll(".deck-carousel")].map((carousel) => [carousel.dataset.sectionIndex, carousel.scrollLeft]));
-  deckTitle.textContent = `${partNames[openPart]} wählen`;
+  deckTitle.textContent = t("{part} wählen", { part: partNames[openPart] });
   deckSections.innerHTML = sections.map((section, index) => {
     const options = section.tags.map((tag) => renderOption(tag, section, tags.has(tag))).join("");
     return `<section class="deck-section"><h4>${escapeHTML(section.title)}</h4><div class="deck-carousel${section.kind === "color" ? " color-options" : ""}" data-section-index="${index}" role="group" aria-label="${escapeHTML(section.title)}">${options}</div></section>`;

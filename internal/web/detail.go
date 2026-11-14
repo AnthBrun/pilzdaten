@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 )
 
 // detailData füllt templates/detail.html. Gegenstück für den Offline-Betrieb
@@ -43,16 +44,26 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	data := detailData{Species: species, DisplayName: displayName(species.NameTrivial)}
-	for _, alias := range strings.Split(species.NameTrivial, ",") {
-		alias = strings.TrimSpace(alias)
-		if alias != "" && alias != data.DisplayName {
-			data.Aliases = append(data.Aliases, alias)
+	lang := s.requestLang(w, r)
+	localNames := s.t(lang, species.NameTrivial)
+	data := detailData{Species: species, DisplayName: displayName(localNames)}
+	// Übersetzte Namen zuerst, dahinter die deutschen Originalnamen und die Synonyme.
+	seen := map[string]bool{data.DisplayName: true}
+	for _, names := range []string{localNames, species.NameTrivial} {
+		for _, alias := range strings.Split(names, ",") {
+			if alias = strings.TrimSpace(alias); alias != "" && !seen[alias] {
+				seen[alias] = true
+				data.Aliases = append(data.Aliases, alias)
+			}
 		}
 	}
 	data.Aliases = append(data.Aliases, species.Synonyme...)
-	data.Traits, data.SupplementalTraits = speciesTraits(species)
+	main, supplemental := speciesTraits(species)
+	data.Traits, data.SupplementalTraits = s.localTraits(lang, main), s.localTraits(lang, supplemental)
 	data.Images = speciesPhotos(species, s.catalog.Original)
+	for index := range data.Images {
+		data.Images[index].Alt = data.DisplayName
+	}
 	if len(data.Images) > 1 {
 		data.Gallery = data.Images[1:]
 	}
@@ -68,7 +79,7 @@ func (s *Server) detail(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(data.Related, func(i, j int) bool {
 		return dangerRank(data.Related[i]) < dangerRank(data.Related[j])
 	})
-	s.render(w, "detail.html", data)
+	s.render(w, lang, "detail.html", data)
 }
 
 func dangerRank(species *catalog.Species) int {
@@ -135,6 +146,18 @@ func speciesTraits(species *catalog.Species) (main, supplemental []trait) {
 		}
 	}
 	return main, supplemental
+}
+
+// localTraits übersetzt Namen und Texte der Merkmale (Reihenfolge bleibt).
+func (s *Server) localTraits(lang string, traits []trait) []trait {
+	if lang == i18n.Source {
+		return traits
+	}
+	local := make([]trait, len(traits))
+	for index, value := range traits {
+		local[index] = trait{Name: s.t(lang, value.Name), Value: s.t(lang, value.Value)}
+	}
+	return local
 }
 
 // Merkmale ab dieser Reihenfolge landen unter "Weitere Angaben".

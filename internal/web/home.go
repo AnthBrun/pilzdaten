@@ -34,6 +34,7 @@ type filterChip struct {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+	lang := s.requestLang(w, r)
 	facets := s.catalog.Facets()
 	page := queryPage(r)
 	minCM, maxCM := diameterRange(r, facets)
@@ -54,7 +55,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		if chipLabel == "" {
 			chipLabel = label(tag)
 		}
-		activeFilters = append(activeFilters, filterChip{Tag: tag, Label: chipLabel})
+		activeFilters = append(activeFilters, filterChip{Tag: tag, Label: s.t(lang, chipLabel)})
 	}
 
 	values := r.URL.Query()
@@ -63,7 +64,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		values.Set("page", strconv.Itoa(target))
 		return "?" + values.Encode()
 	}
-	s.render(w, "index.html", pageData{
+	s.render(w, lang, "index.html", pageData{
 		Count: count, Page: page, Pages: pages, Species: species,
 		PreviousURL: pageURL(page - 1), NextURL: pageURL(page + 1),
 		HasPrevious: page > 1, HasNext: page < pages,

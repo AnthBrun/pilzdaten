@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"pilzdaten/internal/catalog"
+	"pilzdaten/internal/i18n"
 )
 
 // offlineSpecies ist die kompakte Form einer Art im Offline-Paket. Kurze
@@ -40,6 +41,7 @@ type offlineSpecies struct {
 
 type offlinePackage struct {
 	Version string           `json:"version"`
+	Lang    string           `json:"lang"`
 	Facets  catalog.Facets   `json:"facets"`
 	Species []offlineSpecies `json:"species"`
 }
@@ -53,15 +55,23 @@ type offlineData struct {
 	err     error
 }
 
-func (s *Server) buildOfflinePackage() ([]byte, string, error) {
-	s.offline.once.Do(func() {
-		pkg := offlinePackage{Facets: s.catalog.Facets()}
+// buildOfflinePackage baut das Paket einer Sprache beim ersten Abruf.
+func (s *Server) buildOfflinePackage(lang string) ([]byte, string, error) {
+	s.offlineMu.Lock()
+	cached := s.offline[lang]
+	if cached == nil {
+		cached = &offlineData{}
+		s.offline[lang] = cached
+	}
+	s.offlineMu.Unlock()
+	cached.once.Do(func() {
+		pkg := offlinePackage{Lang: lang, Facets: s.localFacets(lang)}
 		for _, species := range s.catalog.All() {
-			pkg.Species = append(pkg.Species, offlineSpeciesFor(s.catalog, species))
+			pkg.Species = append(pkg.Species, s.offlineSpeciesFor(lang, species))
 		}
 		raw, err := json.Marshal(pkg)
 		if err != nil {
-			s.offline.err = err
+			cached.err = err
 			return
 		}
 		sum := sha256.Sum256(raw)
@@ -70,25 +80,30 @@ func (s *Server) buildOfflinePackage() ([]byte, string, error) {
 		var buffer bytes.Buffer
 		writer, _ := gzip.NewWriterLevel(&buffer, gzip.BestCompression)
 		if _, err := writer.Write(raw); err != nil {
-			s.offline.err = err
+			cached.err = err
 			return
 		}
 		if err := writer.Close(); err != nil {
-			s.offline.err = err
+			cached.err = err
 			return
 		}
-		s.offline.gzipped = buffer.Bytes()
-		s.offline.etag = `"` + version + `"`
+		cached.gzipped = buffer.Bytes()
+		cached.etag = `"` + version + `"`
 	})
-	return s.offline.gzipped, s.offline.etag, s.offline.err
+	return cached.gzipped, cached.etag, cached.err
 }
 
-func offlineSpeciesFor(data *catalog.Catalog, species *catalog.Species) offlineSpecies {
-	filterData := data.FilterData(species.Slug)
+func (s *Server) offlineSpeciesFor(lang string, species *catalog.Species) offlineSpecies {
+	filterData := s.catalog.FilterData(species.Slug)
+	localNames := s.t(lang, species.NameTrivial)
+	names := localNames
+	if localNames != species.NameTrivial {
+		names += ", " + species.NameTrivial // offline auch nach deutschen Namen suchen
+	}
 	entry := offlineSpecies{
-		Slug: species.Slug, Name: displayName(species.NameTrivial), Names: species.NameTrivial,
-		Scientific: species.NameWissenschaftlich, Synonyms: species.Synonyme, Genus: species.Gattung,
-		Edibility: species.EdibilityClass, EdibilityTxt: species.EdibilityLabel,
+		Slug: species.Slug, Name: displayName(localNames), Names: names,
+		Scientific: species.NameWissenschaftlich, Synonyms: species.Synonyme, Genus: s.t(lang, species.Gattung),
+		Edibility: species.EdibilityClass, EdibilityTxt: s.t(lang, species.EdibilityLabel),
 		Tags: filterData.Tags, Diameter: [2]int{filterData.MinCM, filterData.MaxCM},
 		Priority: species.Priority, Commonness: species.Commonness, Photos: species.PhotoCount,
 		Related: species.Verwechslungen, Source: species.URL,
@@ -105,6 +120,7 @@ func offlineSpeciesFor(data *catalog.Catalog, species *catalog.Species) offlineS
 		}
 	}
 	main, supplemental := speciesTraits(species)
+	main, supplemental = s.localTraits(lang, main), s.localTraits(lang, supplemental)
 	for _, value := range main {
 		entry.Traits = append(entry.Traits, [2]string{value.Name, value.Value})
 	}
@@ -114,15 +130,18 @@ func offlineSpeciesFor(data *catalog.Catalog, species *catalog.Species) offlineS
 	return entry
 }
 
+var msgPackFailed = i18n.N("Offline-Paket konnte nicht erstellt werden")
+
 func (s *Server) offlinePackage(w http.ResponseWriter, r *http.Request) {
-	gzipped, etag, err := s.buildOfflinePackage()
+	lang := s.requestLang(w, r)
+	gzipped, etag, err := s.buildOfflinePackage(lang)
 	if err != nil {
-		http.Error(w, "Offline-Paket konnte nicht erstellt werden", http.StatusInternalServerError)
+		http.Error(w, s.t(lang, msgPackFailed), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Vary", "Accept-Encoding")
+	w.Header().Set("Vary", "Accept-Encoding, Cookie, Accept-Language")
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return
@@ -135,7 +154,7 @@ func (s *Server) offlinePackage(w http.ResponseWriter, r *http.Request) {
 	}
 	reader, err := gzip.NewReader(bytes.NewReader(gzipped))
 	if err != nil {
-		http.Error(w, "Offline-Paket konnte nicht gelesen werden", http.StatusInternalServerError)
+		http.Error(w, s.t(lang, msgPackFailed), http.StatusInternalServerError)
 		return
 	}
 	defer reader.Close()
@@ -177,8 +196,8 @@ func manifest(w http.ResponseWriter, _ *http.Request) {
 
 // offlinePage ist die Hülle, die der Service Worker für nicht gespeicherte
 // Artseiten ausliefert; js/offline.js rendert die Art aus dem Offline-Paket.
-func (s *Server) offlinePage(w http.ResponseWriter, _ *http.Request) {
-	s.render(w, "offline.html", nil)
+func (s *Server) offlinePage(w http.ResponseWriter, r *http.Request) {
+	s.render(w, s.requestLang(w, r), "offline.html", nil)
 }
 
 // noOriginal: Das Offline-Paket enthält nur Vorschaubilder, keine großen Originale.

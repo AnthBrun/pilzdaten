@@ -101,6 +101,8 @@ export function initLightbox() {
     lightbox.addEventListener("touchend", (event) => {
       if (!tracking) return;
       tracking = false;
+      // Weg aus dem Endpunkt berechnen: touchmove kommt nicht auf jedem Gerät zuverlässig an.
+      deltaX = event.changedTouches[0].clientX - startX;
       const deltaY = event.changedTouches[0].clientY - startY;
       settle();
       if (imageButtons.length < 2 || Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.5) return;

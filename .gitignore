@@ -1,2 +1,5 @@
 .env
 data/i18n/qa/
+
+# Bildmodell für Foto-Vorschläge (scripts/model-bundle.sh), nicht ins Repo
+data/model/

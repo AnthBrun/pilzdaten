@@ -16,6 +16,7 @@ import (
 //
 //	DATA_DIR   Ordner mit den aufbereiteten Daten (Standard: ./data im Repo)
 //	IMAGE_DIR  Wurzel der Artfotos, z. B. …/pilzsuche/raw/images (Pflicht)
+//	MODEL_DIR  Bildmodell für Foto-Vorschläge (Standard: DATA_DIR/model; fehlt es, ist die Funktion aus)
 //	ADDR       Listen-Adresse (Standard: :8080)
 func main() {
 	dataDir := envOr("DATA_DIR", "data")
@@ -41,7 +42,16 @@ func main() {
 	}
 	log.Printf("%d Arten aus %s geladen, Bilder aus %s, Sprachen: %s", data.Count(), dataDir, imageDir, strings.Join(languages, ", "))
 
-	mux := web.NewWithTranslations(data, imageDir, translations)
+	modelDir := envOr("MODEL_DIR", filepath.Join(dataDir, "model"))
+	mux, err := web.NewWithOptions(data, imageDir, web.Options{Translations: translations, ModelDir: modelDir})
+	if err != nil {
+		log.Fatalf("Bildmodell in %s unvollständig: %v", modelDir, err)
+	}
+	if _, err := os.Stat(filepath.Join(modelDir, "meta.json")); err == nil {
+		log.Printf("Foto-Vorschläge aktiv, Modell aus %s", modelDir)
+	} else {
+		log.Printf("Foto-Vorschläge aus (kein Modell in %s)", modelDir)
+	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = w.Write([]byte("ok\n"))

@@ -2,6 +2,9 @@
 // (?f=tags&q=…&dmin=…&dmax=…&page=…&letter=…), damit Zurück, Teilen und
 // Neuladen dieselben Treffer zeigen.
 import { exclusiveGroups } from "./config.js";
+import { readSession, writeSession } from "./util.js";
+
+const SUGGESTED_KEY = "pilz-photo-suggested";
 
 const minSlider = document.querySelector("#diameter-min");
 const maxSlider = document.querySelector("#diameter-max");
@@ -15,6 +18,10 @@ export const state = {
   letter: "",
   // Tags, die mit der aktuellen Auswahl noch Treffer liefern (null = unbekannt).
   availableTags: null,
+  // Teilmenge von tags, die aus einem Foto vorgeschlagen wurden (js/photo.js).
+  // Nicht in der URL, aber in der Session: nach Neuladen bleiben sie
+  // Vorschläge, die ein neues Foto ersetzen darf.
+  suggested: new Set(),
 };
 
 export const diameterBounds = () => ({ min: minSlider?.min ?? "1", max: maxSlider?.max ?? "25" });
@@ -22,6 +29,8 @@ export const diameterBounds = () => ({ min: minSlider?.min ?? "1", max: maxSlide
 export function readStateFromURL() {
   const params = new URLSearchParams(location.search);
   state.tags = new Set((params.get("f") || "").split(",").map((tag) => tag.trim()).filter(Boolean));
+  const remembered = new Set((readSession(SUGGESTED_KEY) || "").split(",").filter(Boolean));
+  state.suggested = new Set([...state.suggested, ...remembered].filter((tag) => state.tags.has(tag)));
   state.q = params.get("q") || "";
   state.page = Math.max(1, Number(params.get("page") || 1) || 1);
   state.letter = params.get("letter") || "";
@@ -57,6 +66,7 @@ export function paramsForRequest() {
 }
 
 export function syncURL(historyMode = "replace") {
+  writeSession(SUGGESTED_KEY, [...state.suggested].filter((tag) => state.tags.has(tag)).join(","));
   const params = paramsForRequest();
   const nextURL = `${location.pathname}${params.size ? `?${params}` : ""}`;
   if (`${location.pathname}${location.search}` === nextURL) return;
@@ -68,6 +78,7 @@ export function syncURL(historyMode = "replace") {
 // Wahl, aber nur innerhalb des offenen Teils (eine Hutfarbe ersetzt keine
 // Lamellenfarbe). Liefert true, wenn eine exklusive Wahl gewechselt hat.
 export function toggleTagInState(tag, group, part) {
+  state.suggested.delete(tag); // selbst angetippt: jetzt eine eigene Wahl
   if (state.tags.has(tag)) {
     state.tags.delete(tag);
     state.page = 1;
@@ -80,7 +91,10 @@ export function toggleTagInState(tag, group, part) {
       ? (existing) => partGroup.has(existing)
       : (existing) => Object.values(exclusiveGroups).some((groups) => groups[group]?.has(existing));
     for (const existing of [...state.tags]) {
-      if (sameGroup(existing)) state.tags.delete(existing);
+      if (sameGroup(existing)) {
+        state.tags.delete(existing);
+        state.suggested.delete(existing);
+      }
     }
     replaced = true;
   }
@@ -89,7 +103,39 @@ export function toggleTagInState(tag, group, part) {
   return replaced;
 }
 
+// Foto-Vorschläge übernehmen. Frühere Vorschläge fallen weg. In exklusiven
+// Gruppen ersetzt ein Vorschlag nur Vorschläge oder die Pilzgruppe (die ist
+// vorbelegt); eine selbst gewählte Hutfarbe o. Ä. bleibt und der Vorschlag
+// entfällt. groups: meta.json.groups des Bildmodells.
+// Liefert { applied: neu gesetzt, kept: war schon gewählt, conflicts: weggelassen }.
+export function applySuggestions(tags, groups) {
+  for (const tag of state.suggested) state.tags.delete(tag);
+  state.suggested.clear();
+  const result = { applied: [], kept: [], conflicts: [] };
+  for (const tag of tags) {
+    if (state.tags.has(tag)) {
+      result.kept.push(tag);
+      continue;
+    }
+    const group = groups.find((candidate) => candidate.tags.includes(tag));
+    if (group?.exclusive) {
+      const others = group.tags.filter((other) => other !== tag && state.tags.has(other));
+      if (others.length && group.name !== "gruppe") {
+        result.conflicts.push(tag);
+        continue;
+      }
+      others.forEach((other) => state.tags.delete(other));
+    }
+    state.tags.add(tag);
+    state.suggested.add(tag);
+    result.applied.push(tag);
+  }
+  state.page = 1;
+  return result;
+}
+
 export function resetState() {
+  state.suggested.clear();
   state.tags.clear();
   state.q = "";
   state.page = 1;

@@ -33,7 +33,8 @@
       {{$page := .}}
       <div class="filter-layout">
         <aside class="mushroom-lab" aria-labelledby="lab-title">
-          <div class="lab-heading"><div><p class="eyebrow">{{t "WAS SIEHST DU?"}}</p><h2 id="catalog-heading" class="lab-title"><span id="lab-title">{{t "Tippe auf den Pilz"}}</span></h2></div><button id="reset-filters" class="wipe-button" type="button">{{t "Alles wischen"}}</button></div>
+          <div class="lab-heading"><div><p class="eyebrow">{{t "WAS SIEHST DU?"}}</p><h2 id="catalog-heading" class="lab-title"><span id="lab-title">{{t "Tippe auf den Pilz"}}</span></h2></div><div class="lab-actions">{{if .Photo}}<button id="photo-button" class="photo-button" type="button" data-model-version="{{.Photo.Version}}" data-model-runtime="{{.Photo.Runtime}}" title="{{t "Merkmale aus Fotos vorschlagen lassen (bleibt auf dem Gerät)"}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>{{t "Foto"}}</span></button><input id="photo-input" type="file" accept="image/*" multiple hidden>{{end}}<button id="reset-filters" class="wipe-button" type="button">{{t "Alles wischen"}}</button></div></div>
+          {{if .Photo}}<div id="photo-status" class="photo-status" role="status" aria-live="polite" hidden></div>{{end}}
           <div class="group-bar" role="group" aria-label="{{t "Pilzgruppe wählen"}}">
             {{range $page.Facets.Groups}}{{if eq .Group "gruppe"}}{{range .Options}}<button class="group-option" type="button" data-trait-tag="{{.Tag}}" data-trait-group="gruppe" title="{{if .Title}}{{t .Title}}{{else}}{{t .Label}}{{end}}"><svg class="group-icon" viewBox="0 0 32 24" aria-hidden="true"><use href="#gi-{{.Tag}}"/></svg><span>{{t .Label}}</span></button>{{end}}{{end}}{{end}}
           </div>

@@ -91,6 +91,34 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .lab-title { margin: 0; color: var(--green); font: 600 21px Georgia, serif; }
 .wipe-button { flex: none; min-height: 36px; padding: 7px 12px; border: 1px solid #e7d7c8; border-radius: 99px; color: #8b5637; background: #fffaf5; font-size: 12px; font-weight: 650; cursor: pointer; }
 .wipe-button:hover { background: #f8ebde; }
+.lab-actions { display: flex; flex: none; align-items: center; gap: 6px; }
+.photo-button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 7px 12px; border: 1px solid var(--green); border-radius: 99px; color: #fff; background: var(--green); font-size: 12px; font-weight: 650; cursor: pointer; }
+.photo-button svg { width: 16px; height: 16px; }
+.photo-button:hover { background: #1b3c2d; }
+.photo-button:disabled { opacity: .6; cursor: progress; }
+.photo-status { margin: 10px 0 0; padding: 10px 12px; border: 1px solid #cad7c8; border-radius: 8px; background: #f3f7f0; color: #2f4a37; font-size: 13px; line-height: 1.4; }
+.photo-status[hidden] { display: none; }
+.photo-status p { margin: 0 0 4px; }
+.photo-status p:last-child { margin-bottom: 0; }
+.photo-status[data-kind="warn"] { border-color: #e7d7c8; background: #fffaf5; color: #6e4429; }
+.photo-status[data-kind="error"] { border-color: #e3b9b4; background: #fdf3f2; color: #7c2f28; }
+.photo-spinner { display: inline-block; width: 12px; height: 12px; margin-right: 7px; border: 2px solid #cad7c8; border-top-color: var(--green); border-radius: 50%; vertical-align: -1px; animation: photo-spin .8s linear infinite; }
+@keyframes photo-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .photo-spinner { animation: none; } }
+.photo-similar-title { margin-top: 8px !important; font-weight: 600; }
+.photo-similar { display: grid; gap: 5px; margin-top: 6px; }
+.photo-similar-item { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-left-width: 4px; border-radius: 6px; background: var(--white); }
+.photo-similar-item:hover { border-color: #cad7c8; }
+.photo-similar-item img, .photo-similar-empty { flex: none; width: 40px; height: 40px; border-radius: 4px; object-fit: cover; background: #eef0e8; display: grid; place-items: center; }
+.photo-similar-name { display: grid; min-width: 0; flex: 1; }
+.photo-similar-name strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.photo-similar-name em { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.photo-similar-score { flex: none; color: var(--muted); font-size: 12px; font-weight: 600; }
+.photo-similar-item.edibility-card-excellent, .photo-similar-item.edibility-card-edible { border-left-color: #4f8a60; }
+.photo-similar-item.edibility-card-poor { border-left-color: #b29a43; }
+.photo-similar-item.edibility-card-poisonous { border-left-color: #d87937; }
+.photo-similar-item.edibility-card-deadly { border-left-color: #bd4747; }
+.photo-similar-item.edibility-card-unknown { border-left-color: #aeb7ae; }
 .mushroom-stage { position: relative; display: flex; justify-content: center; align-items: center; height: 418px; margin: 2px 0 0; overflow: visible; background: radial-gradient(ellipse at 50% 51%, #f5f6ef 0, #fafaf7 56%, transparent 76%); }
 .mushroom-svg { display: block; width: min(100%, 270px); max-height: 100%; height: auto; overflow: visible; }
 
@@ -333,6 +361,8 @@ main { max-width: 1240px; padding: 0 32px; margin: auto; }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid #cad7c8; border-radius: 99px; background: #edf2e9; color: #34553e; font-size: 13px; min-height: 34px; cursor: pointer; }
 .filter-chip span { font-size: 14px; line-height: 9px; }
 .filter-chip:hover { background: #dfe9d9; }
+.filter-chip.is-suggested { border-style: dashed; border-color: var(--green); background: #fff; }
+.chip-camera { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .reset-inline { padding: 5px 7px; border: 0; background: transparent; color: #8b5637; text-decoration: underline; font-size: 13px; font-weight: 600; cursor: pointer; }
 .refine-hint { margin: 0 0 10px; padding: 8px 11px; color: #4f5a45; background: #edf0e4; border-radius: 5px; font-size: 13px; }
 .species-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

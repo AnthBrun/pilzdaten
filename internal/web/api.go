@@ -42,23 +42,28 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	results, count, pages := s.catalog.Filter(r.URL.Query().Get("q"), splitTags(r.URL.Query().Get("f")), minCM, maxCM, letter, page, pageSize)
 	response := searchResponse{Count: count, Page: page, TotalPages: pages, PerPage: pageSize, Results: make([]searchResult, 0, len(results))}
 	for _, species := range results {
-		imagePath := species.BestImage
-		if imagePath == "" {
-			imagePath = firstImage(species.Bilddateien)
-		}
-		imageURLValue := ""
-		if imagePath != "" {
-			imageURLValue = imageURL(imagePath)
-		}
-		response.Results = append(response.Results, searchResult{
-			Slug: species.Slug, Name: displayName(s.t(lang, species.NameTrivial)),
-			ScientificName: species.NameWissenschaftlich,
-			Edibility:      species.Edibility, EdibilityLabel: s.t(lang, species.EdibilityLabel), EdibilityClass: species.EdibilityClass,
-			Image: imageURLValue,
-		})
+		response.Results = append(response.Results, s.cardResult(lang, species))
 	}
 	w.Header().Add("Vary", "Cookie, Accept-Language")
 	writeJSON(w, response)
+}
+
+// cardResult baut die Kartendaten einer Art (Suche, Foto-Vorschläge).
+func (s *Server) cardResult(lang string, species *catalog.Species) searchResult {
+	imagePath := species.BestImage
+	if imagePath == "" {
+		imagePath = firstImage(species.Bilddateien)
+	}
+	imageURLValue := ""
+	if imagePath != "" {
+		imageURLValue = imageURL(imagePath)
+	}
+	return searchResult{
+		Slug: species.Slug, Name: displayName(s.t(lang, species.NameTrivial)),
+		ScientificName: species.NameWissenschaftlich,
+		Edibility:      species.Edibility, EdibilityLabel: s.t(lang, species.EdibilityLabel), EdibilityClass: species.EdibilityClass,
+		Image: imageURLValue,
+	}
 }
 
 func (s *Server) availableTags(w http.ResponseWriter, r *http.Request) {

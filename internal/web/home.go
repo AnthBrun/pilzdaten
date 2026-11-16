@@ -26,6 +26,7 @@ type pageData struct {
 	ActiveFilters []filterChip
 	HasFilters    bool
 	SuggestMore   bool
+	Photo         *photoModel // nil = kein Foto-Knopf
 }
 
 type filterChip struct {
@@ -72,5 +73,6 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 		ActiveFilters: activeFilters,
 		HasFilters:    len(tags) > 0 || query != "" || minCM != facets.MinDiameterCM || maxCM != facets.MaxDiameterCM,
 		SuggestMore:   len(tags) > 0 && count > pageSize,
+		Photo:         s.photo,
 	})
 }

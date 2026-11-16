@@ -53,7 +53,9 @@ export function renderActiveFilters() {
   const hasFilters = state.tags.size > 0 || state.q !== "" || customDiameter;
   activeFilters.hidden = !hasFilters;
   activeFilters.innerHTML = [
-    ...[...state.tags].map((tag) => `<button class="filter-chip" type="button" data-remove-tag="${escapeHTML(tag)}">${escapeHTML(labelFor(tag))} <span aria-hidden="true">×</span></button>`),
+    ...[...state.tags].map((tag) => (state.suggested.has(tag)
+      ? `<button class="filter-chip is-suggested" type="button" data-remove-tag="${escapeHTML(tag)}" title="${escapeHTML(t("Aus dem Foto vorgeschlagen – antippen zum Entfernen"))}"><svg class="chip-camera" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg><span class="visually-hidden">${escapeHTML(t("Vorschlag aus dem Foto:"))}</span>${escapeHTML(labelFor(tag))} <span aria-hidden="true">×</span></button>`
+      : `<button class="filter-chip" type="button" data-remove-tag="${escapeHTML(tag)}">${escapeHTML(labelFor(tag))} <span aria-hidden="true">×</span></button>`)),
     ...(customDiameter ? [`<button class="filter-chip" type="button" data-reset-diameter>${escapeHTML(t("Hut {min}–{max} cm", { min: state.min, max: state.max }))} <span aria-hidden="true">×</span></button>`] : []),
     ...(state.q ? [`<button class="filter-chip" type="button" data-clear-query>„${escapeHTML(state.q)}“ <span aria-hidden="true">×</span></button>`] : []),
     ...(hasFilters ? [`<button class="reset-inline" type="button" id="reset-filters-inline">${escapeHTML(t("Zurücksetzen"))}</button>`] : []),

@@ -5,14 +5,16 @@
 //   deck.js     Auswahl-Deck beim Antippen eines Pilzteils
 //   results.js  Trefferliste, Filter-Chips, Trefferleiste
 //   offline.js  Offline-Paket, Offline-Suche, Offline-Artseite
+//   photo.js    Foto-Vorschläge (Bildmodell im Browser)
 //   detail.js   Artseite (Lightbox, Zurück-Link)
 import { currentMonthTag, DEFAULT_GROUP, sporeColorHex } from "./config.js";
 import { closeDeck, currentPart, initDeck, pulsePart, renderDeck } from "./deck.js";
 import { initBackLinks, initLightbox } from "./detail.js";
 import { updateMushroom } from "./mushroom.js";
 import { initOffline, initOfflineDetail, loadOfflinePack, searchOffline } from "./offline.js";
+import { initPhoto } from "./photo.js";
 import { renderActiveFilters, renderDiameter, renderMessage, renderOptionStates, renderResults, syncDock } from "./results.js";
-import { paramsForRequest, readStateFromURL, resetState, setDiameter, state, syncURL, toggleTagInState } from "./state.js";
+import { applySuggestions, paramsForRequest, readStateFromURL, resetState, setDiameter, state, syncURL, toggleTagInState } from "./state.js";
 import { escapeHTML, fetchJSON, readSession, scrollBehavior, t, writeSession } from "./util.js";
 
 initOffline();
@@ -131,8 +133,17 @@ function initFinder() {
 
   function removeTag(tag) {
     state.tags.delete(tag);
+    state.suggested.delete(tag);
     state.page = 1;
     changed(0);
+  }
+
+  // Vorschläge aus js/photo.js übernehmen und sofort suchen.
+  function suggestTags(tags, groups) {
+    const applied = applySuggestions(tags, groups);
+    closeDeck();
+    changed(0);
+    return applied;
   }
 
   function resetFilters() {
@@ -156,6 +167,7 @@ function initFinder() {
 
   // --- Ereignisse
   initDeck(() => state.tags, toggleTag);
+  initPhoto(suggestTags);
   document.querySelectorAll("[data-trait-tag]").forEach((button) => button.addEventListener("click", () => toggleTag(button.dataset.traitTag, button.dataset.traitGroup || "multi")));
   document.querySelectorAll(".spore-option").forEach((button) => {
     button.style.setProperty("--spore-color", sporeColorHex[button.dataset.traitTag] || "#999b96");

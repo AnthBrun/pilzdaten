@@ -1,17 +1,20 @@
 // Service Worker der Pilzdatenbank: macht die App im Wald ohne Netz nutzbar.
 // Seiten und Code kommen bevorzugt frisch aus dem Netz (mit kurzem Timeout,
 // weil Funklöcher sonst minutenlang hängen), Bilder bevorzugt aus dem Cache.
-const SHELL_CACHE = "pilz-shell-v3";
+const SHELL_CACHE = "pilz-shell-v4";
 const PAGE_CACHE = "pilz-pages";
 const MEDIA_CACHE = "pilz-media";
 const PACK_MEDIA_CACHE = "pilz-media-pack";
 const DATA_CACHE = "pilz-data";
+// Bildmodell und onnxruntime-web (js/photo.js räumt alte Stände auf).
+const MODEL_CACHE = "pilz-model";
 // Alles, was die Seiten ohne Netz brauchen. Neue JS-Module hier eintragen.
 const SHELL_URLS = [
   "/", "/offline", "/manifest.webmanifest",
   "/static/app.css", "/static/icon-192.png", "/static/icon-512.png",
   "/static/js/main.js", "/static/js/config.js", "/static/js/state.js", "/static/js/util.js", "/static/js/icons.js",
   "/static/js/mushroom.js", "/static/js/deck.js", "/static/js/results.js", "/static/js/offline.js", "/static/js/detail.js",
+  "/static/js/photo.js",
 ];
 const NETWORK_TIMEOUT_MS = 4000;
 const MAX_RUNTIME_IMAGES = 400;
@@ -22,7 +25,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  const keep = new Set([SHELL_CACHE, PAGE_CACHE, MEDIA_CACHE, PACK_MEDIA_CACHE, DATA_CACHE]);
+  const keep = new Set([SHELL_CACHE, PAGE_CACHE, MEDIA_CACHE, PACK_MEDIA_CACHE, DATA_CACHE, MODEL_CACHE]);
   event.waitUntil(
     caches.keys()
       .then((names) => Promise.all(names.filter((name) => !keep.has(name)).map((name) => caches.delete(name))))
@@ -90,6 +93,17 @@ async function handleImage(request) {
   return response;
 }
 
+// Modell und Laufzeit sind über ?v=<Version> bzw. ort-<Version>/ eindeutig
+// benannt: einmal geladen, bleiben sie gültig und gehen auch ohne Netz.
+async function handleModel(request) {
+  const cache = await caches.open(MODEL_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.status === 200) await cache.put(request, response.clone());
+  return response;
+}
+
 // "Offline speichern" in js/offline.js bittet darum, die Hülle neu zu laden.
 self.addEventListener("message", (event) => {
   if (event.data === "refresh-shell") event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_URLS)));
@@ -106,6 +120,10 @@ self.addEventListener("fetch", (event) => {
   }
   if (url.pathname.startsWith("/media/")) {
     event.respondWith(handleImage(request));
+    return;
+  }
+  if (url.pathname.startsWith("/model/")) {
+    event.respondWith(handleModel(request));
     return;
   }
   if (url.pathname.startsWith("/static/") || url.pathname === "/manifest.webmanifest") {

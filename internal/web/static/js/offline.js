@@ -81,6 +81,13 @@ function relevanceCompare(left, right) {
 
 const cardData = (species) => ({ slug: species.s, name: species.n, scientific_name: species.w, edibility_class: species.e, edibility_label: species.l, image: species.i || "" });
 
+// Kartendaten für bestimmte Arten aus dem Offline-Paket (Foto-Vorschläge ohne Netz).
+export async function offlineCards(slugs) {
+  const pack = await loadOfflinePack();
+  if (!pack) return [];
+  return slugs.map((slug) => pack.bySlug.get(slug)).filter(Boolean).map(cardData);
+}
+
 // params wie bei /api/search; liefert dieselbe Antwortform plus availableTags.
 export function searchOffline(pack, params) {
   const query = (params.get("q") || "").trim().toLowerCase();

@@ -27,6 +27,13 @@ type Server struct {
 	templates map[string]*template.Template // je Sprache, mit sprachgebundenem t/tf
 	offlineMu sync.Mutex
 	offline   map[string]*offlineData // Offline-Paket je Sprache
+	photo     *photoModel             // nil = keine Foto-Vorschläge (siehe photo.go)
+}
+
+// Options sind optionale Einstellungen für NewWithOptions.
+type Options struct {
+	Translations *i18n.Bundle // nil = nur Deutsch
+	ModelDir     string       // Bildmodell für Foto-Vorschläge ("" oder ohne meta.json = aus)
 }
 
 // New baut den HTTP-Router. imageDir ist das Wurzelverzeichnis der Artfotos,
@@ -39,11 +46,27 @@ func New(data *catalog.Catalog, imageDir string) *http.ServeMux {
 // NewWithTranslations wie New, mit Übersetzungen (nil = nur Deutsch).
 // Die übersetzten Trivialnamen werden zusätzlich durchsuchbar gemacht.
 func NewWithTranslations(data *catalog.Catalog, imageDir string, bundle *i18n.Bundle) *http.ServeMux {
+	mux, err := NewWithOptions(data, imageDir, Options{Translations: bundle})
+	if err != nil {
+		panic(err) // ohne ModelDir kann nichts fehlschlagen
+	}
+	return mux
+}
+
+// NewWithOptions wie New, mit Übersetzungen und optionalem Bildmodell.
+// Fehler nur, wenn ModelDir ein unvollständiges Modell enthält.
+func NewWithOptions(data *catalog.Catalog, imageDir string, options Options) (*http.ServeMux, error) {
+	bundle := options.Translations
+	photo, err := loadPhotoModel(options.ModelDir)
+	if err != nil {
+		return nil, err
+	}
 	server := &Server{
 		catalog:   data,
 		i18n:      bundle,
 		templates: map[string]*template.Template{},
 		offline:   map[string]*offlineData{},
+		photo:     photo,
 	}
 	for _, lang := range bundle.Languages() {
 		server.templates[lang.Code] = template.Must(template.New("pages").Funcs(templateFuncs).Funcs(server.langFuncs(lang.Code)).ParseFS(files, "templates/*.html"))
@@ -65,6 +88,10 @@ func NewWithTranslations(data *catalog.Catalog, imageDir string, bundle *i18n.Bu
 	mux.Handle("GET /api/available-tags", withCacheControl(http.HandlerFunc(server.availableTags), noStore))
 	mux.HandleFunc("GET /api/facets", server.facets)
 	mux.HandleFunc("GET /api/offline", server.offlinePackage)
+	mux.HandleFunc("GET /api/species", server.speciesCards)
+	if photo != nil {
+		mux.HandleFunc("GET /model/{path...}", photo.serveModelFile)
+	}
 	// PWA
 	mux.HandleFunc("GET /sw.js", serviceWorker)
 	mux.HandleFunc("GET /manifest.webmanifest", manifest)
@@ -77,7 +104,7 @@ func NewWithTranslations(data *catalog.Catalog, imageDir string, bundle *i18n.Bu
 	}))
 	mux.Handle("GET /media/", http.StripPrefix("/media/", withCacheControl(http.FileServer(http.Dir(imageDir)), oneDay)))
 	mux.Handle("GET /original/", http.StripPrefix("/original/", withCacheControl(http.FileServer(http.Dir(imageDir)), oneDay)))
-	return mux
+	return mux, nil
 }
 
 func (s *Server) render(w http.ResponseWriter, lang, name string, data any) {

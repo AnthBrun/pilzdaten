@@ -10,6 +10,6 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /out/pilzdaten /pilzdaten
 # Aufbereitete Daten kommen mit ins Image, die Fotos werden als Volume eingebunden.
 COPY data /data
-ENV DATA_DIR=/data IMAGE_DIR=/images ADDR=:8080
+ENV DATA_DIR=/data IMAGE_DIR=/images MODEL_DIR=/model ADDR=:8080
 EXPOSE 8080
 ENTRYPOINT ["/pilzdaten"]

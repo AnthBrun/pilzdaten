@@ -134,6 +134,7 @@ internal/web/                HTTP
   detail.go                  Artseite
   api.go                     JSON-API
   offline.go                 Offline-Paket, Service Worker, Manifest, Offline-Hülle
+  photo.go                   Bildmodell unter /model/ ausliefern, /api/species
   templatefuncs.go           Helfer für Templates (Bild-URLs, Namen, t/tf je Sprache)
   texts.go                   Sammelt alle zu übersetzenden Texte für cmd/translate
   templates/
@@ -152,6 +153,7 @@ internal/web/                HTTP
     js/deck.js               Auswahl-Deck beim Antippen eines Pilzteils
     js/results.js            Trefferliste, Filter-Chips, Trefferleiste
     js/offline.js            Offline-Paket laden, offline suchen, Offline-Artseite
+    js/photo.js              Foto-Vorschläge: Bildmodell im Browser, Vorschlagsregel
     js/detail.js             Lightbox, Zurück-Link
 ```
 
@@ -165,6 +167,8 @@ internal/web/                HTTP
 | `GET /api/available-tags` | Tags, die mit der aktuellen Auswahl noch Treffer liefern. Die übrigen graut das Frontend aus. |
 | `GET /api/facets` | Filtergruppen |
 | `GET /api/offline` | Offline-Paket: alle Arten kompakt, gzip, mit ETag |
+| `GET /api/species` | Kartendaten bestimmter Arten, Query `slugs` (kommagetrennt, max. 20) |
+| `GET /model/…` | Bildmodell und onnxruntime-web aus `MODEL_DIR` (nur wenn vorhanden) |
 | `GET /media/…` | Fotos (Vorschauen) aus `IMAGE_DIR` |
 | `GET /original/…` | Große Originale aus `IMAGE_DIR` (nur Lightbox, nicht im Offline-Cache) |
 | `GET /static/…` | CSS, JS, Icons (eingebettet) |
@@ -198,6 +202,27 @@ Mit Namenssuche kommen zuerst exakte Treffer, dann solche, die mit dem Suchbegri
 2. Ohne Netz sucht `js/offline.js` im Paket. Nicht besuchte Artseiten liefert der Service Worker als `/offline` aus, und `js/offline.js` füllt sie aus dem Paket.
 3. Nach Daten-Updates muss man auf dem Handy erneut auf „Offline bereit“ tippen, um zu aktualisieren.
 4. Das Paket ist in der gewählten Sprache. Nach einem Sprachwechsel zeigt der Knopf wieder „Offline speichern“.
+
+## Foto-Vorschläge
+
+Mit „Foto“ fotografiert man den Fund (oder wählt bis zu sechs Fotos aus), und die App schlägt die sichtbaren Merkmale vor: Pilzgruppe, Hutfarbe und -form, Oberfläche, Unterseite und ihre Farbe, Stielfarbe, Ring/Knolle/Netz, Untergrund, büscheliger Wuchs. Die Vorschläge erscheinen als gestrichelte Chips mit Kamera und lassen sich wie jeder Filter wegtippen. Darunter stehen bis zu drei ähnlich aussehende Arten zum Vergleichen.
+
+- **Alles läuft im Browser** (onnxruntime-web, WASM). Fotos verlassen das Gerät nie.
+- **Fotos ohne Pilz** (Menschen, Tiere, Essen, Mikroskopbilder, leere Flächen) erkennt ein Gate im Modell; dann gibt es keine Vorschläge, sondern einen Hinweis.
+- **Vorsichtig:** Ein Merkmal wird nur vorgeschlagen, wenn es auf Testfotos zu ≥ 99,5 % stimmte. Bei mehreren Fotos zählt der Mittelwert. Eine selbst gewählte Hutfarbe o. Ä. wird nie überschrieben.
+- **Laden:** Modell und Laufzeit (~27 MB mit gzip) kommen erst beim ersten Antippen von „Foto“ und bleiben dann im Service Worker, auch offline.
+
+Das Modell entsteht im Repo [pilz-ki](https://github.com/AnthBrun/pilz-ki) (Training, Bewertung, Export). Hier wird nur der Export eingebunden:
+
+```sh
+scripts/model-bundle.sh ../pilz-ki/work/export/ft-fungi-effv2b3-final data/model
+```
+
+Das Skript kopiert `meta.json` und `model.int8.onnx`, lädt onnxruntime-web (Version und Prüfsumme stehen im Skript) nach `data/model/ort-<version>/` und legt `.gz`-Varianten daneben. `data/model/` ist nicht im Git und nicht im Image; Docker Compose bindet es als `/model` ein (`MODEL_DIR` in `.env`). Fehlt der Ordner, ist der Foto-Knopf einfach nicht da.
+
+Zum Aktualisieren den neuen Export bündeln und neu starten. Die URLs tragen die Modellversion (`?v=` aus `meta.json`) bzw. die Laufzeitversion im Pfad, deshalb holen Handys den neuen Stand von selbst.
+
+Code: `internal/web/photo.go` (Auslieferung unter `/model/`, `/api/species`), `static/js/photo.js` (Vorverarbeitung, Inferenz, Vorschlagsregel). Die Regeln spiegeln `pilzki/predict.py` in pilz-ki; wer eine Seite ändert, ändert die andere mit. Auf 262 fremden Pilzfotos liefert der Browser dieselbe Trefferqualität wie die Python-Referenz (4,3 Merkmale pro Foto, in 98 % der Fälle ist jedes vorgeschlagene Merkmal richtig).
 
 ## Häufige Änderungen
 
@@ -233,6 +258,7 @@ curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
 | Variable | Standard | |
 |---|---|---|
 | `IMAGE_DIR` | – (Pflicht) | Ordner mit den Fotos (enthält `daten/details/…`). In Docker Compose: Host-Pfad aus `.env` |
+| `MODEL_DIR` | `DATA_DIR/model` | Bildmodell für die Foto-Vorschläge (siehe oben). Fehlt es, ist die Funktion aus |
 | `DATA_DIR` | `data` (im Image `/data`) | Ordner mit den sechs Datendateien |
 | `ADDR` | `:8080` | Listen-Adresse |
 | `APP_PORT` | `8080` | Nur Docker Compose: Host-Port |

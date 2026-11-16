@@ -212,15 +212,24 @@ Mit „Foto“ fotografiert man den Fund (oder wählt bis zu sechs Fotos aus), u
 - **Vorsichtig:** Ein Merkmal wird nur vorgeschlagen, wenn es auf Testfotos zu ≥ 99,5 % stimmte. Bei mehreren Fotos zählt der Mittelwert. Eine selbst gewählte Hutfarbe o. Ä. wird nie überschrieben.
 - **Laden:** Modell und Laufzeit (~27 MB mit gzip) kommen erst beim ersten Antippen von „Foto“ und bleiben dann im Service Worker, auch offline.
 
-Das Modell entsteht im Repo [pilz-ki](https://github.com/AnthBrun/pilz-ki) (Training, Bewertung, Export). Hier wird nur der Export eingebunden:
+### Modell einbinden
 
-```sh
-scripts/model-bundle.sh ../pilz-ki/work/export/ft-fungi-effv2b3-final data/model
+Das Modell entsteht im Repo [pilz-ki](https://github.com/AnthBrun/pilz-ki) (Training, Bewertung, Export) und wird dort als GitHub-Release `model-<version>` veröffentlicht. Dieses Repo pinnt die Version in `model.lock` (URL und SHA-256 von `meta.json` und `model.int8.onnx`, dazu Version und SHA-256 von onnxruntime-web).
+
+```
+pilz-ki:    finetune → train-gate → export → pilzki release
+                                               ├─ GitHub-Release model-<version> (+ Kennzahlen)
+                                               └─ PR hier: model.lock aktualisieren
+pilzdaten:  PR mergen → docker compose up -d --build
+            (Stage "model" im Dockerfile lädt die Dateien laut model.lock und prüft die Prüfsummen)
 ```
 
-Das Skript kopiert `meta.json` und `model.int8.onnx`, lädt onnxruntime-web (Version und Prüfsumme stehen im Skript) nach `data/model/ort-<version>/` und legt `.gz`-Varianten daneben. `data/model/` ist nicht im Git und nicht im Image; Docker Compose bindet es als `/model` ein (`MODEL_DIR` in `.env`). Fehlt der Ordner, ist der Foto-Knopf einfach nicht da.
+- **Neues Modell:** den PR „Bildmodell <version>“ mergen und neu bauen. Handys holen den neuen Stand von selbst, weil die URLs die Version tragen.
+- **Zurück:** den Lock-Commit reverten und neu bauen.
+- **Ohne Modell bauen:** `docker compose build --build-arg MODEL=none`. Der Foto-Knopf fehlt dann.
+- **Lokal ohne Docker:** `scripts/model.sh fetch` legt das Modell laut Lock nach `data/model/` (dort sucht `go run` standardmäßig, `MODEL_DIR` überschreibt das). Einen noch nicht veröffentlichten Export aus pilz-ki testet man mit `scripts/model.sh local ../pilz-ki/work/export/<run>`.
 
-Zum Aktualisieren den neuen Export bündeln und neu starten. Die URLs tragen die Modellversion (`?v=` aus `meta.json`) bzw. die Laufzeitversion im Pfad, deshalb holen Handys den neuen Stand von selbst.
+Im Image liegt das Modell unter `/model` (~65 MB inklusive `.gz`-Varianten). `data/model/` ist nicht im Git.
 
 Code: `internal/web/photo.go` (Auslieferung unter `/model/`, `/api/species`), `static/js/photo.js` (Vorverarbeitung, Inferenz, Vorschlagsregel). Die Regeln spiegeln `pilzki/predict.py` in pilz-ki; wer eine Seite ändert, ändert die andere mit. Auf 262 fremden Pilzfotos liefert der Browser dieselbe Trefferqualität wie die Python-Referenz (4,3 Merkmale pro Foto, in 98 % der Fälle ist jedes vorgeschlagene Merkmal richtig).
 
@@ -258,7 +267,7 @@ curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
 | Variable | Standard | |
 |---|---|---|
 | `IMAGE_DIR` | – (Pflicht) | Ordner mit den Fotos (enthält `daten/details/…`). In Docker Compose: Host-Pfad aus `.env` |
-| `MODEL_DIR` | `DATA_DIR/model` | Bildmodell für die Foto-Vorschläge (siehe oben). Fehlt es, ist die Funktion aus |
+| `MODEL_DIR` | `DATA_DIR/model` (im Image `/model`) | Bildmodell für die Foto-Vorschläge (siehe oben). Fehlt es, ist die Funktion aus |
 | `DATA_DIR` | `data` (im Image `/data`) | Ordner mit den sechs Datendateien |
 | `ADDR` | `:8080` | Listen-Adresse |
 | `APP_PORT` | `8080` | Nur Docker Compose: Host-Port |

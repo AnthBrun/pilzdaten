@@ -1,0 +1,8 @@
+# Bildmodell für die Foto-Vorschläge. Geschrieben von `pilzki release` im Repo pilz-ki;
+# scripts/model.sh lädt die Dateien und prüft die Prüfsummen (auch im Docker-Build).
+MODEL_VERSION=20261116-184516
+MODEL_URL=https://github.com/AnthBrun/pilz-ki/releases/download/model-20261116-184516
+META_SHA256=cc6cd1a7d1b075d923a3c03c3781249b996d0d9623b2bfb5b6ce7d2be9512b35
+ONNX_SHA256=cd91f194c10594368cfbba50cd590eb3ca68d96ced5773d6191c5b9e44070393
+ORT_VERSION=1.31.1
+ORT_SHA256=bdccdb9fbb9ab537247c0c734e9b1d2b1b338b4f2a09faa58f0dc1cfa27c312c

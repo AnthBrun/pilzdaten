@@ -9,5 +9,3 @@ services:
       - "${APP_PORT:-8080}:8080"
     volumes:
       - "${IMAGE_DIR:?IMAGE_DIR in .env setzen (Pfad zum Bilderordner)}:/images:ro"
-      # Bildmodell für Foto-Vorschläge (scripts/model-bundle.sh); leer = Funktion aus
-      - "${MODEL_DIR:-./data/model}:/model:ro"

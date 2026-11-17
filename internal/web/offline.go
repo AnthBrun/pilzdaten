@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 
@@ -28,6 +29,7 @@ type offlineSpecies struct {
 	EdibilityTxt string      `json:"l"`
 	Image        string      `json:"i,omitempty"`
 	Images       []string    `json:"x,omitempty"`
+	Originals    []string    `json:"o,omitempty"` // nur App-Paket: großes Original je Bild in x, "" wenn keins
 	Tags         []string    `json:"t"`
 	Diameter     [2]int      `json:"d"`
 	Priority     int         `json:"p"`
@@ -67,7 +69,7 @@ func (s *Server) buildOfflinePackage(lang string) ([]byte, string, error) {
 	cached.once.Do(func() {
 		pkg := offlinePackage{Lang: lang, Facets: s.localFacets(lang)}
 		for _, species := range s.catalog.All() {
-			pkg.Species = append(pkg.Species, s.offlineSpeciesFor(lang, species))
+			pkg.Species = append(pkg.Species, s.offlineSpeciesFor(lang, species, false))
 		}
 		raw, err := json.Marshal(pkg)
 		if err != nil {
@@ -93,7 +95,9 @@ func (s *Server) buildOfflinePackage(lang string) ([]byte, string, error) {
 	return cached.gzipped, cached.etag, cached.err
 }
 
-func (s *Server) offlineSpeciesFor(lang string, species *catalog.Species) offlineSpecies {
+// offlineSpeciesFor: Kurzform einer Art. full (App-Paket) nimmt alle Fotos
+// samt Originalen auf, sonst nur die ersten acht Vorschaubilder.
+func (s *Server) offlineSpeciesFor(lang string, species *catalog.Species, full bool) offlineSpecies {
 	filterData := s.catalog.FilterData(species.Slug)
 	localNames := s.t(lang, species.NameTrivial)
 	names := localNames
@@ -111,13 +115,23 @@ func (s *Server) offlineSpeciesFor(lang string, species *catalog.Species) offlin
 	if entry.Tags == nil {
 		entry.Tags = []string{}
 	}
-	for _, image := range speciesPhotos(species, noOriginal) {
+	original := noOriginal
+	if full {
+		original = s.catalog.Original
+	}
+	for _, image := range speciesPhotos(species, original) {
 		if entry.Image == "" {
 			entry.Image = image.URL
 		}
-		if len(entry.Images) < 8 {
+		if full || len(entry.Images) < 8 {
 			entry.Images = append(entry.Images, image.URL)
 		}
+		if full {
+			entry.Originals = append(entry.Originals, image.Full)
+		}
+	}
+	if full && !slices.ContainsFunc(entry.Originals, func(url string) bool { return url != "" }) {
+		entry.Originals = nil
 	}
 	main, supplemental := speciesTraits(species)
 	main, supplemental = s.localTraits(lang, main), s.localTraits(lang, supplemental)
@@ -128,6 +142,24 @@ func (s *Server) offlineSpeciesFor(lang string, species *catalog.Species) offlin
 		entry.Extra = append(entry.Extra, [2]string{value.Name, value.Value})
 	}
 	return entry
+}
+
+// AppPackage baut das Datenpaket der nativen App (Repo pilzkorb): dasselbe
+// Format wie /api/offline, aber mit allen Fotos und ihren großen Originalen
+// (Feld o). Die App lädt es beim ersten Start; der Webserver wird dafür
+// nicht gebraucht (siehe cmd/apppackage).
+func AppPackage(data *catalog.Catalog, translations *i18n.Bundle, lang string) ([]byte, error) {
+	s := &Server{catalog: data, i18n: translations}
+	pkg := offlinePackage{Lang: lang, Facets: s.localFacets(lang)}
+	for _, species := range data.All() {
+		pkg.Species = append(pkg.Species, s.offlineSpeciesFor(lang, species, true))
+	}
+	raw, err := json.Marshal(pkg)
+	if err != nil {
+		return nil, err
+	}
+	sum := sha256.Sum256(raw)
+	return bytes.Replace(raw, []byte(`"version":""`), []byte(`"version":"`+hex.EncodeToString(sum[:8])+`"`), 1), nil
 }
 
 var msgPackFailed = i18n.N("Offline-Paket konnte nicht erstellt werden")

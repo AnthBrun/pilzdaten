@@ -91,6 +91,19 @@ cp ../pilzsuche/data/{species.jsonl,index_arts.jsonl,filter_tags.jsonl,facets.js
 docker compose up -d --build
 ```
 
+## Datenpaket für die native App
+
+Die Flutter-App (Repo `pilzkorb`) läuft ohne diesen Server. Sie lädt beim
+ersten Start ein Datenpaket: dasselbe Format wie `/api/offline`, aber mit
+allen Fotos je Art und ihren großen Originalen (Feld `o`).
+
+```sh
+go run ./cmd/apppackage -data data -out app-package.json
+```
+
+Daraus und aus dem Bildmodell (`model.lock`) baut `pilzkorb/tool/build_app_bundle.py`
+das Bundle mit `manifest.json`, das auf den App-Server kommt.
+
 ## Übersetzungen
 
 Deutsch ist die Quellsprache. Jede weitere Sprache ist ein Ordner `data/i18n/<code>/` mit zwei Wörterbüchern „deutscher Text → Übersetzung“. Sie werden mit DeepL erzeugt und committet, zur Laufzeit braucht die App kein DeepL.

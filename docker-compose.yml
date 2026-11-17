@@ -7,5 +7,8 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:8080"
+    environment:
+      # Tokens der nativen App für /app/bundle/ (kommagetrennt; leer = Route aus)
+      APP_TOKENS: "${APP_TOKENS:-}"
     volumes:
       - "${IMAGE_DIR:?IMAGE_DIR in .env setzen (Pfad zum Bilderordner)}:/images:ro"

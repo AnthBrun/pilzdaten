@@ -1,10 +1,10 @@
-// apppackage schreibt das Datenpaket der nativen App (Repo pilzkorb):
-// alle Arten wie /api/offline, zusätzlich alle Fotos und großen Originale.
+// apppackage baut das Daten-Bundle der nativen App (Repo pilzkorb).
 //
-//	go run ./cmd/apppackage -data data -lang de -out app-package.json
+//	go run ./cmd/apppackage -data data -model data/model -bundle app-bundle
+//	go run ./cmd/apppackage -data data -out app-package.json   (nur die Artdaten)
 //
-// pilzkorb/tool/build_app_bundle.py nimmt die Datei und das Bildmodell
-// (model.lock) und baut daraus das Bundle, das die App beim ersten Start lädt.
+// Das Docker-Image baut das Bundle selbst (Stage "appbundle") und liefert es
+// unter /app/bundle/ aus, sobald APP_TOKENS gesetzt ist (siehe README).
 package main
 
 import (
@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"pilzdaten/internal/appbundle"
 	"pilzdaten/internal/catalog"
 	"pilzdaten/internal/i18n"
 	"pilzdaten/internal/web"
@@ -21,8 +22,13 @@ import (
 func main() {
 	dataDir := flag.String("data", "data", "Ordner mit den aufbereiteten Daten")
 	lang := flag.String("lang", i18n.Source, "Sprache des Pakets")
-	out := flag.String("out", "app-package.json", "Zieldatei")
+	out := flag.String("out", "", "nur das App-Paket (JSON) in diese Datei schreiben")
+	bundle := flag.String("bundle", "", "komplettes Bundle in diesen Ordner schreiben")
+	modelDir := flag.String("model", "data/model", "Bildmodell (meta.json, model.int8.onnx) für -bundle")
 	flag.Parse()
+	if (*out == "") == (*bundle == "") {
+		log.Fatal("genau eins von -out oder -bundle angeben")
+	}
 
 	data, err := catalog.LoadDir(*dataDir)
 	if err != nil {
@@ -36,8 +42,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("App-Paket konnte nicht gebaut werden: %v", err)
 	}
-	if err := os.WriteFile(*out, raw, 0o644); err != nil {
-		log.Fatal(err)
+	if *out != "" {
+		if err := os.WriteFile(*out, raw, 0o644); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%d Arten, %d Bytes -> %s", data.Count(), len(raw), *out)
+		return
 	}
-	log.Printf("%d Arten, %d Bytes -> %s", data.Count(), len(raw), *out)
+	manifest, err := appbundle.Write(*bundle, raw, *modelDir)
+	if err != nil {
+		log.Fatalf("Bundle konnte nicht gebaut werden: %v", err)
+	}
+	log.Printf("Bundle %s (%d Arten) -> %s", manifest.Version, data.Count(), *bundle)
 }

@@ -18,6 +18,8 @@ import (
 //	IMAGE_DIR  Wurzel der Artfotos, z. B. …/pilzsuche/raw/images (Pflicht)
 //	MODEL_DIR  Bildmodell für Foto-Vorschläge (Standard: DATA_DIR/model; fehlt es, ist die Funktion aus)
 //	ADDR       Listen-Adresse (Standard: :8080)
+//	APP_BUNDLE_DIR  Daten-Bundle der nativen App (Standard: DATA_DIR/app-bundle)
+//	APP_TOKENS      Tokens der App für /app/bundle/, kommagetrennt (leer = Route aus)
 func main() {
 	dataDir := envOr("DATA_DIR", "data")
 	imageDir := os.Getenv("IMAGE_DIR")
@@ -43,7 +45,9 @@ func main() {
 	log.Printf("%d Arten aus %s geladen, Bilder aus %s, Sprachen: %s", data.Count(), dataDir, imageDir, strings.Join(languages, ", "))
 
 	modelDir := envOr("MODEL_DIR", filepath.Join(dataDir, "model"))
-	mux, err := web.NewWithOptions(data, imageDir, web.Options{Translations: translations, ModelDir: modelDir})
+	bundleDir := envOr("APP_BUNDLE_DIR", filepath.Join(dataDir, "app-bundle"))
+	tokens := strings.Split(os.Getenv("APP_TOKENS"), ",")
+	mux, err := web.NewWithOptions(data, imageDir, web.Options{Translations: translations, ModelDir: modelDir, AppBundleDir: bundleDir, AppTokens: tokens})
 	if err != nil {
 		log.Fatalf("Bildmodell in %s unvollständig: %v", modelDir, err)
 	}
@@ -51,6 +55,9 @@ func main() {
 		log.Printf("Foto-Vorschläge aktiv, Modell aus %s", modelDir)
 	} else {
 		log.Printf("Foto-Vorschläge aus (kein Modell in %s)", modelDir)
+	}
+	if _, err := os.Stat(filepath.Join(bundleDir, "manifest.json")); err == nil && strings.TrimSpace(os.Getenv("APP_TOKENS")) != "" {
+		log.Printf("App-Bundle unter /app/bundle/ aus %s", bundleDir)
 	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")

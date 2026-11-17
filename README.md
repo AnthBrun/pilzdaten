@@ -91,18 +91,24 @@ cp ../pilzsuche/data/{species.jsonl,index_arts.jsonl,filter_tags.jsonl,facets.js
 docker compose up -d --build
 ```
 
-## Datenpaket für die native App
+## Daten-Bundle für die native App
 
-Die Flutter-App (Repo `pilzkorb`) läuft ohne diesen Server. Sie lädt beim
-ersten Start ein Datenpaket: dasselbe Format wie `/api/offline`, aber mit
-allen Fotos je Art und ihren großen Originalen (Feld `o`).
+Die Flutter-App (Repo `pilzkorb`) soll die PWA nach und nach ersetzen und
+hängt nicht von den Seiten dieses Servers ab. Beim ersten Öffnen lädt sie ein
+Daten-Bundle (ca. 30 MB): Artdaten mit allen Fotos und Originalen plus
+Bildmodell. Fotos holt sie vorerst von `/media` und `/original`.
 
-```sh
-go run ./cmd/apppackage -data data -out app-package.json
-```
-
-Daraus und aus dem Bildmodell (`model.lock`) baut `pilzkorb/tool/build_app_bundle.py`
-das Bundle mit `manifest.json`, das auf den App-Server kommt.
+- **Bauen:** Das Docker-Image baut das Bundle selbst (Stage `appbundle`) aus
+  `data/` und dem Modell laut `model.lock`. Lokal:
+  `go run ./cmd/apppackage -data data -model data/model -bundle data/app-bundle`
+- **Ausliefern:** `GET /app/bundle/manifest.json` und die Dateien darin, nur mit
+  `Authorization: Bearer <Token>`. Tokens stehen kommagetrennt in `APP_TOKENS`
+  (`.env`); ohne Tokens gibt es die Route nicht. Zum Wechseln alten und neuen
+  Token eine Zeit lang parallel eintragen.
+- **Format:** `internal/appbundle` (Manifest mit sha256 je Datei). Die App liest
+  es in `pilzkorb/lib/data/bundle_store.dart` – beide gemeinsam ändern.
+- Ein Token in der App lässt sich auslesen. Er hält beiläufiges Abgreifen ab,
+  ersetzt aber keine Nutzerkonten.
 
 ## Übersetzungen
 
@@ -180,6 +186,7 @@ internal/web/                HTTP
 | `GET /api/available-tags` | Tags, die mit der aktuellen Auswahl noch Treffer liefern. Die übrigen graut das Frontend aus. |
 | `GET /api/facets` | Filtergruppen |
 | `GET /api/offline` | Offline-Paket: alle Arten kompakt, gzip, mit ETag |
+| `GET /app/bundle/…` | Daten-Bundle der nativen App, nur mit Token (siehe oben) |
 | `GET /api/species` | Kartendaten bestimmter Arten, Query `slugs` (kommagetrennt, max. 20) |
 | `GET /model/…` | Bildmodell und onnxruntime-web aus `MODEL_DIR` (nur wenn vorhanden) |
 | `GET /media/…` | Fotos (Vorschauen) aus `IMAGE_DIR` |
@@ -284,4 +291,6 @@ curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
 | `DATA_DIR` | `data` (im Image `/data`) | Ordner mit den sechs Datendateien |
 | `ADDR` | `:8080` | Listen-Adresse |
 | `APP_PORT` | `8080` | Nur Docker Compose: Host-Port |
+| `APP_BUNDLE_DIR` | `data/app-bundle` (im Image `/app-bundle`) | Daten-Bundle der nativen App |
+| `APP_TOKENS` | – | Tokens der App für `/app/bundle/`, kommagetrennt; leer = Route aus |
 | `DEEPL_API_KEY` | – | Nur `cmd/translate`: DeepL-Schlüssel, aus der Umgebung oder `.env` |

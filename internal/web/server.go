@@ -34,6 +34,8 @@ type Server struct {
 type Options struct {
 	Translations *i18n.Bundle // nil = nur Deutsch
 	ModelDir     string       // Bildmodell für Foto-Vorschläge ("" oder ohne meta.json = aus)
+	AppBundleDir string       // Daten-Bundle der nativen App (cmd/apppackage -bundle), "" = aus
+	AppTokens    []string     // erlaubte Tokens für /app/bundle/; leer = Route aus
 }
 
 // New baut den HTTP-Router. imageDir ist das Wurzelverzeichnis der Artfotos,
@@ -89,6 +91,8 @@ func NewWithOptions(data *catalog.Catalog, imageDir string, options Options) (*h
 	mux.HandleFunc("GET /api/facets", server.facets)
 	mux.HandleFunc("GET /api/offline", server.offlinePackage)
 	mux.HandleFunc("GET /api/species", server.speciesCards)
+	// Immer registriert, damit /app/… nie auf die Startseite fällt; ohne Bundle oder Tokens 404.
+	mux.HandleFunc("GET /app/bundle/{path...}", newAppBundle(options.AppBundleDir, options.AppTokens).serve)
 	if photo != nil {
 		mux.HandleFunc("GET /model/{path...}", photo.serveModelFile)
 	}
